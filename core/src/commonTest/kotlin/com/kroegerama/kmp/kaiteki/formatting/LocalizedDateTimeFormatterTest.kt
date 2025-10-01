@@ -51,11 +51,19 @@ class LocalizedDateTimeFormatterTest {
         expect("Oct 1, 2025") { formatterUS.formatDate(localDateTime) }
         expect("Oct 1, 2025") { formatterUS.formatDate(localDate) }
 
-        expect("8:15 PM") { formatterUS.formatTime(instant) }
-        expect("8:15 PM") { formatterUS.formatTime(localDateTime) }
-        expect("8:15 PM") { formatterUS.formatTime(localTime) }
+        expect("8:15 PM") { formatterUS.formatTime(instant).replace(" ", " ") }
+        expect("8:15 PM") { formatterUS.formatTime(localDateTime).replace(" ", " ") }
+        expect("8:15 PM") { formatterUS.formatTime(localTime).replace(" ", " ") }
 
-        expect("Oct 1, 2025, 8:15 PM") { formatterUS.formatDateTime(instant) }
-        expect("Oct 1, 2025, 8:15 PM") { formatterUS.formatDateTime(localDateTime) }
+        expect("Oct 1, 2025, 8:15 PM") {
+            formatterUS.formatDateTime(instant)
+                .replace(" ", " ")
+                .replace(" at ", ", ")
+        }
+        expect("Oct 1, 2025, 8:15 PM") {
+            formatterUS.formatDateTime(localDateTime)
+                .replace(" ", " ")
+                .replace(" at ", ", ")
+        }
     }
 }

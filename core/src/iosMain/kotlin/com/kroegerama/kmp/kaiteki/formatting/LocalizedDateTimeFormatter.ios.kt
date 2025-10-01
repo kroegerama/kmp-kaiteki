@@ -13,6 +13,11 @@ import platform.Foundation.NSCalendar
 import platform.Foundation.NSDate
 import platform.Foundation.NSDateComponents
 import platform.Foundation.NSDateFormatter
+import platform.Foundation.NSDateFormatterFullStyle
+import platform.Foundation.NSDateFormatterLongStyle
+import platform.Foundation.NSDateFormatterMediumStyle
+import platform.Foundation.NSDateFormatterNoStyle
+import platform.Foundation.NSDateFormatterShortStyle
 import platform.Foundation.NSLocale
 import kotlin.time.Instant
 
@@ -26,17 +31,23 @@ public actual class DefaultLocalizedDateTimeFormatter
     private val dateFormatter: NSDateFormatter = NSDateFormatter().apply {
         this.locale = NSLocale(locale.toString())
         this.timeZone = zone.toNSTimeZone()
-        setLocalizedDateFormatFromTemplate(dateStyle.toDateTemplate())
+        this.dateStyle = dateStyle.toNSDateFormatterStyle()
+        this.timeStyle = NSDateFormatterNoStyle
     }
     private val timeFormatter: NSDateFormatter = NSDateFormatter().apply {
         this.locale = NSLocale(locale.toString())
         this.timeZone = zone.toNSTimeZone()
-        setLocalizedDateFormatFromTemplate(timeStyle.toTimeTemplate())
+        this.dateStyle = NSDateFormatterNoStyle
+        this.timeStyle = timeStyle.toNSDateFormatterStyle()
     }
     private val dateTimeFormatter: NSDateFormatter = NSDateFormatter().apply {
         this.locale = NSLocale(locale.toString())
         this.timeZone = zone.toNSTimeZone()
-        setLocalizedDateFormatFromTemplate("${dateStyle.toDateTemplate()}, ${timeStyle.toTimeTemplate()}")
+        this.dateStyle = dateStyle.toNSDateFormatterStyle()
+        this.timeStyle = timeStyle.toNSDateFormatterStyle()
+    }
+    private val calendar = NSCalendar.currentCalendar.apply {
+        setTimeZone(zone.toNSTimeZone())
     }
 
     actual override fun formatDate(instant: Instant): String = dateFormatter.stringFromDate(instant.toNSDate())
@@ -51,19 +62,16 @@ public actual class DefaultLocalizedDateTimeFormatter
     actual override fun formatDateTime(localDateTime: LocalDateTime): String = dateTimeFormatter.stringFromDate(localDateTime.toNSDate())
 
     private fun LocalDateTime.toNSDate(): NSDate {
-        val calendar = NSCalendar.currentCalendar
         val components = toNSDateComponents()
         return calendar.dateFromComponents(components)!!
     }
 
     private fun LocalDate.toNSDate(): NSDate {
-        val calendar = NSCalendar.currentCalendar
         val components = toNSDateComponents()
         return calendar.dateFromComponents(components)!!
     }
 
     private fun LocalTime.toNSDate(): NSDate {
-        val calendar = NSCalendar.currentCalendar
         val components = NSDateComponents()
         components.setHour(hour.toLong())
         components.setMinute(minute.toLong())
@@ -73,16 +81,9 @@ public actual class DefaultLocalizedDateTimeFormatter
     }
 }
 
-private fun FormatStyle.toDateTemplate() = when (this) {
-    FormatStyle.SHORT -> "yMMd"
-    FormatStyle.MEDIUM -> "yMMMd"
-    FormatStyle.LONG -> "yMMMMd"
-    FormatStyle.FULL -> "yMMMMEEEEd"
-}
-
-private fun FormatStyle.toTimeTemplate() = when (this) {
-    FormatStyle.SHORT -> "jm"
-    FormatStyle.MEDIUM -> "jms"
-    FormatStyle.LONG -> "jmsz"
-    FormatStyle.FULL -> "jmszzzz"
+private fun FormatStyle.toNSDateFormatterStyle(): ULong = when (this) {
+    FormatStyle.SHORT -> NSDateFormatterShortStyle
+    FormatStyle.MEDIUM -> NSDateFormatterMediumStyle
+    FormatStyle.LONG -> NSDateFormatterLongStyle
+    FormatStyle.FULL -> NSDateFormatterFullStyle
 }
