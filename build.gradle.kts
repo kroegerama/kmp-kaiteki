@@ -1,0 +1,29 @@
+import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
+
+plugins {
+    alias(libs.plugins.kotlin.multiplatform) apply false
+    alias(libs.plugins.kotlin.compose) apply false
+    alias(libs.plugins.compose) apply false
+    alias(libs.plugins.android.library) apply false
+    alias(libs.plugins.vanniktech.maven.publish) apply false
+    alias(libs.plugins.versions)
+}
+
+allprojects {
+    version = C.PROJECT_VERSION
+    group = C.PROJECT_GROUP_ID
+    description = C.PROJECT_DESCRIPTION
+}
+
+tasks.withType<DependencyUpdatesTask>().configureEach {
+    gradleReleaseChannel = "current"
+    rejectVersionIf {
+        isNonStable(candidate.version) && !isNonStable(currentVersion)
+    }
+}
+
+private val nonStableQualifiers = listOf("alpha", "beta", "rc")
+
+private fun isNonStable(version: String): Boolean = nonStableQualifiers.any { qualifier ->
+    qualifier in version.lowercase()
+}
