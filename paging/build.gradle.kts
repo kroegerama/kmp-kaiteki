@@ -69,7 +69,7 @@ mavenPublishing {
 
     coordinates(
         groupId = group.toString(),
-        artifactId = name,
+        artifactId = "kaiteki-paging",
         version = version.toString()
     )
 

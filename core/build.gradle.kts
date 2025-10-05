@@ -82,7 +82,7 @@ mavenPublishing {
 
     coordinates(
         groupId = group.toString(),
-        artifactId = name,
+        artifactId = "kaiteki-core",
         version = version.toString()
     )
 
