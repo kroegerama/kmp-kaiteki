@@ -14,6 +14,7 @@ kotlin {
         apiVersion = KotlinVersion.KOTLIN_2_1
         languageVersion = KotlinVersion.KOTLIN_2_1
 
+        optIn.add("kotlin.contracts.ExperimentalContracts")
         optIn.add("kotlin.time.ExperimentalTime")
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
@@ -46,6 +47,9 @@ kotlin {
             implementation(libs.arrow)
             implementation(libs.compose.runtime.annotation)
             implementation(libs.multiplatform.locale)
+        }
+        androidMain.dependencies {
+            implementation(libs.androidx.startup)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

@@ -2,12 +2,10 @@ package com.kroegerama.kmp.kaiteki.loadstate
 
 import androidx.compose.runtime.Immutable
 import arrow.core.Either
-import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
 @Immutable
-@OptIn(ExperimentalContracts::class)
 public sealed class LoadState<out E, out T> {
     public data object Idle : LoadState<Nothing, Nothing>()
 
