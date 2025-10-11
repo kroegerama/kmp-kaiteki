@@ -2,13 +2,20 @@ package com.kroegerama.kmp.kaiteki.paging
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.paging.*
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.PagingSource
+import androidx.paging.PagingState
+import androidx.paging.cachedIn
 import arrow.core.None
 import arrow.core.Option
 import arrow.core.Some
 import arrow.core.some
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
@@ -99,3 +106,6 @@ internal class EmptyPagingSource<Key : Any, Value : Any> : PagingSource<Key, Val
         nextKey = null
     )
 }
+
+public fun <T : Any> pagingDataOf(data: List<T>): StateFlow<PagingData<T>> =
+    MutableStateFlow(PagingData.from(data))
