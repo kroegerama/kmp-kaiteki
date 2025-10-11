@@ -63,15 +63,7 @@ dependencies {
 }
 
 mavenPublishing {
-    publishToMavenCentral()
-
-    signAllPublications()
-
     coordinates(
-        groupId = group.toString(),
-        artifactId = "kaiteki-paging",
-        version = version.toString()
+        artifactId = "kaiteki-paging"
     )
-
-    pom(pomAction)
 }

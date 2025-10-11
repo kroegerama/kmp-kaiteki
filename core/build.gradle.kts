@@ -80,15 +80,7 @@ dependencies {
 }
 
 mavenPublishing {
-    publishToMavenCentral()
-
-    signAllPublications()
-
     coordinates(
-        groupId = group.toString(),
-        artifactId = "kaiteki-core",
-        version = version.toString()
+        artifactId = "kaiteki-core"
     )
-
-    pom(pomAction)
 }

@@ -42,7 +42,6 @@ kotlin {
         commonMain.dependencies {
             implementation(libs.kotlinx.datetime)
             implementation(libs.arrow)
-            implementation(libs.androidx.navigation.runtime)
             implementation(libs.multiplatform.locale)
             implementation(compose.runtime)
             implementation(compose.foundation)
@@ -54,6 +53,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.androidx.browser)
             implementation(libs.androidx.core)
+            implementation(libs.androidx.navigation.runtime)
             implementation(libs.hilt.lifecycle.viewmodel.compose)
             implementation(compose.preview)
         }
@@ -90,15 +90,7 @@ dependencies {
 }
 
 mavenPublishing {
-    publishToMavenCentral()
-
-    signAllPublications()
-
     coordinates(
-        groupId = group.toString(),
-        artifactId = "kaiteki-compose",
-        version = version.toString()
+        artifactId = "kaiteki-compose"
     )
-
-    pom(pomAction)
 }
