@@ -7,6 +7,7 @@ import kotlin.contracts.contract
 
 @Immutable
 public sealed class LoadState<out E, out T> {
+
     public data object Idle : LoadState<Nothing, Nothing>()
 
     @Immutable
@@ -60,31 +61,39 @@ public sealed class LoadState<out E, out T> {
         return also { if (it is Error) action(it.error) }
     }
 
+    public fun isIdle(): Boolean {
+        contract {
+            returns(true) implies (this@LoadState is Idle)
+            returns(false) implies (this@LoadState !is Idle)
+        }
+        return this@LoadState is Idle
+    }
+
     public fun isLoading(): Boolean {
         contract {
-            returns(true) implies (this@LoadState is Loading<T>)
-            returns(false) implies (this@LoadState !is Loading<T>)
+            returns(true) implies (this@LoadState is Loading)
+            returns(false) implies (this@LoadState !is Loading)
         }
-        return this is Loading<T>
+        return this@LoadState is Loading
     }
 
     public fun isSuccess(): Boolean {
         contract {
-            returns(true) implies (this@LoadState is Success<T>)
-            returns(false) implies (this@LoadState !is Success<T>)
+            returns(true) implies (this@LoadState is Success)
+            returns(false) implies (this@LoadState !is Success)
         }
-        return this is Success<T>
+        return this@LoadState is Success
     }
 
     public fun isError(): Boolean {
         contract {
-            returns(true) implies (this@LoadState is Error<E>)
-            returns(false) implies (this@LoadState !is Error<E>)
+            returns(true) implies (this@LoadState is Error)
+            returns(false) implies (this@LoadState !is Error)
         }
-        return this is Error<E>
+        return this@LoadState is Error
     }
 
-    public inline fun <C> map(f: (success: T) -> C): LoadState<E, C> {
+    public inline fun <C> map(crossinline f: (success: T) -> C): LoadState<E, C> {
         contract {
             callsInPlace(f, InvocationKind.AT_MOST_ONCE)
         }
@@ -96,7 +105,7 @@ public sealed class LoadState<out E, out T> {
         }
     }
 
-    public inline fun <C> mapError(f: (error: E) -> C): LoadState<C, T> {
+    public inline fun <C> mapError(crossinline f: (error: E) -> C): LoadState<C, T> {
         contract {
             callsInPlace(f, InvocationKind.AT_MOST_ONCE)
         }
@@ -106,6 +115,45 @@ public sealed class LoadState<out E, out T> {
             is Success -> Success(data)
             is Error -> Error(error.let(f))
         }
+    }
+
+    public inline fun <C> fold(
+        crossinline onLoading: (dataOrStale: T?) -> C?,
+        crossinline onSuccess: (success: T) -> C,
+        crossinline onError: (error: E) -> C
+    ): LoadState<Nothing, C> {
+        contract {
+            callsInPlace(onLoading, InvocationKind.AT_MOST_ONCE)
+            callsInPlace(onSuccess, InvocationKind.AT_MOST_ONCE)
+            callsInPlace(onError, InvocationKind.AT_MOST_ONCE)
+        }
+        return when (this) {
+            Idle -> Idle
+            is Loading -> Loading(onLoading(staleData))
+            is Success -> Success(onSuccess(data))
+            is Error -> Success(onError(error))
+        }
+    }
+}
+
+public inline fun <E, T> LoadState<E, T>.recover(crossinline f: (error: E) -> T): LoadState<Nothing, T> {
+    contract {
+        callsInPlace(f, InvocationKind.AT_MOST_ONCE)
+    }
+    return when (this) {
+        LoadState.Idle -> LoadState.Idle
+        is LoadState.Loading -> this
+        is LoadState.Success -> this
+        is LoadState.Error -> LoadState.Success(f(error))
+    }
+}
+
+public fun <T> LoadState<T, T>.flatten(): LoadState<Nothing, T> {
+    return when (this) {
+        LoadState.Idle -> LoadState.Idle
+        is LoadState.Loading -> this
+        is LoadState.Success -> this
+        is LoadState.Error -> LoadState.Success(error)
     }
 }
 
