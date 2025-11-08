@@ -5,7 +5,9 @@ import androidx.paging.PagingState
 import arrow.core.Either
 import arrow.core.getOrElse
 
-public abstract class PageSizePagingSource<A, B, T : Any> : PagingSource<Int, T>() {
+public abstract class PageSizePagingSource<A, B, T : Any>(
+    private val firstPage: Int = 0
+) : PagingSource<Int, T>() {
 
     private val knownIds = mutableSetOf<Any>()
 
@@ -21,11 +23,11 @@ public abstract class PageSizePagingSource<A, B, T : Any> : PagingSource<Int, T>
         val anchorPosition = state.anchorPosition ?: return null
         val page = state.closestPageToPosition(anchorPosition) ?: return null
         val key = page.prevKey?.plus(1) ?: page.nextKey?.minus(1)
-        return key?.coerceAtLeast(0)
+        return key?.coerceAtLeast(firstPage)
     }
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, T> {
-        val page = params.key ?: 0
+        val page = params.key ?: firstPage
         val size = params.loadSize
 
         val response = makeCall(page, size).getOrElse {
@@ -45,7 +47,7 @@ public abstract class PageSizePagingSource<A, B, T : Any> : PagingSource<Int, T>
 
         return LoadResult.Page(
             data = data,
-            prevKey = page.minus(1).takeUnless { it < 0 },
+            prevKey = page.minus(1).takeUnless { it < firstPage },
             nextKey = page.plus(1).takeUnless { endReached }
         )
     }
