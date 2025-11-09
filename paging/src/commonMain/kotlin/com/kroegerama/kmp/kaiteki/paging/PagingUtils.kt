@@ -109,3 +109,6 @@ internal class EmptyPagingSource<Key : Any, Value : Any> : PagingSource<Key, Val
 
 public fun <T : Any> pagingDataOf(data: List<T>): StateFlow<PagingData<T>> =
     MutableStateFlow(PagingData.from(data))
+
+public fun <T : Any> pagingDataOf(vararg data: T): StateFlow<PagingData<T>> =
+    MutableStateFlow(PagingData.from(data.toList()))
