@@ -38,6 +38,8 @@ kotlin {
             jvmTarget = JvmTarget.JVM_11
             moduleName = "kmp.kaiteki.core"
         }
+
+        withHostTest { }
     }
 
     iosX64()
