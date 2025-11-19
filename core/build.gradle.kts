@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.android.library)
+    alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.vanniktech.maven.publish)
 }
 
@@ -27,13 +27,19 @@ kotlin {
             moduleName = "kmp.kaiteki.core"
         }
     }
-    androidTarget {
-        publishLibraryVariants("release")
+
+    android {
+        namespace = "com.kroegerama.kmp.kaiteki"
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
+        enableCoreLibraryDesugaring = true
+
         compilerOptions {
             jvmTarget = JvmTarget.JVM_11
             moduleName = "kmp.kaiteki.core"
         }
     }
+
     iosX64()
     iosArm64()
     iosSimulatorArm64()
@@ -53,24 +59,6 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
-        }
-    }
-}
-
-android {
-    namespace = "com.kroegerama.kmp.kaiteki"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-    defaultConfig {
-        minSdk = libs.versions.android.minSdk.get().toInt()
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-        isCoreLibraryDesugaringEnabled = true
-    }
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
 }

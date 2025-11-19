@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.compose)
-    alias(libs.plugins.android.library)
+    alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.vanniktech.maven.publish)
 }
 
@@ -27,13 +27,19 @@ kotlin {
             moduleName = "kmp.kaiteki.compose"
         }
     }
-    androidTarget {
-        publishLibraryVariants("release")
+
+    android {
+        namespace = "com.kroegerama.kmp.kaiteki.compose"
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
+        enableCoreLibraryDesugaring = true
+
         compilerOptions {
             jvmTarget = JvmTarget.JVM_11
             moduleName = "kmp.kaiteki.compose"
         }
     }
+
     iosX64()
     iosArm64()
     iosSimulatorArm64()
@@ -63,29 +69,8 @@ kotlin {
     }
 }
 
-android {
-    namespace = "com.kroegerama.kmp.kaiteki.compose"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-    defaultConfig {
-        minSdk = libs.versions.android.minSdk.get().toInt()
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-        isCoreLibraryDesugaringEnabled = true
-    }
-    buildFeatures {
-        compose = true
-    }
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-    }
-}
-
 dependencies {
-    debugImplementation(compose.uiTooling)
+    androidRuntimeClasspath(compose.uiTooling)
     coreLibraryDesugaring(libs.desugar)
 }
 
