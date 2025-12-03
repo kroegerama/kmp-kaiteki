@@ -12,21 +12,24 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 
 @Stable
-public interface LoadStateFlow<out E, out T, out P> {
+public interface LoadStateFlow<E, T, P> {
     public val flow: StateFlow<LoadState<E, T>>
-    public val dataOrStale: StateFlow<T?>
+    public val dataOrStale: StateFlow<Option<T>>
     public val loading: StateFlow<Boolean>
 
-    public fun refresh()
+    public fun refresh(withLoading: Boolean = true)
+    public fun override(newData: T)
 
     public companion object {
         public operator fun <E, T, P> invoke(
@@ -39,7 +42,7 @@ public interface LoadStateFlow<out E, out T, out P> {
                 scope = scope,
                 parameterFlow = parameterFlow,
                 onError = onError,
-                block = { block(it.getOrElse { throw IllegalStateException() }) }
+                block = { block(it.getOrElse { error("this cannot happen, parameterFlow is not null") }) }
             )
         }
 
@@ -65,52 +68,112 @@ public interface LoadStateFlow<out E, out T, out P> {
 }
 
 @Stable
-private class LoadStateFlowStatic<out T>(
+private class LoadStateFlowStatic<T>(
     data: T
 ) : LoadStateFlow<Nothing, T, Nothing> {
-    override val flow: StateFlow<LoadState<Nothing, T>> = MutableStateFlow(LoadState.Success(data))
-    override val dataOrStale: StateFlow<T?> = MutableStateFlow(data)
+    private val mutableFlow = MutableStateFlow(LoadState.Success(data))
+    private val mutableDataOrStaleFlow = MutableStateFlow(data.some())
+    override val flow: StateFlow<LoadState<Nothing, T>> = mutableFlow
+    override val dataOrStale: StateFlow<Option<T>> = mutableDataOrStaleFlow
     override val loading: StateFlow<Boolean> = MutableStateFlow(false)
-    override fun refresh() = Unit
+    override fun refresh(withLoading: Boolean) = Unit
+    override fun override(newData: T) {
+        mutableFlow.value = LoadState.Success(newData)
+        mutableDataOrStaleFlow.value = newData.some()
+    }
 }
 
 @Stable
-private class LoadStateFlowImpl<out E, out T, out P>(
+private class LoadStateFlowImpl<E, T, P>(
     scope: CoroutineScope,
     parameterFlow: Flow<P>?,
     onError: ((E, retry: () -> Unit) -> Unit)?,
     block: suspend (Option<P>) -> Either<E, T>
 ) : LoadStateFlow<E, T, P> {
-    private val refreshKey = MutableStateFlow(0L)
 
-    private var stale: T? = null
+    private data class InternalState<P, T>(
+        val refreshCount: Int = 0,
+        val withLoading: Boolean = true,
+        val override: Option<T> = None,
+        val parameter: Option<P>?
+    ) {
+        fun refresh(withLoading: Boolean) = copy(
+            refreshCount = refreshCount + 1,
+            withLoading = withLoading,
+            override = None
+        )
 
-    private val paramFlow = parameterFlow?.map { it.some() } ?: flowOf(None)
+        fun override(newData: T) = copy(
+            override = newData.some()
+        )
 
-    private val sourceFlow: Flow<Pair<Long, Option<P>>> = combine(refreshKey, paramFlow, ::Pair)
+        fun parameter(parameter: P) = copy(
+            refreshCount = 0,
+            withLoading = true,
+            override = None,
+            parameter = parameter.some()
+        )
+    }
+
+    private val state: MutableStateFlow<InternalState<P, T>> = MutableStateFlow(
+        InternalState(
+            // we need to distinguish between no parameterFlow and an empty parameterFlow
+            // an empty parameterFlow should not trigger the upstream flow
+            // if there's no parameterFlow, the upstream flow should be triggered once
+            parameter = if (parameterFlow == null) None else null
+        )
+    )
+
+    private var stale: Option<T> = None
+
+    init {
+        parameterFlow?.onEach { parameter ->
+            state.update { it.parameter(parameter) }
+        }?.launchIn(scope)
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override val flow: StateFlow<LoadState<E, T>> = sourceFlow.flatMapLatest { (_, param) ->
+    private val upstream: StateFlow<LoadState<E, T>> = state.flatMapLatest { state ->
+        state.override.onSome { override ->
+            return@flatMapLatest flowOf<LoadState<E, T>>(LoadState.Success(override))
+        }
+        if (state.parameter == null) {
+            // this will happen, if the parameter flow is empty
+            return@flatMapLatest emptyFlow()
+        }
         flow {
-            emit(LoadState.Loading(stale))
-            val response = block(param).onLeft {
+            if (state.withLoading) {
+                emit(
+                    LoadState.Loading(
+                        staleData = stale,
+                        refreshCount = state.refreshCount
+                    )
+                )
+            }
+            val response = block(state.parameter).onLeft {
                 onError?.invoke(it) { refresh() }
             }.onRight {
-                stale = it
+                stale = it.some()
             }
-            emit(response.asLoadState())
+            emit(response.asLoadState(stale))
         }
-    }.stateIn(scope, SharingStarted.WhileSubscribed(5_000), LoadState.Idle)
+    }.stateIn(scope, SharingStarted.Eagerly, LoadState.Idle)
 
-    override val dataOrStale = flow.map {
+    override val flow: StateFlow<LoadState<E, T>> = upstream
+
+    override val dataOrStale: StateFlow<Option<T>> = upstream.map {
         it.dataOrStale
-    }.stateIn(scope, SharingStarted.WhileSubscribed(5_000), null)
+    }.stateIn(scope, SharingStarted.Eagerly, None)
 
-    override val loading: StateFlow<Boolean> = flow.map {
+    override val loading: StateFlow<Boolean> = upstream.map {
         it is LoadState.Loading
-    }.stateIn(scope, SharingStarted.WhileSubscribed(5_000), false)
+    }.stateIn(scope, SharingStarted.Eagerly, false)
 
-    override fun refresh() {
-        refreshKey.update { it + 1 }
+    override fun refresh(withLoading: Boolean) {
+        state.update { it.refresh(withLoading) }
+    }
+
+    override fun override(newData: T) {
+        state.update { it.override(newData) }
     }
 }
