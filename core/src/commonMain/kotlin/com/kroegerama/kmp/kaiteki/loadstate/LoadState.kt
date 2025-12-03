@@ -2,6 +2,9 @@ package com.kroegerama.kmp.kaiteki.loadstate
 
 import androidx.compose.runtime.Immutable
 import arrow.core.Either
+import arrow.core.None
+import arrow.core.Option
+import arrow.core.some
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
@@ -12,7 +15,8 @@ public sealed class LoadState<out E, out T> {
 
     @Immutable
     public data class Loading<out T>(
-        val staleData: T? = null
+        val refreshCount: Int = 0,
+        val staleData: Option<T> = None
     ) : LoadState<Nothing, T>()
 
     @Immutable
@@ -21,26 +25,27 @@ public sealed class LoadState<out E, out T> {
     ) : LoadState<Nothing, T>()
 
     @Immutable
-    public data class Error<out E>(
-        val error: E
-    ) : LoadState<E, Nothing>()
+    public data class Error<out E, out T>(
+        val error: E,
+        val staleData: Option<T> = None,
+    ) : LoadState<E, T>()
 
-    public val dataOrStale: T?
+    public val dataOrStale: Option<T>
         get() = when (this) {
-            Idle -> null
-            is Error -> null
+            Idle -> None
+            is Error -> staleData
             is Loading -> staleData
-            is Success -> data
+            is Success -> data.some()
         }
 
-    public inline fun onDataOrStale(action: (success: T) -> Unit): LoadState<E, T> {
+    public inline fun onDataOrStale(action: (dataOrStale: T) -> Unit): LoadState<E, T> {
         contract {
             callsInPlace(action, InvocationKind.AT_MOST_ONCE)
         }
-        return also { it.dataOrStale?.let(action) }
+        return also { it.dataOrStale.onSome { some -> action(some) } }
     }
 
-    public inline fun onLoading(action: (staleData: T?) -> Unit): LoadState<E, T> {
+    public inline fun onLoading(action: (staleData: Option<T>) -> Unit): LoadState<E, T> {
         contract {
             callsInPlace(action, InvocationKind.AT_MOST_ONCE)
         }
@@ -99,9 +104,16 @@ public sealed class LoadState<out E, out T> {
         }
         return when (this) {
             Idle -> Idle
-            is Loading -> Loading(staleData?.let(f))
-            is Success -> Success(data.let(f))
-            is Error -> Error(error)
+            is Loading -> Loading(
+                refreshCount = refreshCount,
+                staleData = staleData.map { f(it) }
+            )
+
+            is Success -> Success(f(data))
+            is Error -> Error(
+                error = error,
+                staleData = staleData.map { f(it) }
+            )
         }
     }
 
@@ -111,14 +123,21 @@ public sealed class LoadState<out E, out T> {
         }
         return when (this) {
             Idle -> Idle
-            is Loading -> Loading(staleData)
+            is Loading -> Loading(
+                refreshCount = refreshCount,
+                staleData = staleData
+            )
+
             is Success -> Success(data)
-            is Error -> Error(error.let(f))
+            is Error -> Error(
+                error = f(error),
+                staleData = staleData
+            )
         }
     }
 
     public inline fun <C> fold(
-        crossinline onLoading: (dataOrStale: T?) -> C?,
+        crossinline onLoading: (dataOrStale: Option<T>) -> Option<C>,
         crossinline onSuccess: (success: T) -> C,
         crossinline onError: (error: E) -> C
     ): LoadState<Nothing, C> {
@@ -129,7 +148,11 @@ public sealed class LoadState<out E, out T> {
         }
         return when (this) {
             Idle -> Idle
-            is Loading -> Loading(onLoading(staleData))
+            is Loading -> Loading(
+                refreshCount = refreshCount,
+                staleData = onLoading(staleData)
+            )
+
             is Success -> Success(onSuccess(data))
             is Error -> Success(onError(error))
         }
@@ -157,7 +180,7 @@ public fun <T> LoadState<T, T>.flatten(): LoadState<Nothing, T> {
     }
 }
 
-public fun <A, B> Either<A, B>.asLoadState(): LoadState<A, B> = fold(
-    ifLeft = { LoadState.Error(it) },
+public fun <A, B> Either<A, B>.asLoadState(stale: Option<B> = None): LoadState<A, B> = fold(
+    ifLeft = { LoadState.Error(it, stale) },
     ifRight = { LoadState.Success(it) }
 )
