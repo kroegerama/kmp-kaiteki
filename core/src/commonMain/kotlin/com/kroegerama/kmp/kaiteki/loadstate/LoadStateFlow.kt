@@ -7,7 +7,6 @@ import arrow.core.Option
 import arrow.core.getOrElse
 import arrow.core.some
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -132,7 +131,6 @@ private class LoadStateFlowImpl<E, T, P>(
         }?.launchIn(scope)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     private val upstream: StateFlow<LoadState<E, T>> = state.flatMapLatest { state ->
         state.override.onSome { override ->
             return@flatMapLatest flowOf<LoadState<E, T>>(LoadState.Success(override))

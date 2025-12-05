@@ -14,8 +14,11 @@ kotlin {
         apiVersion = KotlinVersion.KOTLIN_2_1
         languageVersion = KotlinVersion.KOTLIN_2_1
 
-        optIn.add("kotlin.contracts.ExperimentalContracts")
-        optIn.add("kotlin.time.ExperimentalTime")
+        optIn.addAll(
+            "kotlin.contracts.ExperimentalContracts",
+            "kotlin.time.ExperimentalTime",
+            "kotlinx.coroutines.ExperimentalCoroutinesApi"
+        )
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
     coreLibrariesVersion = "2.1.21"

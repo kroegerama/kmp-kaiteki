@@ -2,7 +2,6 @@ package com.kroegerama.kmp.kaiteki.loadstate
 
 import arrow.core.left
 import arrow.core.right
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +14,6 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class LoadStateFlowTest {
     @Test
     fun testOfData() = runTest {
