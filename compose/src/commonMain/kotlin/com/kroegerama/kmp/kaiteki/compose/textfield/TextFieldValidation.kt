@@ -2,7 +2,15 @@ package com.kroegerama.kmp.kaiteki.compose.textfield
 
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.CancellationException
 
 @Composable
@@ -84,6 +92,21 @@ public interface ValidationRaiserScope {
      */
     @ValidationDSL
     public fun raise(block: ErrorGeneratorLambda): Nothing
+
+    @ValidationDSL
+    public fun require(condition: Boolean) {
+        if (!condition) raise()
+    }
+
+    @ValidationDSL
+    public fun require(condition: Boolean, error: String) {
+        if (!condition) raise(error)
+    }
+
+    @ValidationDSL
+    public fun require(condition: Boolean, block: ErrorGeneratorLambda) {
+        if (!condition) raise(block)
+    }
 }
 
 private interface ValidationRaiserProvider {
@@ -107,16 +130,19 @@ private class ValidationRaiserImpl : ValidationRaiserScope, ValidationRaiserProv
 private class ValidationRaiserCancellationException : CancellationException("Validation failed")
 
 public interface Validator {
-    public fun validate(): Boolean
     public val isError: Boolean
     public val validationError: String?
         @Composable get
+
+    public fun validate(): Boolean
+    public fun clearError()
 }
 
 public interface TextFieldValidator : Validator {
     public val state: TextFieldState
     public val text: CharSequence get() = state.text
     public val string: String get() = state.string
+    public fun trim(): Unit = state.trim()
 }
 
 @Immutable
@@ -138,6 +164,10 @@ private data class SimpleValidatorImpl<T>(
     }.also {
         validationResultState.value = it.raised
     }.raised == null
+
+    override fun clearError() {
+        validationResultState.value = null
+    }
 }
 
 @Immutable
@@ -159,6 +189,10 @@ private data class TextFieldValidatorImpl(
     }.also {
         validationResultState.value = it.raised
     }.raised == null
+
+    override fun clearError() {
+        validationResultState.value = null
+    }
 }
 
 @Immutable
