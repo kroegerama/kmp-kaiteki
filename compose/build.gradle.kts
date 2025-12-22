@@ -58,6 +58,7 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(libs.androidx.browser)
+            implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.core)
             implementation(libs.androidx.navigation.runtime)
             implementation(libs.hilt.lifecycle.viewmodel.compose)
