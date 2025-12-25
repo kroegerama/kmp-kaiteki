@@ -19,6 +19,7 @@ import platform.Foundation.NSDateFormatterMediumStyle
 import platform.Foundation.NSDateFormatterNoStyle
 import platform.Foundation.NSDateFormatterShortStyle
 import platform.Foundation.NSLocale
+import platform.Foundation.NSRelativeDateTimeFormatter
 import kotlin.time.Instant
 
 public actual class DefaultLocalizedDateTimeFormatter
@@ -49,6 +50,9 @@ public actual class DefaultLocalizedDateTimeFormatter
     private val calendar = NSCalendar.currentCalendar.apply {
         setTimeZone(zone.toNSTimeZone())
     }
+    private val relativeDateTimeFormatter = NSRelativeDateTimeFormatter().apply {
+        this.locale = NSLocale(locale.toString())
+    }
 
     actual override fun formatDate(instant: Instant): String = dateFormatter.stringFromDate(instant.toNSDate())
     actual override fun formatDate(localDate: LocalDate): String = dateFormatter.stringFromDate(localDate.toNSDate())
@@ -60,6 +64,45 @@ public actual class DefaultLocalizedDateTimeFormatter
 
     actual override fun formatDateTime(instant: Instant): String = dateTimeFormatter.stringFromDate(instant.toNSDate())
     actual override fun formatDateTime(localDateTime: LocalDateTime): String = dateTimeFormatter.stringFromDate(localDateTime.toNSDate())
+
+    actual override fun formatRelative(direction: Direction, unit: AbsoluteUnit): String? {
+        val quantity = when (direction) {
+            Direction.LAST_2 -> -2.0
+            Direction.LAST -> -1.0
+            Direction.THIS -> 0.0
+            Direction.NEXT -> 1.0
+            Direction.NEXT_2 -> 2.0
+            Direction.PLAIN -> 0.0
+        }
+        val components = NSDateComponents().apply {
+            when (unit) {
+                AbsoluteUnit.YEAR -> setYear(quantity.toLong())
+                AbsoluteUnit.MONTH -> setMonth(quantity.toLong())
+                AbsoluteUnit.WEEK -> setWeekOfYear(quantity.toLong())
+                else -> setDay(quantity.toLong())
+            }
+        }
+        return relativeDateTimeFormatter.localizedStringFromDateComponents(components)
+    }
+
+    actual override fun formatRelative(quantity: Double, direction: Direction, unit: RelativeUnit): String? {
+        val adjustedQuantity = when (direction) {
+            Direction.LAST, Direction.LAST_2 -> -quantity
+            else -> quantity
+        }
+        val components = NSDateComponents().apply {
+            when (unit) {
+                RelativeUnit.YEARS -> setYear(adjustedQuantity.toLong())
+                RelativeUnit.MONTHS -> setMonth(adjustedQuantity.toLong())
+                RelativeUnit.WEEKS -> setWeekOfYear(adjustedQuantity.toLong())
+                RelativeUnit.DAYS -> setDay(adjustedQuantity.toLong())
+                RelativeUnit.HOURS -> setHour(adjustedQuantity.toLong())
+                RelativeUnit.MINUTES -> setMinute(adjustedQuantity.toLong())
+                RelativeUnit.SECONDS -> setSecond(adjustedQuantity.toLong())
+            }
+        }
+        return relativeDateTimeFormatter.localizedStringFromDateComponents(components)
+    }
 
     private fun LocalDateTime.toNSDate(): NSDate {
         val components = toNSDateComponents()

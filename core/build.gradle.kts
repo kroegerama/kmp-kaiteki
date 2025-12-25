@@ -62,10 +62,17 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.androidx.startup)
         }
+        jvmMain.dependencies {
+            implementation(libs.icu4j)
+        }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.turbine)
+        }
+        val androidHostTest by getting
+        androidHostTest.dependencies {
+            implementation(libs.robolectric)
         }
     }
 }
