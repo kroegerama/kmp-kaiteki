@@ -17,8 +17,8 @@ import kotlin.time.Instant
 
 public enum class FormatStyle { SHORT, MEDIUM, LONG, FULL }
 public enum class Direction { LAST_2, LAST, THIS, NEXT, NEXT_2, PLAIN }
-public enum class AbsoluteUnit { SUNDAY, MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, DAY, WEEK, MONTH, YEAR, NOW }
-public enum class RelativeUnit { SECONDS, MINUTES, HOURS, DAYS, WEEKS, MONTHS, YEARS }
+public enum class AbsoluteUnit { DAY, MONTH, YEAR, NOW }
+public enum class RelativeUnit { SECONDS, MINUTES, HOURS, DAYS, MONTHS, YEARS }
 
 @Immutable
 public interface LocalizedDateTimeFormatter {

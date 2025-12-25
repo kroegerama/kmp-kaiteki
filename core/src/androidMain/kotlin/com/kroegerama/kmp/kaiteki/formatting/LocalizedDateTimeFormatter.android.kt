@@ -77,15 +77,7 @@ private fun Direction.jvmDirection(): RelativeDateTimeFormatter.Direction = when
 }
 
 private fun AbsoluteUnit.jvmAbsoluteUnit(): RelativeDateTimeFormatter.AbsoluteUnit = when (this) {
-    AbsoluteUnit.SUNDAY -> RelativeDateTimeFormatter.AbsoluteUnit.SUNDAY
-    AbsoluteUnit.MONDAY -> RelativeDateTimeFormatter.AbsoluteUnit.MONDAY
-    AbsoluteUnit.TUESDAY -> RelativeDateTimeFormatter.AbsoluteUnit.TUESDAY
-    AbsoluteUnit.WEDNESDAY -> RelativeDateTimeFormatter.AbsoluteUnit.WEDNESDAY
-    AbsoluteUnit.THURSDAY -> RelativeDateTimeFormatter.AbsoluteUnit.THURSDAY
-    AbsoluteUnit.FRIDAY -> RelativeDateTimeFormatter.AbsoluteUnit.FRIDAY
-    AbsoluteUnit.SATURDAY -> RelativeDateTimeFormatter.AbsoluteUnit.SATURDAY
     AbsoluteUnit.DAY -> RelativeDateTimeFormatter.AbsoluteUnit.DAY
-    AbsoluteUnit.WEEK -> RelativeDateTimeFormatter.AbsoluteUnit.WEEK
     AbsoluteUnit.MONTH -> RelativeDateTimeFormatter.AbsoluteUnit.MONTH
     AbsoluteUnit.YEAR -> RelativeDateTimeFormatter.AbsoluteUnit.YEAR
     AbsoluteUnit.NOW -> RelativeDateTimeFormatter.AbsoluteUnit.NOW
@@ -96,7 +88,6 @@ private fun RelativeUnit.jvmAbsoluteUnit(): RelativeDateTimeFormatter.RelativeUn
     RelativeUnit.MINUTES -> RelativeDateTimeFormatter.RelativeUnit.MINUTES
     RelativeUnit.HOURS -> RelativeDateTimeFormatter.RelativeUnit.HOURS
     RelativeUnit.DAYS -> RelativeDateTimeFormatter.RelativeUnit.DAYS
-    RelativeUnit.WEEKS -> RelativeDateTimeFormatter.RelativeUnit.WEEKS
     RelativeUnit.MONTHS -> RelativeDateTimeFormatter.RelativeUnit.MONTHS
     RelativeUnit.YEARS -> RelativeDateTimeFormatter.RelativeUnit.YEARS
 }

@@ -89,48 +89,12 @@ class LocalizedDateTimeFormatterTest : RobolectricTest() {
         expect("next month") { formatterUS.formatRelative(Direction.NEXT, AbsoluteUnit.MONTH) }
         expect(null) { formatterUS.formatRelative(Direction.NEXT_2, AbsoluteUnit.MONTH) }
 
-        // WEEK
-        expect(null) { formatterUS.formatRelative(Direction.LAST_2, AbsoluteUnit.WEEK) }
-        expectAny("last week", null) { formatterUS.formatRelative(Direction.LAST, AbsoluteUnit.WEEK) }
-        expectAny("this week", null) { formatterUS.formatRelative(Direction.THIS, AbsoluteUnit.WEEK) }
-        expectAny("next week", null) { formatterUS.formatRelative(Direction.NEXT, AbsoluteUnit.WEEK) }
-        expect(null) { formatterUS.formatRelative(Direction.NEXT_2, AbsoluteUnit.WEEK) }
-
         // DAY
         expect(null) { formatterUS.formatRelative(Direction.LAST_2, AbsoluteUnit.DAY) }
         expect("yesterday") { formatterUS.formatRelative(Direction.LAST, AbsoluteUnit.DAY) }
         expect("today") { formatterUS.formatRelative(Direction.THIS, AbsoluteUnit.DAY) }
         expect("tomorrow") { formatterUS.formatRelative(Direction.NEXT, AbsoluteUnit.DAY) }
         expect(null) { formatterUS.formatRelative(Direction.NEXT_2, AbsoluteUnit.DAY) }
-
-        // Weekdays
-        expectAny("last Sunday", null) { formatterUS.formatRelative(Direction.LAST, AbsoluteUnit.SUNDAY) }
-        expectAny("this Sunday", null) { formatterUS.formatRelative(Direction.THIS, AbsoluteUnit.SUNDAY) }
-        expectAny("next Sunday", null) { formatterUS.formatRelative(Direction.NEXT, AbsoluteUnit.SUNDAY) }
-
-        expectAny("last Monday", null) { formatterUS.formatRelative(Direction.LAST, AbsoluteUnit.MONDAY) }
-        expectAny("this Monday", null) { formatterUS.formatRelative(Direction.THIS, AbsoluteUnit.MONDAY) }
-        expectAny("next Monday", null) { formatterUS.formatRelative(Direction.NEXT, AbsoluteUnit.MONDAY) }
-
-        expectAny("last Tuesday", null) { formatterUS.formatRelative(Direction.LAST, AbsoluteUnit.TUESDAY) }
-        expectAny("this Tuesday", null) { formatterUS.formatRelative(Direction.THIS, AbsoluteUnit.TUESDAY) }
-        expectAny("next Tuesday", null) { formatterUS.formatRelative(Direction.NEXT, AbsoluteUnit.TUESDAY) }
-
-        expectAny("last Wednesday", null) { formatterUS.formatRelative(Direction.LAST, AbsoluteUnit.WEDNESDAY) }
-        expectAny("this Wednesday", null) { formatterUS.formatRelative(Direction.THIS, AbsoluteUnit.WEDNESDAY) }
-        expectAny("next Wednesday", null) { formatterUS.formatRelative(Direction.NEXT, AbsoluteUnit.WEDNESDAY) }
-
-        expectAny("last Thursday", null) { formatterUS.formatRelative(Direction.LAST, AbsoluteUnit.THURSDAY) }
-        expectAny("this Thursday", null) { formatterUS.formatRelative(Direction.THIS, AbsoluteUnit.THURSDAY) }
-        expectAny("next Thursday", null) { formatterUS.formatRelative(Direction.NEXT, AbsoluteUnit.THURSDAY) }
-
-        expectAny("last Friday", null) { formatterUS.formatRelative(Direction.LAST, AbsoluteUnit.FRIDAY) }
-        expectAny("this Friday", null) { formatterUS.formatRelative(Direction.THIS, AbsoluteUnit.FRIDAY) }
-        expectAny("next Friday", null) { formatterUS.formatRelative(Direction.NEXT, AbsoluteUnit.FRIDAY) }
-
-        expectAny("last Saturday", null) { formatterUS.formatRelative(Direction.LAST, AbsoluteUnit.SATURDAY) }
-        expectAny("this Saturday", null) { formatterUS.formatRelative(Direction.THIS, AbsoluteUnit.SATURDAY) }
-        expectAny("next Saturday", null) { formatterUS.formatRelative(Direction.NEXT, AbsoluteUnit.SATURDAY) }
 
         // NOW
         expect("now") { formatterUS.formatRelative(Direction.PLAIN, AbsoluteUnit.NOW) }
@@ -143,9 +107,6 @@ class LocalizedDateTimeFormatterTest : RobolectricTest() {
 
         expect("3 months ago") { formatterUS.formatRelative(3.0, Direction.LAST, RelativeUnit.MONTHS) }
         expect("in 3 months") { formatterUS.formatRelative(3.0, Direction.NEXT, RelativeUnit.MONTHS) }
-
-        expectAny("2 weeks ago", null) { formatterUS.formatRelative(2.0, Direction.LAST, RelativeUnit.WEEKS) }
-        expectAny("in 2 weeks", null) { formatterUS.formatRelative(2.0, Direction.NEXT, RelativeUnit.WEEKS) }
 
         expect("7 days ago") { formatterUS.formatRelative(7.0, Direction.LAST, RelativeUnit.DAYS) }
         expect("in 7 days") { formatterUS.formatRelative(7.0, Direction.NEXT, RelativeUnit.DAYS) }
@@ -176,48 +137,12 @@ class LocalizedDateTimeFormatterTest : RobolectricTest() {
         expect("nächsten Monat") { formatterDE.formatRelative(Direction.NEXT, AbsoluteUnit.MONTH) }
         expect(null) { formatterDE.formatRelative(Direction.NEXT_2, AbsoluteUnit.MONTH) }
 
-        // WEEK
-        expect(null) { formatterDE.formatRelative(Direction.LAST_2, AbsoluteUnit.WEEK) }
-        expectAny("letzte Woche", null) { formatterDE.formatRelative(Direction.LAST, AbsoluteUnit.WEEK) }
-        expectAny("diese Woche", null) { formatterDE.formatRelative(Direction.THIS, AbsoluteUnit.WEEK) }
-        expectAny("nächste Woche", null) { formatterDE.formatRelative(Direction.NEXT, AbsoluteUnit.WEEK) }
-        expect(null) { formatterDE.formatRelative(Direction.NEXT_2, AbsoluteUnit.WEEK) }
-
         // DAY
         expectAny("vorgestern", null) { formatterDE.formatRelative(Direction.LAST_2, AbsoluteUnit.DAY) }
         expect("gestern") { formatterDE.formatRelative(Direction.LAST, AbsoluteUnit.DAY) }
         expect("heute") { formatterDE.formatRelative(Direction.THIS, AbsoluteUnit.DAY) }
         expect("morgen") { formatterDE.formatRelative(Direction.NEXT, AbsoluteUnit.DAY) }
         expectAny("übermorgen", null) { formatterDE.formatRelative(Direction.NEXT_2, AbsoluteUnit.DAY) }
-
-        // Weekdays
-        expectAny("letzten Sonntag", null) { formatterDE.formatRelative(Direction.LAST, AbsoluteUnit.SUNDAY) }
-        expectAny("diesen Sonntag", null) { formatterDE.formatRelative(Direction.THIS, AbsoluteUnit.SUNDAY) }
-        expectAny("nächsten Sonntag", null) { formatterDE.formatRelative(Direction.NEXT, AbsoluteUnit.SUNDAY) }
-
-        expectAny("letzten Montag", null) { formatterDE.formatRelative(Direction.LAST, AbsoluteUnit.MONDAY) }
-        expectAny("diesen Montag", null) { formatterDE.formatRelative(Direction.THIS, AbsoluteUnit.MONDAY) }
-        expectAny("nächsten Montag", null) { formatterDE.formatRelative(Direction.NEXT, AbsoluteUnit.MONDAY) }
-
-        expectAny("letzten Dienstag", null) { formatterDE.formatRelative(Direction.LAST, AbsoluteUnit.TUESDAY) }
-        expectAny("diesen Dienstag", null) { formatterDE.formatRelative(Direction.THIS, AbsoluteUnit.TUESDAY) }
-        expectAny("nächsten Dienstag", null) { formatterDE.formatRelative(Direction.NEXT, AbsoluteUnit.TUESDAY) }
-
-        expectAny("letzten Mittwoch", null) { formatterDE.formatRelative(Direction.LAST, AbsoluteUnit.WEDNESDAY) }
-        expectAny("diesen Mittwoch", null) { formatterDE.formatRelative(Direction.THIS, AbsoluteUnit.WEDNESDAY) }
-        expectAny("nächsten Mittwoch", null) { formatterDE.formatRelative(Direction.NEXT, AbsoluteUnit.WEDNESDAY) }
-
-        expectAny("letzten Donnerstag", null) { formatterDE.formatRelative(Direction.LAST, AbsoluteUnit.THURSDAY) }
-        expectAny("diesen Donnerstag", null) { formatterDE.formatRelative(Direction.THIS, AbsoluteUnit.THURSDAY) }
-        expectAny("nächsten Donnerstag", null) { formatterDE.formatRelative(Direction.NEXT, AbsoluteUnit.THURSDAY) }
-
-        expectAny("letzten Freitag", null) { formatterDE.formatRelative(Direction.LAST, AbsoluteUnit.FRIDAY) }
-        expectAny("diesen Freitag", null) { formatterDE.formatRelative(Direction.THIS, AbsoluteUnit.FRIDAY) }
-        expectAny("nächsten Freitag", null) { formatterDE.formatRelative(Direction.NEXT, AbsoluteUnit.FRIDAY) }
-
-        expectAny("letzten Samstag", null) { formatterDE.formatRelative(Direction.LAST, AbsoluteUnit.SATURDAY) }
-        expectAny("diesen Samstag", null) { formatterDE.formatRelative(Direction.THIS, AbsoluteUnit.SATURDAY) }
-        expectAny("nächsten Samstag", null) { formatterDE.formatRelative(Direction.NEXT, AbsoluteUnit.SATURDAY) }
 
         // NOW
         expect("jetzt") { formatterDE.formatRelative(Direction.PLAIN, AbsoluteUnit.NOW) }
@@ -230,9 +155,6 @@ class LocalizedDateTimeFormatterTest : RobolectricTest() {
 
         expect("vor 3 Monaten") { formatterDE.formatRelative(3.0, Direction.LAST, RelativeUnit.MONTHS) }
         expect("in 3 Monaten") { formatterDE.formatRelative(3.0, Direction.NEXT, RelativeUnit.MONTHS) }
-
-        expectAny("vor 2 Wochen", null) { formatterDE.formatRelative(2.0, Direction.LAST, RelativeUnit.WEEKS) }
-        expectAny("in 2 Wochen", null) { formatterDE.formatRelative(2.0, Direction.NEXT, RelativeUnit.WEEKS) }
 
         expect("vor 7 Tagen") { formatterDE.formatRelative(7.0, Direction.LAST, RelativeUnit.DAYS) }
         expect("in 7 Tagen") { formatterDE.formatRelative(7.0, Direction.NEXT, RelativeUnit.DAYS) }
