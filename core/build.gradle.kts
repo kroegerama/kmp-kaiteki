@@ -52,9 +52,9 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.kotlinx.datetime)
-            implementation(libs.androidx.lifecycle.common)
-            implementation(libs.androidx.lifecycle.runtime)
-            implementation(libs.androidx.lifecycle.viewmodel.savedstate)
+            implementation(libs.jb.androidx.lifecycle.common)
+            implementation(libs.jb.androidx.lifecycle.runtime)
+            implementation(libs.jb.androidx.lifecycle.viewmodel.savedstate)
             implementation(libs.arrow)
             implementation(libs.compose.runtime.annotation)
             implementation(libs.multiplatform.locale)

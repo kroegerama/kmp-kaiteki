@@ -4,14 +4,14 @@ kotlin = "2.3.0"
 android-minSdk = "24"
 android-compileSdk = "36"
 androidx-activity = "1.12.2"
-androidx-lifecycle = "2.9.6"
 androidx-browser = "1.9.0"
+androidx-compose = "1.10.0"
 androidx-core = "1.17.0"
-androidx-navigation = "2.9.1"
+androidx-navigation = "2.9.6"
 androidx-startup = "1.2.0"
 arrow = "2.2.1.1"
 compose = "1.9.3"
-androidx-compose = "1.10.0"
+jb-androidx-lifecycle = "2.9.6"
 maven-publish = "0.35.0"
 multiplatform-locale = "0.9.0"
 turbine = "1.2.1"
@@ -26,13 +26,13 @@ paging = "3.3.6"
 androidx-browser = { module = "androidx.browser:browser", version.ref = "androidx-browser" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
 androidx-core = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
-androidx-lifecycle-common = { module = "org.jetbrains.androidx.lifecycle:lifecycle-common", version.ref = "androidx-lifecycle" }
-androidx-lifecycle-runtime = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime", version.ref = "androidx-lifecycle" }
-androidx-lifecycle-viewmodel = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel", version.ref = "androidx-lifecycle" }
-androidx-lifecycle-viewmodel-savedstate = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-savedstate", version.ref = "androidx-lifecycle" }
-androidx-navigation-runtime = { module = "org.jetbrains.androidx.navigation:navigation-runtime", version.ref = "androidx-navigation" }
+androidx-navigation-runtime = { module = "androidx.navigation:navigation-runtime", version.ref = "androidx-navigation" }
 androidx-startup = { module = "androidx.startup:startup-runtime", version.ref = "androidx-startup" }
 arrow = { module = "io.arrow-kt:arrow-core", version.ref = "arrow" }
+jb-androidx-lifecycle-common = { module = "org.jetbrains.androidx.lifecycle:lifecycle-common", version.ref = "jb-androidx-lifecycle" }
+jb-androidx-lifecycle-runtime = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime", version.ref = "jb-androidx-lifecycle" }
+jb-androidx-lifecycle-viewmodel = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel", version.ref = "jb-androidx-lifecycle" }
+jb-androidx-lifecycle-viewmodel-savedstate = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-savedstate", version.ref = "jb-androidx-lifecycle" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 compose-runtime-annotation = { module = "androidx.compose.runtime:runtime-annotation", version.ref = "androidx-compose" }

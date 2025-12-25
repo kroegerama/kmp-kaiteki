@@ -46,7 +46,7 @@ kotlin {
         commonMain.dependencies {
             implementation(libs.paging.common)
             implementation(libs.arrow)
-            implementation(libs.androidx.lifecycle.viewmodel)
+            implementation(libs.jb.androidx.lifecycle.viewmodel)
         }
     }
 }
