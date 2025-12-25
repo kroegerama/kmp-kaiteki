@@ -23,7 +23,9 @@ public fun LocalDateTime.toJulianDay(): Long = date.toJulianDay()
 /**
  * @see [LocalDate.toJulianDay]
  */
-public fun Instant.toJulianDay(): Long = toLocalDateTime(TimeZone.UTC).toJulianDay()
+public fun Instant.toJulianDay(
+    timeZone: TimeZone = TimeZone.currentSystemDefault()
+): Long = toLocalDateTime(timeZone).toJulianDay()
 
 /**
  * Returns the number of days between this date and the other date.
@@ -44,5 +46,7 @@ public infix fun LocalDateTime.dayDistanceTo(other: LocalDateTime): Long =
 /**
  * @see [LocalDate.dayDistanceTo]
  */
-public infix fun Instant.dayDistanceTo(other: Instant): Long =
-    toLocalDateTime(TimeZone.UTC).dayDistanceTo(other.toLocalDateTime(TimeZone.UTC))
+public fun Instant.dayDistanceTo(
+    other: Instant,
+    timeZone: TimeZone = TimeZone.currentSystemDefault()
+): Long = toLocalDateTime(timeZone).dayDistanceTo(other.toLocalDateTime(timeZone))
