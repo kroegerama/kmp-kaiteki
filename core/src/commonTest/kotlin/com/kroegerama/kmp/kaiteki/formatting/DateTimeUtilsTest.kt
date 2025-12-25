@@ -4,6 +4,7 @@ import com.kroegerama.kmp.kaiteki.dayDistanceTo
 import com.kroegerama.kmp.kaiteki.toJulianDay
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
 import kotlin.test.Test
 import kotlin.test.expect
 import kotlin.time.Duration.Companion.days
@@ -45,10 +46,12 @@ class DateTimeUtilsTest {
     @Test
     fun dayDistanceTest() {
         val now = Instant.parse("2025-10-18T12:34:56.789+02:00")
-        expect(-1) { now.minus(1.days).dayDistanceTo(now) }
-        expect(0) { now.minus(12.hours).dayDistanceTo(now) }
-        expect(0) { now.dayDistanceTo(now) }
-        expect(0) { now.plus(11.hours).dayDistanceTo(now) }
-        expect(1) { now.plus(1.days).dayDistanceTo(now) }
+        val tz = TimeZone.of("Europe/Berlin")
+
+        expect(-1) { now.minus(1.days).dayDistanceTo(now, tz) }
+        expect(0) { now.minus(12.hours).dayDistanceTo(now, tz) }
+        expect(0) { now.dayDistanceTo(now, tz) }
+        expect(0) { now.plus(11.hours).dayDistanceTo(now, tz) }
+        expect(1) { now.plus(1.days).dayDistanceTo(now, tz) }
     }
 }
