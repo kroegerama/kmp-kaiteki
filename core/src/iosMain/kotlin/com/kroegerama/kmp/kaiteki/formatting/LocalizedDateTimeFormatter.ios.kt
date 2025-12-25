@@ -20,6 +20,8 @@ import platform.Foundation.NSDateFormatterNoStyle
 import platform.Foundation.NSDateFormatterShortStyle
 import platform.Foundation.NSLocale
 import platform.Foundation.NSRelativeDateTimeFormatter
+import platform.Foundation.NSRelativeDateTimeFormatterStyleNamed
+import platform.Foundation.NSRelativeDateTimeFormatterUnitsStyleFull
 import kotlin.time.Instant
 
 public actual class DefaultLocalizedDateTimeFormatter
@@ -52,6 +54,8 @@ public actual class DefaultLocalizedDateTimeFormatter
     }
     private val relativeDateTimeFormatter = NSRelativeDateTimeFormatter().apply {
         this.locale = NSLocale(locale.toString())
+        this.unitsStyle = NSRelativeDateTimeFormatterUnitsStyleFull
+        this.dateTimeStyle = NSRelativeDateTimeFormatterStyleNamed
     }
 
     actual override fun formatDate(instant: Instant): String = dateFormatter.stringFromDate(instant.toNSDate())
@@ -66,41 +70,79 @@ public actual class DefaultLocalizedDateTimeFormatter
     actual override fun formatDateTime(localDateTime: LocalDateTime): String = dateTimeFormatter.stringFromDate(localDateTime.toNSDate())
 
     actual override fun formatRelative(direction: Direction, unit: AbsoluteUnit): String? {
-        val quantity = when (direction) {
-            Direction.LAST_2 -> -2.0
-            Direction.LAST -> -1.0
-            Direction.THIS -> 0.0
-            Direction.NEXT -> 1.0
-            Direction.NEXT_2 -> 2.0
-            Direction.PLAIN -> 0.0
-        }
         val components = NSDateComponents().apply {
             when (unit) {
-                AbsoluteUnit.YEAR -> setYear(quantity.toLong())
-                AbsoluteUnit.MONTH -> setMonth(quantity.toLong())
-                AbsoluteUnit.WEEK -> setWeekOfYear(quantity.toLong())
-                else -> setDay(quantity.toLong())
+                AbsoluteUnit.NOW -> second = 0
+
+                AbsoluteUnit.DAY -> day = when (direction) {
+                    Direction.LAST -> -1
+                    Direction.THIS, Direction.PLAIN -> 0
+                    Direction.NEXT -> 1
+                    else -> return null
+                }
+
+                AbsoluteUnit.WEEK -> weekOfYear = when (direction) {
+                    Direction.LAST -> -1
+                    Direction.THIS, Direction.PLAIN -> 0
+                    Direction.NEXT -> 1
+                    else -> return null
+                }
+
+                AbsoluteUnit.MONTH -> month = when (direction) {
+                    Direction.LAST -> -1
+                    Direction.THIS, Direction.PLAIN -> 0
+                    Direction.NEXT -> 1
+                    else -> return null
+                }
+
+                AbsoluteUnit.YEAR -> year = when (direction) {
+                    Direction.LAST -> -1
+                    Direction.THIS, Direction.PLAIN -> 0
+                    Direction.NEXT -> 1
+                    else -> return null
+                }
+
+                AbsoluteUnit.SUNDAY,
+                AbsoluteUnit.MONDAY,
+                AbsoluteUnit.TUESDAY,
+                AbsoluteUnit.WEDNESDAY,
+                AbsoluteUnit.THURSDAY,
+                AbsoluteUnit.FRIDAY,
+                AbsoluteUnit.SATURDAY -> {
+                    weekday = unit.toIOSWeekday()
+                    weekdayOrdinal = when (direction) {
+                        Direction.LAST_2 -> -2
+                        Direction.LAST -> -1
+                        Direction.THIS, Direction.PLAIN -> 0
+                        Direction.NEXT -> 1
+                        Direction.NEXT_2 -> 2
+                    }
+                }
             }
         }
+
         return relativeDateTimeFormatter.localizedStringFromDateComponents(components)
     }
 
     actual override fun formatRelative(quantity: Double, direction: Direction, unit: RelativeUnit): String? {
-        val adjustedQuantity = when (direction) {
+        val signed = when (direction) {
             Direction.LAST, Direction.LAST_2 -> -quantity
-            else -> quantity
+            Direction.NEXT, Direction.NEXT_2 -> quantity
+            Direction.THIS, Direction.PLAIN -> 0.0
+        }.toLong()
+
+        val components = NSDateComponents()
+
+        when (unit) {
+            RelativeUnit.SECONDS -> components.second = signed
+            RelativeUnit.MINUTES -> components.minute = signed
+            RelativeUnit.HOURS -> components.hour = signed
+            RelativeUnit.DAYS -> components.day = signed
+            RelativeUnit.WEEKS -> components.weekOfYear = signed
+            RelativeUnit.MONTHS -> components.month = signed
+            RelativeUnit.YEARS -> components.year = signed
         }
-        val components = NSDateComponents().apply {
-            when (unit) {
-                RelativeUnit.YEARS -> setYear(adjustedQuantity.toLong())
-                RelativeUnit.MONTHS -> setMonth(adjustedQuantity.toLong())
-                RelativeUnit.WEEKS -> setWeekOfYear(adjustedQuantity.toLong())
-                RelativeUnit.DAYS -> setDay(adjustedQuantity.toLong())
-                RelativeUnit.HOURS -> setHour(adjustedQuantity.toLong())
-                RelativeUnit.MINUTES -> setMinute(adjustedQuantity.toLong())
-                RelativeUnit.SECONDS -> setSecond(adjustedQuantity.toLong())
-            }
-        }
+
         return relativeDateTimeFormatter.localizedStringFromDateComponents(components)
     }
 
@@ -129,4 +171,15 @@ private fun FormatStyle.toNSDateFormatterStyle(): ULong = when (this) {
     FormatStyle.MEDIUM -> NSDateFormatterMediumStyle
     FormatStyle.LONG -> NSDateFormatterLongStyle
     FormatStyle.FULL -> NSDateFormatterFullStyle
+}
+
+private fun AbsoluteUnit.toIOSWeekday(): Long = when (this) {
+    AbsoluteUnit.SUNDAY -> 1
+    AbsoluteUnit.MONDAY -> 2
+    AbsoluteUnit.TUESDAY -> 3
+    AbsoluteUnit.WEDNESDAY -> 4
+    AbsoluteUnit.THURSDAY -> 5
+    AbsoluteUnit.FRIDAY -> 6
+    AbsoluteUnit.SATURDAY -> 7
+    else -> error("Not a weekday")
 }
