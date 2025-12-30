@@ -6,6 +6,7 @@ import androidx.compose.runtime.annotation.FrequentlyChangingValue
 import androidx.compose.runtime.annotation.RememberInComposition
 import com.kroegerama.kmp.kaiteki.InternalKaitekiApi
 import com.kroegerama.kmp.kaiteki.dayDistanceTo
+import com.vanniktech.locale.Language
 import com.vanniktech.locale.Locale
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -19,9 +20,12 @@ public enum class FormatStyle { SHORT, MEDIUM, LONG, FULL }
 public enum class Direction { LAST_2, LAST, THIS, NEXT, NEXT_2, PLAIN }
 public enum class AbsoluteUnit { DAY, MONTH, YEAR, NOW }
 public enum class RelativeUnit { SECONDS, MINUTES, HOURS, DAYS, MONTHS, YEARS }
+public enum class CapitalizationMode { NONE, MIDDLE_OF_SENTENCE, BEGINNING_OF_SENTENCE, UI_LIST_OR_MENU, STANDALONE }
 
 @Immutable
 public interface LocalizedDateTimeFormatter {
+    public val locale: Locale
+
     @Stable
     public fun formatDate(instant: Instant): String
 
@@ -56,7 +60,7 @@ public interface LocalizedDateTimeFormatter {
     @FrequentlyChangingValue
     public fun formatFancy(
         instant: Instant,
-        dateTimeDivider: String = DEFAULT_TIME_DIVIDER,
+        dateTimeDivider: (Locale) -> String = ::defaultTimeDivider,
         switchNowToSeconds: Long = DEFAULT_SWITCH_NOW_TO_SEC,
         switchSecondsToMinutes: Long = DEFAULT_SWITCH_SEC_TO_MIN,
         switchMinutesToTime: Long = DEFAULT_SWITCH_MIN_TO_TIME
@@ -69,7 +73,19 @@ public interface LocalizedDateTimeFormatter {
     ).first
 
     public companion object {
-        public const val DEFAULT_TIME_DIVIDER: String = ", "
+        public fun defaultTimeDivider(locale: Locale): String = when (locale.language) {
+            Language.CHINESE,
+            Language.JAPANESE,
+            Language.KOREAN,
+            Language.THAI -> " "
+
+            Language.ARABIC,
+            Language.FARSI,
+            Language.URDU -> "، "
+
+            else -> ", "
+        }
+
         public const val DEFAULT_SWITCH_NOW_TO_SEC: Long = 3L
         public const val DEFAULT_SWITCH_SEC_TO_MIN: Long = 60L * 2L
         public const val DEFAULT_SWITCH_MIN_TO_TIME: Long = 60L * 15L
@@ -80,7 +96,7 @@ public interface LocalizedDateTimeFormatter {
 @FrequentlyChangingValue
 public fun LocalizedDateTimeFormatter.formatFancyInternal(
     instant: Instant,
-    dateTimeDivider: String,
+    dateTimeDivider: (Locale) -> String,
     switchNowToSeconds: Long,
     switchSecondsToMinutes: Long,
     switchMinutesToTime: Long
@@ -108,7 +124,7 @@ public fun LocalizedDateTimeFormatter.formatFancyInternal(
 
         1L -> formatRelative(Direction.NEXT, AbsoluteUnit.DAY) ?: formatDate(instant)
         2L -> formatRelative(Direction.NEXT_2, AbsoluteUnit.DAY) ?: formatDate(instant)
-        else -> formatDate(instant)
+        else -> return formatDateTime(instant) to 30_000L
     }
 
     val time = if (dayOffset == 0L) {
@@ -123,13 +139,13 @@ public fun LocalizedDateTimeFormatter.formatFancyInternal(
                 secondsOffsetAbsolute.toDouble(),
                 direction,
                 RelativeUnit.SECONDS
-            )
+            ) ?: return formatDateTime(instant) to 30_000L
 
             secondsOffsetAbsolute < switchMinutesToTime -> formatRelative(
                 secondsOffsetAbsolute.div(60).toDouble(),
                 direction,
                 RelativeUnit.MINUTES
-            )
+            ) ?: return formatDateTime(instant) to 30_000L
 
             else -> formatTime(instant)
         }
@@ -137,7 +153,7 @@ public fun LocalizedDateTimeFormatter.formatFancyInternal(
         formatTime(instant)
     }
 
-    val str = listOfNotNull(date, time).joinToString(dateTimeDivider)
+    val str = listOfNotNull(date, time).joinToString(dateTimeDivider(locale))
     val delay = when {
         secondsOffsetAbsolute < switchSecondsToMinutes -> 1_000L
         secondsOffsetAbsolute < switchMinutesToTime -> 10_000L
@@ -146,24 +162,11 @@ public fun LocalizedDateTimeFormatter.formatFancyInternal(
     return str to delay
 }
 
-public expect class DefaultLocalizedDateTimeFormatter
-@RememberInComposition constructor(
+@RememberInComposition
+public expect fun defaultLocalizedDateTimeFormatter(
     locale: Locale,
     dateStyle: FormatStyle = FormatStyle.MEDIUM,
     timeStyle: FormatStyle = FormatStyle.SHORT,
+    capitalizationMode: CapitalizationMode = CapitalizationMode.NONE,
     zone: TimeZone = TimeZone.currentSystemDefault()
-) : LocalizedDateTimeFormatter {
-    override fun formatDate(instant: Instant): String
-    override fun formatDate(localDate: LocalDate): String
-    override fun formatDate(localDateTime: LocalDateTime): String
-
-    override fun formatTime(instant: Instant): String
-    override fun formatTime(localTime: LocalTime): String
-    override fun formatTime(localDateTime: LocalDateTime): String
-
-    override fun formatDateTime(instant: Instant): String
-    override fun formatDateTime(localDateTime: LocalDateTime): String
-
-    override fun formatRelative(direction: Direction, unit: AbsoluteUnit): String?
-    override fun formatRelative(quantity: Double, direction: Direction, unit: RelativeUnit): String?
-}
+): LocalizedDateTimeFormatter

@@ -18,33 +18,57 @@ import platform.Foundation.NSDateFormatterLongStyle
 import platform.Foundation.NSDateFormatterMediumStyle
 import platform.Foundation.NSDateFormatterNoStyle
 import platform.Foundation.NSDateFormatterShortStyle
+import platform.Foundation.NSFormattingContext
+import platform.Foundation.NSFormattingContextBeginningOfSentence
+import platform.Foundation.NSFormattingContextListItem
+import platform.Foundation.NSFormattingContextMiddleOfSentence
+import platform.Foundation.NSFormattingContextStandalone
+import platform.Foundation.NSFormattingContextUnknown
 import platform.Foundation.NSLocale
 import platform.Foundation.NSRelativeDateTimeFormatter
 import platform.Foundation.NSRelativeDateTimeFormatterStyleNamed
 import platform.Foundation.NSRelativeDateTimeFormatterUnitsStyleFull
 import kotlin.time.Instant
 
-public actual class DefaultLocalizedDateTimeFormatter
-@RememberInComposition actual constructor(
+@RememberInComposition
+public actual fun defaultLocalizedDateTimeFormatter(
     locale: Locale,
     dateStyle: FormatStyle,
     timeStyle: FormatStyle,
+    capitalizationMode: CapitalizationMode,
+    zone: TimeZone
+): LocalizedDateTimeFormatter = DefaultLocalizedDateTimeFormatter(
+    locale = locale,
+    dateStyle = dateStyle,
+    timeStyle = timeStyle,
+    capitalizationMode = capitalizationMode,
+    zone = zone
+)
+
+internal class DefaultLocalizedDateTimeFormatter(
+    override val locale: Locale,
+    dateStyle: FormatStyle,
+    timeStyle: FormatStyle,
+    capitalizationMode: CapitalizationMode,
     zone: TimeZone
 ) : LocalizedDateTimeFormatter {
+
+    private val nsLocale = NSLocale(locale.toString())
+
     private val dateFormatter: NSDateFormatter = NSDateFormatter().apply {
-        this.locale = NSLocale(locale.toString())
+        this.locale = nsLocale
         this.timeZone = zone.toNSTimeZone()
         this.dateStyle = dateStyle.toNSDateFormatterStyle()
         this.timeStyle = NSDateFormatterNoStyle
     }
     private val timeFormatter: NSDateFormatter = NSDateFormatter().apply {
-        this.locale = NSLocale(locale.toString())
+        this.locale = nsLocale
         this.timeZone = zone.toNSTimeZone()
         this.dateStyle = NSDateFormatterNoStyle
         this.timeStyle = timeStyle.toNSDateFormatterStyle()
     }
     private val dateTimeFormatter: NSDateFormatter = NSDateFormatter().apply {
-        this.locale = NSLocale(locale.toString())
+        this.locale = nsLocale
         this.timeZone = zone.toNSTimeZone()
         this.dateStyle = dateStyle.toNSDateFormatterStyle()
         this.timeStyle = timeStyle.toNSDateFormatterStyle()
@@ -53,23 +77,24 @@ public actual class DefaultLocalizedDateTimeFormatter
         setTimeZone(zone.toNSTimeZone())
     }
     private val relativeDateTimeFormatter = NSRelativeDateTimeFormatter().apply {
-        this.locale = NSLocale(locale.toString())
+        this.locale = nsLocale
         this.unitsStyle = NSRelativeDateTimeFormatterUnitsStyleFull
         this.dateTimeStyle = NSRelativeDateTimeFormatterStyleNamed
+        this.formattingContext = capitalizationMode.toNSFormattingContext()
     }
 
-    actual override fun formatDate(instant: Instant): String = dateFormatter.stringFromDate(instant.toNSDate())
-    actual override fun formatDate(localDate: LocalDate): String = dateFormatter.stringFromDate(localDate.toNSDate())
-    actual override fun formatDate(localDateTime: LocalDateTime): String = dateFormatter.stringFromDate(localDateTime.toNSDate())
+    override fun formatDate(instant: Instant): String = dateFormatter.stringFromDate(instant.toNSDate())
+    override fun formatDate(localDate: LocalDate): String = dateFormatter.stringFromDate(localDate.toNSDate())
+    override fun formatDate(localDateTime: LocalDateTime): String = dateFormatter.stringFromDate(localDateTime.toNSDate())
 
-    actual override fun formatTime(instant: Instant): String = timeFormatter.stringFromDate(instant.toNSDate())
-    actual override fun formatTime(localTime: LocalTime): String = timeFormatter.stringFromDate(localTime.toNSDate())
-    actual override fun formatTime(localDateTime: LocalDateTime): String = timeFormatter.stringFromDate(localDateTime.toNSDate())
+    override fun formatTime(instant: Instant): String = timeFormatter.stringFromDate(instant.toNSDate())
+    override fun formatTime(localTime: LocalTime): String = timeFormatter.stringFromDate(localTime.toNSDate())
+    override fun formatTime(localDateTime: LocalDateTime): String = timeFormatter.stringFromDate(localDateTime.toNSDate())
 
-    actual override fun formatDateTime(instant: Instant): String = dateTimeFormatter.stringFromDate(instant.toNSDate())
-    actual override fun formatDateTime(localDateTime: LocalDateTime): String = dateTimeFormatter.stringFromDate(localDateTime.toNSDate())
+    override fun formatDateTime(instant: Instant): String = dateTimeFormatter.stringFromDate(instant.toNSDate())
+    override fun formatDateTime(localDateTime: LocalDateTime): String = dateTimeFormatter.stringFromDate(localDateTime.toNSDate())
 
-    actual override fun formatRelative(direction: Direction, unit: AbsoluteUnit): String? {
+    override fun formatRelative(direction: Direction, unit: AbsoluteUnit): String? {
         val components = NSDateComponents().apply {
             when (unit) {
                 AbsoluteUnit.NOW -> second = 0
@@ -100,7 +125,7 @@ public actual class DefaultLocalizedDateTimeFormatter
         return relativeDateTimeFormatter.localizedStringFromDateComponents(components)
     }
 
-    actual override fun formatRelative(quantity: Double, direction: Direction, unit: RelativeUnit): String? {
+    override fun formatRelative(quantity: Double, direction: Direction, unit: RelativeUnit): String {
         val signed = when (direction) {
             Direction.LAST, Direction.LAST_2 -> -quantity
             Direction.NEXT, Direction.NEXT_2 -> quantity
@@ -139,11 +164,19 @@ public actual class DefaultLocalizedDateTimeFormatter
         components.setNanosecond(nanosecond.toLong())
         return calendar.dateFromComponents(components)!!
     }
-}
 
-private fun FormatStyle.toNSDateFormatterStyle(): ULong = when (this) {
-    FormatStyle.SHORT -> NSDateFormatterShortStyle
-    FormatStyle.MEDIUM -> NSDateFormatterMediumStyle
-    FormatStyle.LONG -> NSDateFormatterLongStyle
-    FormatStyle.FULL -> NSDateFormatterFullStyle
+    private fun FormatStyle.toNSDateFormatterStyle(): ULong = when (this) {
+        FormatStyle.SHORT -> NSDateFormatterShortStyle
+        FormatStyle.MEDIUM -> NSDateFormatterMediumStyle
+        FormatStyle.LONG -> NSDateFormatterLongStyle
+        FormatStyle.FULL -> NSDateFormatterFullStyle
+    }
+
+    private fun CapitalizationMode.toNSFormattingContext(): NSFormattingContext = when (this) {
+        CapitalizationMode.NONE -> NSFormattingContextUnknown
+        CapitalizationMode.MIDDLE_OF_SENTENCE -> NSFormattingContextMiddleOfSentence
+        CapitalizationMode.BEGINNING_OF_SENTENCE -> NSFormattingContextBeginningOfSentence
+        CapitalizationMode.UI_LIST_OR_MENU -> NSFormattingContextListItem
+        CapitalizationMode.STANDALONE -> NSFormattingContextStandalone
+    }
 }

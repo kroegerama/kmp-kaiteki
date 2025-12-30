@@ -1,21 +1,20 @@
 package com.kroegerama.kmp.kaiteki.compose.formatting
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.State
 import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.text.intl.Locale
 import com.kroegerama.kmp.kaiteki.InternalKaitekiApi
-import com.kroegerama.kmp.kaiteki.formatting.DefaultLocalizedDateTimeFormatter
+import com.kroegerama.kmp.kaiteki.formatting.CapitalizationMode
 import com.kroegerama.kmp.kaiteki.formatting.FormatStyle
 import com.kroegerama.kmp.kaiteki.formatting.LocalizedDateTimeFormatter
 import com.kroegerama.kmp.kaiteki.formatting.LocalizedDateTimeFormatter.Companion.DEFAULT_SWITCH_MIN_TO_TIME
 import com.kroegerama.kmp.kaiteki.formatting.LocalizedDateTimeFormatter.Companion.DEFAULT_SWITCH_NOW_TO_SEC
 import com.kroegerama.kmp.kaiteki.formatting.LocalizedDateTimeFormatter.Companion.DEFAULT_SWITCH_SEC_TO_MIN
-import com.kroegerama.kmp.kaiteki.formatting.LocalizedDateTimeFormatter.Companion.DEFAULT_TIME_DIVIDER
+import com.kroegerama.kmp.kaiteki.formatting.defaultLocalizedDateTimeFormatter
 import com.kroegerama.kmp.kaiteki.formatting.formatFancyInternal
 import com.vanniktech.locale.Country
 import com.vanniktech.locale.Language
@@ -30,22 +29,21 @@ public fun rememberLocalizedDateTimeFormatter(
     locale: Locale = Locale.current,
     dateStyle: FormatStyle = FormatStyle.MEDIUM,
     timeStyle: FormatStyle = FormatStyle.SHORT,
+    capitalizationMode: CapitalizationMode = CapitalizationMode.NONE,
     zone: TimeZone = TimeZone.currentSystemDefault()
-): LocalizedDateTimeFormatter = remember(locale, dateStyle, timeStyle, zone) {
-    DefaultLocalizedDateTimeFormatter(
+): LocalizedDateTimeFormatter = remember(locale, dateStyle, timeStyle, capitalizationMode, zone) {
+    defaultLocalizedDateTimeFormatter(
         locale = KMPLocale.fromOrNull(locale.toString()) ?: KMPLocale(Language.ENGLISH, Country.USA),
         dateStyle = dateStyle,
         timeStyle = timeStyle,
+        capitalizationMode = capitalizationMode,
         zone = zone
     )
 }
 
 public val LocalLocalizedDateTimeFormatter: ProvidableCompositionLocal<LocalizedDateTimeFormatter> = compositionLocalOf {
-    DefaultLocalizedDateTimeFormatter(
-        locale = KMPLocale.from(Locale.current.toString()),
-        dateStyle = FormatStyle.MEDIUM,
-        timeStyle = FormatStyle.SHORT,
-        zone = TimeZone.currentSystemDefault()
+    defaultLocalizedDateTimeFormatter(
+        locale = KMPLocale.from(Locale.current.toString())
     )
 }
 
@@ -53,40 +51,28 @@ public val LocalLocalizedDateTimeFormatter: ProvidableCompositionLocal<Localized
 @Composable
 public fun LocalizedDateTimeFormatter.formatFancyAsState(
     instant: Instant,
-    dateTimeDivider: String = DEFAULT_TIME_DIVIDER,
+    dateTimeDivider: (KMPLocale) -> String = LocalizedDateTimeFormatter::defaultTimeDivider,
     switchNowToSeconds: Long = DEFAULT_SWITCH_NOW_TO_SEC,
     switchSecondsToMinutes: Long = DEFAULT_SWITCH_SEC_TO_MIN,
     switchMinutesToTime: Long = DEFAULT_SWITCH_MIN_TO_TIME
-): State<String> {
-    val state = remember {
-        mutableStateOf(
-            formatFancyInternal(
-                instant = instant,
-                dateTimeDivider = dateTimeDivider,
-                switchNowToSeconds = switchNowToSeconds,
-                switchSecondsToMinutes = switchSecondsToMinutes,
-                switchMinutesToTime = switchMinutesToTime
-            ).first
+): State<String> = produceState(
+    initialValue = "",
+    this,
+    instant,
+    dateTimeDivider,
+    switchNowToSeconds,
+    switchSecondsToMinutes,
+    switchMinutesToTime
+) {
+    while (isActive) {
+        val (formatted, delay) = formatFancyInternal(
+            instant = instant,
+            dateTimeDivider = dateTimeDivider,
+            switchNowToSeconds = switchNowToSeconds,
+            switchSecondsToMinutes = switchSecondsToMinutes,
+            switchMinutesToTime = switchMinutesToTime
         )
+        value = formatted
+        delay(delay)
     }
-    LaunchedEffect(
-        instant,
-        dateTimeDivider,
-        switchNowToSeconds,
-        switchSecondsToMinutes,
-        switchMinutesToTime
-    ) {
-        while (isActive) {
-            val (formatted, delay) = formatFancyInternal(
-                instant = instant,
-                dateTimeDivider = dateTimeDivider,
-                switchNowToSeconds = switchNowToSeconds,
-                switchSecondsToMinutes = switchSecondsToMinutes,
-                switchMinutesToTime = switchMinutesToTime
-            )
-            state.value = formatted
-            delay(delay)
-        }
-    }
-    return state
 }

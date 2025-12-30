@@ -14,15 +14,22 @@ import kotlin.time.Instant
 
 class LocalizedDateTimeFormatterTest : RobolectricTest() {
 
-    private val formatterDE = DefaultLocalizedDateTimeFormatter(
+    private val formatterDE = defaultLocalizedDateTimeFormatter(
         locale = Locale.from("de-DE"),
         dateStyle = FormatStyle.MEDIUM,
         timeStyle = FormatStyle.SHORT,
         zone = FixedOffsetTimeZone(UtcOffset(2))
     )
 
-    private val formatterUS = DefaultLocalizedDateTimeFormatter(
+    private val formatterUS = defaultLocalizedDateTimeFormatter(
         locale = Locale.from("en-US"),
+        dateStyle = FormatStyle.MEDIUM,
+        timeStyle = FormatStyle.SHORT,
+        zone = FixedOffsetTimeZone(UtcOffset(2))
+    )
+
+    private val formatterAR = defaultLocalizedDateTimeFormatter(
+        locale = Locale.from("ar-rEG"),
         dateStyle = FormatStyle.MEDIUM,
         timeStyle = FormatStyle.SHORT,
         zone = FixedOffsetTimeZone(UtcOffset(2))
@@ -67,6 +74,20 @@ class LocalizedDateTimeFormatterTest : RobolectricTest() {
                 .replace(" ", " ")
                 .replace(" at ", ", ")
         }
+    }
+
+    @Test
+    fun testAR() {
+        expect("٠١‏/١٠‏/٢٠٢٥") { formatterAR.formatDate(instant) }
+        expect("٠١‏/١٠‏/٢٠٢٥") { formatterAR.formatDate(localDateTime) }
+        expect("٠١‏/١٠‏/٢٠٢٥") { formatterAR.formatDate(localDate) }
+
+        expect("٨:١٥ م") { formatterAR.formatTime(instant) }
+        expect("٨:١٥ م") { formatterAR.formatTime(localDateTime) }
+        expect("٨:١٥ م") { formatterAR.formatTime(localTime) }
+
+        expect("٠١‏/١٠‏/٢٠٢٥، ٨:١٥ م") { formatterAR.formatDateTime(instant) }
+        expect("٠١‏/١٠‏/٢٠٢٥، ٨:١٥ م") { formatterAR.formatDateTime(localDateTime) }
     }
 
     private fun <T> expectAny(vararg expected: T, computation: () -> T) {
