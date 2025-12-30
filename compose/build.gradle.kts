@@ -53,10 +53,10 @@ kotlin {
             implementation(libs.kotlinx.datetime)
             implementation(libs.arrow)
             implementation(libs.multiplatform.locale)
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material3)
-            implementation(compose.components.uiToolingPreview)
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.foundation)
+            implementation(libs.compose.material3)
+            implementation(libs.compose.preview)
 
             api(project((":core")))
         }
@@ -66,7 +66,6 @@ kotlin {
             implementation(libs.androidx.core)
             implementation(libs.androidx.navigation.runtime)
             implementation(libs.hilt.lifecycle.viewmodel.compose)
-            implementation(compose.preview)
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
@@ -75,7 +74,7 @@ kotlin {
 }
 
 dependencies {
-    androidRuntimeClasspath(compose.uiTooling)
+    androidRuntimeClasspath(libs.compose.uiTooling)
     coreLibraryDesugaring(libs.desugar)
 }
 

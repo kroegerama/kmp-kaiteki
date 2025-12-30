@@ -1,5 +1,5 @@
 [versions]
-agp = "8.13.2"
+agp = "9.0.0-rc02"
 icu4j = "78.1"
 kotlin = "2.3.0"
 android-minSdk = "24"
@@ -11,7 +11,8 @@ androidx-core = "1.17.0"
 androidx-navigation = "2.9.6"
 androidx-startup = "1.2.0"
 arrow = "2.2.1.1"
-compose = "1.9.3"
+compose = "1.10.0-rc02"
+compose-material3 = "1.9.0"
 jb-androidx-lifecycle = "2.9.6"
 maven-publish = "0.35.0"
 multiplatform-locale = "0.9.0"
@@ -46,6 +47,11 @@ paging-common = { module = "androidx.paging:paging-common", version.ref = "pagin
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose" }
+compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose" }
+compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "compose-material3" }
+compose-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "compose" }
+compose-uiTooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "compose" }
 
 [plugins]
 android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
