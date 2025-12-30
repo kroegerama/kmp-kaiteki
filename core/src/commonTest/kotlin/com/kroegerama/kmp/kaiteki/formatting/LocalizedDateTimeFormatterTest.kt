@@ -29,7 +29,7 @@ class LocalizedDateTimeFormatterTest : RobolectricTest() {
     )
 
     private val formatterAR = defaultLocalizedDateTimeFormatter(
-        locale = Locale.from("ar-rEG"),
+        locale = Locale.from("ar-EG"),
         dateStyle = FormatStyle.MEDIUM,
         timeStyle = FormatStyle.SHORT,
         zone = FixedOffsetTimeZone(UtcOffset(2))
@@ -82,12 +82,12 @@ class LocalizedDateTimeFormatterTest : RobolectricTest() {
         expect("٠١‏/١٠‏/٢٠٢٥") { formatterAR.formatDate(localDateTime) }
         expect("٠١‏/١٠‏/٢٠٢٥") { formatterAR.formatDate(localDate) }
 
-        expect("٨:١٥ م") { formatterAR.formatTime(instant) }
-        expect("٨:١٥ م") { formatterAR.formatTime(localDateTime) }
-        expect("٨:١٥ م") { formatterAR.formatTime(localTime) }
+        expect("٨:١٥ م") { formatterAR.formatTime(instant).replace(" ", " ") }
+        expect("٨:١٥ م") { formatterAR.formatTime(localDateTime).replace(" ", " ") }
+        expect("٨:١٥ م") { formatterAR.formatTime(localTime).replace(" ", " ") }
 
-        expect("٠١‏/١٠‏/٢٠٢٥، ٨:١٥ م") { formatterAR.formatDateTime(instant) }
-        expect("٠١‏/١٠‏/٢٠٢٥، ٨:١٥ م") { formatterAR.formatDateTime(localDateTime) }
+        expect("٠١‏/١٠‏/٢٠٢٥، ٨:١٥ م") { formatterAR.formatDateTime(instant).replace(" ", " ") }
+        expect("٠١‏/١٠‏/٢٠٢٥، ٨:١٥ م") { formatterAR.formatDateTime(localDateTime).replace(" ", " ") }
     }
 
     private fun <T> expectAny(vararg expected: T, computation: () -> T) {
