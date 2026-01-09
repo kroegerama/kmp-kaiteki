@@ -17,6 +17,7 @@ kotlin {
         languageVersion = KotlinVersion.KOTLIN_2_1
 
         optIn.addAll(
+            "kotlin.contracts.ExperimentalContracts",
             "kotlin.time.ExperimentalTime"
         )
 
@@ -51,6 +52,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.kotlinx.datetime)
+            implementation(libs.jb.androidx.lifecycle.viewmodel)
             implementation(libs.arrow)
             implementation(libs.multiplatform.locale)
             implementation(libs.compose.runtime)
