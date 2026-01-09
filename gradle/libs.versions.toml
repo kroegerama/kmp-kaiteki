@@ -1,6 +1,6 @@
 [versions]
-agp = "9.0.0-rc02"
-icu4j = "78.1"
+agp = "9.0.0-rc03"
+icu4j = "78.2"
 kotlin = "2.3.0"
 android-minSdk = "24"
 android-compileSdk = "36"
