@@ -36,6 +36,11 @@ kotlin {
             jvmTarget = JvmTarget.JVM_11
             moduleName = "kmp.kaiteki.paging"
         }
+
+        optimization {
+            consumerKeepRules.publish = true
+            consumerKeepRules.file("consumer-proguard-rules.pro")
+        }
     }
 
     iosX64()

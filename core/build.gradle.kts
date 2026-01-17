@@ -42,6 +42,11 @@ kotlin {
             moduleName = "kmp.kaiteki.core"
         }
 
+        optimization {
+            consumerKeepRules.publish = true
+            consumerKeepRules.file("consumer-proguard-rules.pro")
+        }
+
         withHostTest { }
     }
 
