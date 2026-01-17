@@ -1,7 +1,8 @@
 package com.kroegerama.kmp.kaiteki.formatting
 
 import androidx.compose.runtime.annotation.RememberInComposition
-import com.vanniktech.locale.Locale
+import com.vanniktech.locale.Country
+import com.vanniktech.locale.Language
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
@@ -29,10 +30,11 @@ import platform.Foundation.NSRelativeDateTimeFormatter
 import platform.Foundation.NSRelativeDateTimeFormatterStyleNamed
 import platform.Foundation.NSRelativeDateTimeFormatterUnitsStyleFull
 import kotlin.time.Instant
+import com.vanniktech.locale.Locale as KMPLocale
 
 @RememberInComposition
 public actual fun defaultLocalizedDateTimeFormatter(
-    locale: Locale,
+    locale: KMPLocale,
     dateStyle: FormatStyle,
     timeStyle: FormatStyle,
     capitalizationMode: CapitalizationMode,
@@ -45,8 +47,19 @@ public actual fun defaultLocalizedDateTimeFormatter(
     zone = zone
 )
 
+@RememberInComposition
+public fun defaultLocalizedDateTimeFormatter(
+    platformLocale: NSLocale,
+    dateStyle: FormatStyle = FormatStyle.MEDIUM,
+    timeStyle: FormatStyle = FormatStyle.SHORT,
+    capitalizationMode: CapitalizationMode = CapitalizationMode.NONE,
+    zone: TimeZone = TimeZone.currentSystemDefault()
+): LocalizedDateTimeFormatter = defaultLocalizedDateTimeFormatter(
+    locale = KMPLocale.fromOrNull(platformLocale.toString()) ?: KMPLocale(Language.ENGLISH, Country.USA)
+)
+
 internal class DefaultLocalizedDateTimeFormatter(
-    override val locale: Locale,
+    override val locale: KMPLocale,
     dateStyle: FormatStyle,
     timeStyle: FormatStyle,
     capitalizationMode: CapitalizationMode,

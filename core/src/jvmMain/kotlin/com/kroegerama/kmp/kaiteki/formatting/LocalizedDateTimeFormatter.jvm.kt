@@ -4,7 +4,8 @@ import androidx.compose.runtime.annotation.RememberInComposition
 import com.ibm.icu.text.DisplayContext
 import com.ibm.icu.text.RelativeDateTimeFormatter
 import com.ibm.icu.util.ULocale
-import com.vanniktech.locale.Locale
+import com.vanniktech.locale.Country
+import com.vanniktech.locale.Language
 import com.vanniktech.locale.toJavaLocale
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -17,11 +18,13 @@ import kotlinx.datetime.toJavaZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.time.Instant
 import kotlin.time.toJavaInstant
+import com.vanniktech.locale.Locale as KMPLocale
 import java.time.format.FormatStyle as JvmFormatStyle
+import java.util.Locale as JavaLocale
 
 @RememberInComposition
 public actual fun defaultLocalizedDateTimeFormatter(
-    locale: Locale,
+    locale: KMPLocale,
     dateStyle: FormatStyle,
     timeStyle: FormatStyle,
     capitalizationMode: CapitalizationMode,
@@ -34,8 +37,19 @@ public actual fun defaultLocalizedDateTimeFormatter(
     zone = zone
 )
 
+@RememberInComposition
+public fun defaultLocalizedDateTimeFormatter(
+    platformLocale: JavaLocale,
+    dateStyle: FormatStyle = FormatStyle.MEDIUM,
+    timeStyle: FormatStyle = FormatStyle.SHORT,
+    capitalizationMode: CapitalizationMode = CapitalizationMode.NONE,
+    zone: TimeZone = TimeZone.currentSystemDefault()
+): LocalizedDateTimeFormatter = defaultLocalizedDateTimeFormatter(
+    locale = KMPLocale.fromOrNull(platformLocale.toString()) ?: KMPLocale(Language.ENGLISH, Country.USA)
+)
+
 internal class DefaultLocalizedDateTimeFormatter(
-    override val locale: Locale,
+    override val locale: KMPLocale,
     dateStyle: FormatStyle,
     timeStyle: FormatStyle,
     capitalizationMode: CapitalizationMode,

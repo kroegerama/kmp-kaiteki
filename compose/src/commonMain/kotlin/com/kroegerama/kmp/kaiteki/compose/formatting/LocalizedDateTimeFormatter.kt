@@ -3,10 +3,10 @@ package com.kroegerama.kmp.kaiteki.compose.formatting
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.State
+import androidx.compose.runtime.annotation.RememberInComposition
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.ui.text.intl.Locale
 import com.kroegerama.kmp.kaiteki.InternalKaitekiApi
 import com.kroegerama.kmp.kaiteki.formatting.CapitalizationMode
 import com.kroegerama.kmp.kaiteki.formatting.FormatStyle
@@ -22,18 +22,19 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.datetime.TimeZone
 import kotlin.time.Instant
+import androidx.compose.ui.text.intl.Locale as ComposeLocale
 import com.vanniktech.locale.Locale as KMPLocale
 
 @Composable
 public fun rememberLocalizedDateTimeFormatter(
-    locale: Locale = Locale.current,
+    locale: ComposeLocale = ComposeLocale.current,
     dateStyle: FormatStyle = FormatStyle.MEDIUM,
     timeStyle: FormatStyle = FormatStyle.SHORT,
     capitalizationMode: CapitalizationMode = CapitalizationMode.NONE,
     zone: TimeZone = TimeZone.currentSystemDefault()
 ): LocalizedDateTimeFormatter = remember(locale, dateStyle, timeStyle, capitalizationMode, zone) {
     defaultLocalizedDateTimeFormatter(
-        locale = KMPLocale.fromOrNull(locale.toString()) ?: KMPLocale(Language.ENGLISH, Country.USA),
+        composeLocale = locale,
         dateStyle = dateStyle,
         timeStyle = timeStyle,
         capitalizationMode = capitalizationMode,
@@ -41,9 +42,20 @@ public fun rememberLocalizedDateTimeFormatter(
     )
 }
 
+@RememberInComposition
+public fun defaultLocalizedDateTimeFormatter(
+    composeLocale: ComposeLocale,
+    dateStyle: FormatStyle = FormatStyle.MEDIUM,
+    timeStyle: FormatStyle = FormatStyle.SHORT,
+    capitalizationMode: CapitalizationMode = CapitalizationMode.NONE,
+    zone: TimeZone = TimeZone.currentSystemDefault()
+): LocalizedDateTimeFormatter = defaultLocalizedDateTimeFormatter(
+    locale = KMPLocale.fromOrNull(composeLocale.toString()) ?: KMPLocale(Language.ENGLISH, Country.USA)
+)
+
 public val LocalLocalizedDateTimeFormatter: ProvidableCompositionLocal<LocalizedDateTimeFormatter> = compositionLocalOf {
     defaultLocalizedDateTimeFormatter(
-        locale = KMPLocale.from(Locale.current.toString())
+        locale = KMPLocale.from(ComposeLocale.current.toString())
     )
 }
 
