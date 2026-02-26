@@ -33,7 +33,7 @@ kotlin {
         }
     }
 
-    android {
+    androidLibrary {
         namespace = "com.kroegerama.kmp.kaiteki.compose"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
@@ -63,6 +63,7 @@ kotlin {
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
             implementation(libs.compose.preview)
+            implementation(libs.paging.compose)
 
             api(project((":core")))
         }

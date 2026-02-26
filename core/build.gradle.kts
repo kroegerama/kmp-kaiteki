@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.vanniktech.maven.publish)
 }
@@ -31,7 +32,7 @@ kotlin {
         }
     }
 
-    android {
+    androidLibrary {
         namespace = "com.kroegerama.kmp.kaiteki"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
@@ -56,6 +57,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.kotlinx.datetime)
+            implementation(libs.kotlinx.serialization.core)
             implementation(libs.jb.androidx.lifecycle.common)
             implementation(libs.jb.androidx.lifecycle.runtime)
             implementation(libs.jb.androidx.lifecycle.viewmodel.savedstate)
