@@ -12,6 +12,13 @@ import arrow.core.Option
 import arrow.core.some
 
 @Immutable
+@Deprecated(
+    "use ConsumableState instead",
+    ReplaceWith(
+        "ConsumableState<T>()",
+        imports = ["com.kroegerama.kmp.kaiteki.compose.ConsumableState"]
+    )
+)
 public class Consumable<T> @RememberInComposition constructor() {
     internal var option: Option<T> by mutableStateOf<Option<T>>(None)
         private set
@@ -26,6 +33,14 @@ public class Consumable<T> @RememberInComposition constructor() {
 }
 
 @Composable
+@Deprecated(
+    "use ConsumableState.Consume instead",
+    ReplaceWith(
+        "consumable.Consume(block)",
+        imports = ["com.kroegerama.kmp.kaiteki.compose.Consume"]
+    )
+)
+@Suppress("DEPRECATION")
 public fun <T> LaunchedConsumable(
     consumable: Consumable<T>,
     block: suspend (T) -> Unit
@@ -38,6 +53,7 @@ public fun <T> LaunchedConsumable(
 }
 
 @Composable
+@Deprecated("use ConsumableState.Consume instead")
 public fun <T> ConsumeOptionEffect(
     option: Option<T>,
     onConsumed: (T) -> Unit,
