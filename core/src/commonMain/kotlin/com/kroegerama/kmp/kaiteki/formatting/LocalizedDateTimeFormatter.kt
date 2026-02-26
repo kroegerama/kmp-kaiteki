@@ -1,6 +1,5 @@
 package com.kroegerama.kmp.kaiteki.formatting
 
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.annotation.FrequentlyChangingValue
 import androidx.compose.runtime.annotation.RememberInComposition
@@ -22,7 +21,7 @@ public enum class AbsoluteUnit { DAY, MONTH, YEAR, NOW }
 public enum class RelativeUnit { SECONDS, MINUTES, HOURS, DAYS, MONTHS, YEARS }
 public enum class CapitalizationMode { NONE, MIDDLE_OF_SENTENCE, BEGINNING_OF_SENTENCE, UI_LIST_OR_MENU, STANDALONE }
 
-@Immutable
+@Stable
 public interface LocalizedDateTimeFormatter {
     public val locale: Locale
 

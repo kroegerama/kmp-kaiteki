@@ -1,11 +1,10 @@
 package com.kroegerama.kmp.kaiteki.formatting
 
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.annotation.RememberInComposition
 import com.vanniktech.locale.Locale
 
-@Immutable
+@Stable
 public interface DecimalFormatter {
     @Stable
     public fun format(value: Number): String
