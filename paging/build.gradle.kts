@@ -48,7 +48,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.paging.common)
+            implementation(libs.androidx.paging.common)
             implementation(libs.arrow)
             implementation(libs.jb.androidx.lifecycle.viewmodel)
         }

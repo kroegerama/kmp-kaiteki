@@ -63,7 +63,7 @@ kotlin {
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
             implementation(libs.compose.preview)
-            implementation(libs.paging.compose)
+            implementation(libs.androidx.paging.compose)
 
             api(project(":core"))
         }
