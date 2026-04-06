@@ -1,0 +1,214 @@
+package com.kroegerama.kmp.kaiteki.compose.components
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
+
+@ExperimentalMaterial3ExpressiveApi
+@Composable
+public fun BaseButton(
+    onClick: () -> Unit,
+    text: String,
+    size: Dp,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    enabled: Boolean = true,
+    colors: ButtonColors = ButtonDefaults.buttonColors()
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier.heightIn(size),
+        shapes = ButtonDefaults.shapesFor(size),
+        contentPadding = ButtonDefaults.contentPaddingFor(
+            buttonHeight = size,
+            hasStartIcon = icon != null
+        ),
+        colors = colors
+    ) {
+        icon?.let { icon ->
+            Icon(
+                imageVector = icon,
+                contentDescription = text,
+                modifier = Modifier.size(ButtonDefaults.iconSizeFor(size)),
+            )
+            Spacer(Modifier.size(ButtonDefaults.iconSpacingFor(size)))
+        }
+        Text(
+            text = text,
+            style = ButtonDefaults.textStyleFor(size)
+        )
+    }
+}
+
+@ExperimentalMaterial3ExpressiveApi
+@Composable
+public fun ButtonExtraSmall(
+    onClick: () -> Unit,
+    text: String,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    enabled: Boolean = true,
+    colors: ButtonColors = ButtonDefaults.buttonColors(),
+) {
+    BaseButton(
+        size = ButtonDefaults.ExtraSmallContainerHeight,
+        onClick = onClick,
+        text = text,
+        modifier = modifier,
+        icon = icon,
+        enabled = enabled,
+        colors = colors,
+    )
+}
+
+@ExperimentalMaterial3ExpressiveApi
+@Composable
+public fun ButtonSmall(
+    onClick: () -> Unit,
+    text: String,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    enabled: Boolean = true,
+    colors: ButtonColors = ButtonDefaults.buttonColors(),
+) {
+    BaseButton(
+        size = ButtonDefaults.MinHeight,
+        onClick = onClick,
+        text = text,
+        modifier = modifier,
+        icon = icon,
+        enabled = enabled,
+        colors = colors,
+    )
+}
+
+@ExperimentalMaterial3ExpressiveApi
+@Composable
+public fun ButtonMedium(
+    onClick: () -> Unit,
+    text: String,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    enabled: Boolean = true,
+    colors: ButtonColors = ButtonDefaults.buttonColors(),
+) {
+    BaseButton(
+        size = ButtonDefaults.MediumContainerHeight,
+        onClick = onClick,
+        text = text,
+        modifier = modifier,
+        icon = icon,
+        enabled = enabled,
+        colors = colors,
+    )
+}
+
+@ExperimentalMaterial3ExpressiveApi
+@Composable
+public fun ButtonLarge(
+    onClick: () -> Unit,
+    text: String,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    enabled: Boolean = true,
+    colors: ButtonColors = ButtonDefaults.buttonColors(),
+) {
+    BaseButton(
+        size = ButtonDefaults.LargeContainerHeight,
+        onClick = onClick,
+        text = text,
+        modifier = modifier,
+        icon = icon,
+        enabled = enabled,
+        colors = colors,
+    )
+}
+
+@ExperimentalMaterial3ExpressiveApi
+@Composable
+public fun ButtonExtraLarge(
+    onClick: () -> Unit,
+    text: String,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    enabled: Boolean = true,
+    colors: ButtonColors = ButtonDefaults.buttonColors(),
+) {
+    BaseButton(
+        size = ButtonDefaults.ExtraLargeContainerHeight,
+        onClick = onClick,
+        text = text,
+        modifier = modifier,
+        icon = icon,
+        enabled = enabled,
+        colors = colors,
+    )
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Preview
+@Composable
+private fun ButtonPreview() {
+    MaterialTheme {
+        Scaffold { innerPadding ->
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(16.dp)
+            ) {
+                ButtonExtraSmall(
+                    onClick = {},
+                    text = "ButtonExtraSmall"
+                )
+                ButtonSmall(
+                    onClick = {},
+                    text = "ButtonSmall"
+                )
+                ButtonSmall(
+                    onClick = {},
+                    text = "ButtonSmall w/icon",
+                    icon = KaitekiIcon
+                )
+                ButtonMedium(
+                    onClick = {},
+                    text = "ButtonMedium"
+                )
+                ButtonLarge(
+                    onClick = {},
+                    text = "ButtonLarge"
+                )
+                ButtonLarge(
+                    onClick = {},
+                    text = "ButtonLarge w/icon",
+                    icon = KaitekiIcon
+                )
+                ButtonExtraLarge(
+                    onClick = {},
+                    text = "ButtonExtraLarge"
+                )
+            }
+        }
+    }
+}
