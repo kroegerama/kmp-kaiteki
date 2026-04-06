@@ -16,3 +16,8 @@ public inline fun <reified T : Enum<T>> enumValueOfSerialNameOrNull(serialName: 
 } catch (_: IllegalArgumentException) {
     null
 }
+
+public inline fun <reified T : Enum<T>> T.serialName(): String {
+    val descriptor = serializer<T>().descriptor
+    return descriptor.getElementName(ordinal)
+}

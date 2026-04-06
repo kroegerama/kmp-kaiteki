@@ -16,7 +16,10 @@ class EnumUtilsTest {
         @SerialName("")
         Test2,
 
-        Test3
+        Test3,
+
+        ` `
+
     }
 
     @Test
@@ -24,7 +27,8 @@ class EnumUtilsTest {
         listOf(
             TestEnum.Test1 to "Serial Name 1",
             TestEnum.Test2 to "",
-            TestEnum.Test3 to "Test3"
+            TestEnum.Test3 to "Test3",
+            TestEnum.` ` to " "
         ).forEach { (expected, string) ->
             expect(expected) { enumValueOfSerialName<TestEnum>(string) }
         }
@@ -44,7 +48,8 @@ class EnumUtilsTest {
         listOf(
             TestEnum.Test1 to "Serial Name 1",
             TestEnum.Test2 to "",
-            TestEnum.Test3 to "Test3"
+            TestEnum.Test3 to "Test3",
+            TestEnum.` ` to " "
         ).forEach { (expected, string) ->
             expect(expected) { enumValueOfSerialName<TestEnum>(string) }
         }
@@ -54,6 +59,18 @@ class EnumUtilsTest {
             "Test2"
         ).forEach { string ->
             expect(null) { enumValueOfSerialNameOrNull<TestEnum>(string) }
+        }
+    }
+
+    @Test
+    fun testSerialName() {
+        listOf(
+            TestEnum.Test1 to "Serial Name 1",
+            TestEnum.Test2 to "",
+            TestEnum.Test3 to "Test3",
+            TestEnum.` ` to " "
+        ).forEach { (enum, expected) ->
+            expect(expected) { enum.serialName() }
         }
     }
 }
