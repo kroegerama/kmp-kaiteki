@@ -19,7 +19,12 @@ public actual class DefaultDecimalFormatter @RememberInComposition actual constr
         this.maximumFractionDigits = maximumFractionDigits
         this.maximumIntegerDigits = maximumIntegerDigits
         this.isGroupingUsed = isGroupingUsed
-    }
+    } as DecimalFormat
 
     actual override fun format(value: Number): String = decimalFormat.format(value)
+
+    actual override val decimalSeparator: Char = decimalFormat.decimalFormatSymbols.decimalSeparator
+
+    actual override val groupingSeparator: Char = decimalFormat.decimalFormatSymbols.groupingSeparator
+
 }

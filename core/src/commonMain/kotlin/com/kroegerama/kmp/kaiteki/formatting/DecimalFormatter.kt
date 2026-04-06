@@ -8,6 +8,12 @@ import com.vanniktech.locale.Locale
 public interface DecimalFormatter {
     @Stable
     public fun format(value: Number): String
+
+    @Stable
+    public val decimalSeparator: Char
+
+    @Stable
+    public val groupingSeparator: Char
 }
 
 public expect class DefaultDecimalFormatter
@@ -20,4 +26,6 @@ public expect class DefaultDecimalFormatter
     isGroupingUsed: Boolean = true
 ) : DecimalFormatter {
     override fun format(value: Number): String
+    override val decimalSeparator: Char
+    override val groupingSeparator: Char
 }

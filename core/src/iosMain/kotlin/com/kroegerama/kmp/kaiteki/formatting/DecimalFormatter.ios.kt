@@ -27,4 +27,9 @@ public actual class DefaultDecimalFormatter @RememberInComposition actual constr
 
     actual override fun format(value: Number): String =
         numberFormatter.stringFromNumber(NSNumber(value.toDouble())) ?: value.toString()
+
+    actual override val decimalSeparator: Char = numberFormatter.decimalSeparator.first()
+
+    actual override val groupingSeparator: Char = numberFormatter.groupingSeparator.first()
+
 }
