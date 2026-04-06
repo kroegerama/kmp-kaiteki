@@ -128,7 +128,7 @@ public class SimpleValidatingState<T> @RememberInComposition constructor(
 }
 
 public abstract class BaseValidatingState<T>(
-    private val validator: ValidationRaiserScope.(T) -> Unit
+    private val validator: (@ValidationDSL ValidationRaiserScope).(T) -> Unit
 ) : Validator {
     private var validationResultState: ErrorGeneratorLambda? by mutableStateOf(null)
 
@@ -165,38 +165,34 @@ public fun validate(vararg validators: Validator): TextFieldValidationResult {
 private typealias ErrorGeneratorLambda = @Composable () -> String?
 
 @DslMarker
+@Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
 public annotation class ValidationDSL
 
+@ValidationDSL
 public interface ValidationRaiserScope {
     /**
      * Raise error without error message.
      */
-    @ValidationDSL
     public fun raise(): Nothing
 
     /**
      * Raise error hardcoded string.
      */
-    @ValidationDSL
     public fun raise(string: String): Nothing
 
     /**
      * Raise error by executing a composable lambda.
      */
-    @ValidationDSL
     public fun raise(block: ErrorGeneratorLambda): Nothing
 
-    @ValidationDSL
     public fun require(condition: Boolean) {
         if (!condition) raise()
     }
 
-    @ValidationDSL
     public fun require(condition: Boolean, error: String) {
         if (!condition) raise(error)
     }
 
-    @ValidationDSL
     public fun require(condition: Boolean, block: ErrorGeneratorLambda) {
         if (!condition) raise(block)
     }

@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 import kotlin.jvm.JvmInline
 
 @DslMarker
-@Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE, AnnotationTarget.FUNCTION)
+@Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
 public annotation class FlowCollectorDsl
 
 /**
@@ -24,7 +24,6 @@ public annotation class FlowCollectorDsl
  * ```
  * @see flowWithLifecycle
  */
-@FlowCollectorDsl
 public fun <T> Flow<T>.observeWithLifecycle(
     lifecycleOwner: LifecycleOwner,
     minActiveState: Lifecycle.State = Lifecycle.State.STARTED,
@@ -33,7 +32,6 @@ public fun <T> Flow<T>.observeWithLifecycle(
     flowWithLifecycle(lifecycleOwner.lifecycle, minActiveState).collect(action)
 }
 
-@FlowCollectorDsl
 public fun <T> LifecycleOwner.observeFlow(
     flow: Flow<T>,
     minActiveState: Lifecycle.State = Lifecycle.State.STARTED,
@@ -52,7 +50,6 @@ public fun <T> LifecycleOwner.observeFlow(
  * ```
  * @see Lifecycle.repeatOnLifecycle
  */
-@FlowCollectorDsl
 public fun LifecycleOwner.observeMultipleFlows(
     minActiveState: Lifecycle.State = Lifecycle.State.STARTED,
     block: (@FlowCollectorDsl MultipleFlowCollectorContext).() -> Unit

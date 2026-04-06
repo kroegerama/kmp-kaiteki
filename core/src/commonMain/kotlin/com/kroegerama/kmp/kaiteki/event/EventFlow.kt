@@ -1,5 +1,6 @@
 package com.kroegerama.kmp.kaiteki.event
 
+import kotlinx.coroutines.ExperimentalForInheritanceCoroutinesApi
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -27,6 +28,7 @@ import kotlinx.coroutines.flow.SharedFlow
  *    }
  * ```
  */
+@OptIn(ExperimentalForInheritanceCoroutinesApi::class)
 public interface EventFlow<T> : SharedFlow<T> {
     public fun send(event: T)
 
