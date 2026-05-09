@@ -56,7 +56,7 @@ public fun rememberChromeCustomTabUriHandler(
     secondaryToolbarColor: Color = MaterialTheme.colorScheme.background
 ): UriHandler {
     val context = LocalContext.current
-    return remember(toolbarColor, secondaryToolbarColor) {
+    return remember(context, toolbarColor, secondaryToolbarColor) {
         ChromeCustomTabsUriHandler(
             context = context,
             colorSchemeParamsDecorator = {
