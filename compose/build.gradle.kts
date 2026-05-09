@@ -70,6 +70,7 @@ kotlin {
             implementation(libs.androidx.paging.compose)
 
             api(project(":core"))
+            api(project(":paging"))
         }
         androidMain.dependencies {
             implementation(libs.androidx.browser)

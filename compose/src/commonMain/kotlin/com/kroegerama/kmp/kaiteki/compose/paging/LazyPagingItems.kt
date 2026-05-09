@@ -9,10 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.kroegerama.kmp.kaiteki.paging.pagingDataOf
 
 /**
  * ##### Note:
@@ -21,7 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 @Composable
 public fun <T : Any> lazyPagingItemsOfData(data: () -> List<T>): LazyPagingItems<T> {
     val flow = remember {
-        MutableStateFlow(PagingData.from(data()))
+        pagingDataOf(data())
     }
     return flow.collectAsLazyPagingItems()
 }
@@ -32,7 +31,7 @@ public fun <T : Any> lazyPagingItemsOfData(data: () -> List<T>): LazyPagingItems
  */
 @Composable
 public fun <T : Any> lazyPagingItemsOfData(vararg arr: T): LazyPagingItems<T> =
-    lazyPagingItemsOfData { arr.toList() }
+    lazyPagingItemsOfData { arr.asList() }
 
 @Preview
 @Composable

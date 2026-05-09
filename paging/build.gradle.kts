@@ -14,7 +14,10 @@ kotlin {
         apiVersion = KotlinVersion.KOTLIN_2_1
         languageVersion = KotlinVersion.KOTLIN_2_1
 
-        freeCompilerArgs.add("-Xexpect-actual-classes")
+        freeCompilerArgs.addAll(
+            "-Xcontext-parameters",
+            "-Xexpect-actual-classes",
+        )
     }
     coreLibrariesVersion = "2.1.21"
 
