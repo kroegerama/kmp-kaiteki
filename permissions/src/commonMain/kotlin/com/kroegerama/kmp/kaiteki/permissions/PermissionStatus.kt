@@ -5,6 +5,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.platform.LocalInspectionMode
 
+@ExperimentalKaitekiPermissionsApi
 public sealed interface PermissionStatus {
     public data object Granted : PermissionStatus
     public data class Denied(
@@ -12,6 +13,7 @@ public sealed interface PermissionStatus {
     ) : PermissionStatus
 }
 
+@ExperimentalKaitekiPermissionsApi
 @Stable
 public interface PermissionState {
     public val permission: String
@@ -20,6 +22,7 @@ public interface PermissionState {
     public fun openSystemPreferences()
 }
 
+@ExperimentalKaitekiPermissionsApi
 @Composable
 public fun rememberPermissionState(
     permission: String,
@@ -28,10 +31,11 @@ public fun rememberPermissionState(
 ): PermissionState {
     return when {
         LocalInspectionMode.current -> PreviewPermissionState(permission, permissionPreviewStatus)
-        else -> rememberMutablePermissionState(permission, onPermissionResult)
+        else -> rememberPlatformPermissionState(permission, onPermissionResult)
     }
 }
 
+@ExperimentalKaitekiPermissionsApi
 @Immutable
 internal class PreviewPermissionState(
     override val permission: String,
@@ -41,18 +45,9 @@ internal class PreviewPermissionState(
     override fun openSystemPreferences() = Unit
 }
 
+@ExperimentalKaitekiPermissionsApi
 @Composable
-internal expect fun rememberMutablePermissionState(
+internal expect fun rememberPlatformPermissionState(
     permission: String,
     onPermissionResult: (Boolean) -> Unit
-): MutablePermissionState
-
-@Stable
-internal expect class MutablePermissionState : PermissionState {
-    override val permission: String
-    override var status: PermissionStatus
-    override fun launchPermissionRequest()
-    override fun openSystemPreferences()
-    internal fun refreshPermissionStatus()
-    internal fun getPermissionStatus(): PermissionStatus
-}
+): PermissionState

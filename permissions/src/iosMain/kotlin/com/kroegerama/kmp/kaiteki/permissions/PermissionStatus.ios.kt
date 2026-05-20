@@ -17,12 +17,13 @@ import platform.Foundation.NSURL
 import platform.UIKit.UIApplication
 import platform.UIKit.UIApplicationOpenSettingsURLString
 
+@ExperimentalKaitekiPermissionsApi
 @Composable
-internal actual fun rememberMutablePermissionState(
+internal actual fun rememberPlatformPermissionState(
     permission: String,
     onPermissionResult: (Boolean) -> Unit
-): MutablePermissionState {
-    val state = remember(permission) { MutablePermissionState(permission) }
+): PermissionState {
+    val state = remember(permission) { PlatformPermissionState(permission) }
     DisposableEffect(state, onPermissionResult) {
         state.onPermissionResult = onPermissionResult
         onDispose { state.onPermissionResult = null }
@@ -30,41 +31,44 @@ internal actual fun rememberMutablePermissionState(
     return state
 }
 
+@ExperimentalKaitekiPermissionsApi
 @Stable
-internal actual class MutablePermissionState(
-    actual override val permission: String,
+internal class PlatformPermissionState(
+    override val permission: String,
 ) : PermissionState {
 
     private val handler = createPermissionHandler(permission)
 
-    actual override var status: PermissionStatus by mutableStateOf(getPermissionStatus())
+    override var status: PermissionStatus by mutableStateOf(getPermissionStatus())
 
     internal var onPermissionResult: ((Boolean) -> Unit)? = null
 
-    actual override fun launchPermissionRequest() {
+    override fun launchPermissionRequest() {
         handler.request { granted ->
             refreshPermissionStatus()
             onPermissionResult?.invoke(granted)
         }
     }
 
-    actual override fun openSystemPreferences() {
+    override fun openSystemPreferences() {
         val url = NSURL.URLWithString(UIApplicationOpenSettingsURLString) ?: return
         UIApplication.sharedApplication.openURL(url)
     }
 
-    internal actual fun refreshPermissionStatus() {
+    internal fun refreshPermissionStatus() {
         status = getPermissionStatus()
     }
 
-    internal actual fun getPermissionStatus(): PermissionStatus = handler.getStatus()
+    internal fun getPermissionStatus(): PermissionStatus = handler.getStatus()
 }
 
+@ExperimentalKaitekiPermissionsApi
 internal interface PermissionHandler {
     fun getStatus(): PermissionStatus
     fun request(onResult: (Boolean) -> Unit)
 }
 
+@ExperimentalKaitekiPermissionsApi
 internal class CameraPermissionHandler : PermissionHandler {
     override fun getStatus(): PermissionStatus {
         return when (AVCaptureDevice.authorizationStatusForMediaType(AVMediaTypeVideo)) {
@@ -81,6 +85,7 @@ internal class CameraPermissionHandler : PermissionHandler {
     }
 }
 
+@ExperimentalKaitekiPermissionsApi
 internal fun createPermissionHandler(permission: String): PermissionHandler = when (permission) {
     "camera" -> CameraPermissionHandler()
     else -> throw IllegalArgumentException("Unsupported permission: $permission")

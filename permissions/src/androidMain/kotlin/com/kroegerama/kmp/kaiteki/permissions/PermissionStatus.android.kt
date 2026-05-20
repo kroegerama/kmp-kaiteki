@@ -23,14 +23,15 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 
+@ExperimentalKaitekiPermissionsApi
 @Composable
-internal actual fun rememberMutablePermissionState(
+internal actual fun rememberPlatformPermissionState(
     permission: String,
     onPermissionResult: (Boolean) -> Unit
-): MutablePermissionState {
+): PermissionState {
     val context = LocalContext.current
     val permissionState = remember(permission) {
-        MutablePermissionState(
+        PlatformPermissionState(
             permission,
             context,
             context.findActivity()
@@ -54,24 +55,25 @@ internal actual fun rememberMutablePermissionState(
     return permissionState
 }
 
+@ExperimentalKaitekiPermissionsApi
 @Stable
-internal actual class MutablePermissionState(
-    actual override val permission: String,
+internal class PlatformPermissionState(
+    override val permission: String,
     private val context: Context,
     private val activity: Activity
 ) : PermissionState {
 
-    actual override var status: PermissionStatus by mutableStateOf(getPermissionStatus())
+    override var status: PermissionStatus by mutableStateOf(getPermissionStatus())
 
     internal var launcher: ActivityResultLauncher<String>? = null
 
-    actual override fun launchPermissionRequest() {
+    override fun launchPermissionRequest() {
         launcher?.launch(
             permission
         ) ?: throw IllegalStateException("ActivityResultLauncher cannot be null")
     }
 
-    actual override fun openSystemPreferences() {
+    override fun openSystemPreferences() {
         context.startActivity(
             Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                 data = Uri.fromParts("package", context.packageName, null)
@@ -80,11 +82,11 @@ internal actual class MutablePermissionState(
         )
     }
 
-    internal actual fun refreshPermissionStatus() {
+    internal fun refreshPermissionStatus() {
         status = getPermissionStatus()
     }
 
-    internal actual fun getPermissionStatus(): PermissionStatus {
+    internal fun getPermissionStatus(): PermissionStatus {
         val hasPermission = context.checkPermission(permission)
         return if (hasPermission) {
             PermissionStatus.Granted
@@ -94,9 +96,10 @@ internal actual class MutablePermissionState(
     }
 }
 
+@ExperimentalKaitekiPermissionsApi
 @Composable
 internal fun PermissionLifecycleCheckerEffect(
-    permissionState: MutablePermissionState,
+    permissionState: PlatformPermissionState,
     lifecycleEvent: Lifecycle.Event = Lifecycle.Event.ON_RESUME
 ) {
     // Check if the permission was granted when the lifecycle is resumed.
@@ -119,15 +122,18 @@ internal fun PermissionLifecycleCheckerEffect(
     }
 }
 
+@ExperimentalKaitekiPermissionsApi
 internal fun Activity.shouldShowRationale(permission: String): Boolean {
     return ActivityCompat.shouldShowRequestPermissionRationale(this, permission)
 }
 
+@ExperimentalKaitekiPermissionsApi
 internal fun Context.checkPermission(permission: String): Boolean {
     return ContextCompat.checkSelfPermission(this, permission) ==
             PackageManager.PERMISSION_GRANTED
 }
 
+@ExperimentalKaitekiPermissionsApi
 internal fun Context.findActivity(): Activity {
     var context = this
     while (context is ContextWrapper) {
