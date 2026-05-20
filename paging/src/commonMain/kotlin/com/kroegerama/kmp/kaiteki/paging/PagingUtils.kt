@@ -1,4 +1,4 @@
-@file:Suppress("DEPRECATION")
+@file:Suppress("DEPRECATION_ERROR")
 
 package com.kroegerama.kmp.kaiteki.paging
 
@@ -18,10 +18,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
-@Deprecated("PagingUtils are replaced by PagerHolder")
+@Deprecated("PagingUtils are replaced by PagerHolder", level = DeprecationLevel.ERROR)
 public const val DEFAULT_PAGE_SIZE: Int = 20
 
-@Deprecated("PagingUtils are replaced by PagerHolder")
+@Deprecated("PagingUtils are replaced by PagerHolder", level = DeprecationLevel.ERROR)
 public fun <Key : Any, Value : Any> defaultPager(
     pageSize: Int = DEFAULT_PAGE_SIZE,
     initialLoadSize: Int = DEFAULT_PAGE_SIZE,
@@ -31,7 +31,7 @@ public fun <Key : Any, Value : Any> defaultPager(
     pagingSourceFactory = pagingSourceFactory
 )
 
-@Deprecated("PagingUtils are replaced by PagerHolder")
+@Deprecated("PagingUtils are replaced by PagerHolder", level = DeprecationLevel.ERROR)
 public fun <Param, Key : Any, Value : Any> defaultPager(
     parameterFlow: Flow<Param>,
     scope: CoroutineScope,
@@ -60,7 +60,7 @@ public fun <Param, Key : Any, Value : Any> defaultPager(
     )
 }
 
-@Deprecated("PagingUtils are replaced by PagerHolder")
+@Deprecated("PagingUtils are replaced by PagerHolder", level = DeprecationLevel.ERROR)
 public fun <Param, Key : Any, Value : Any> ViewModel.defaultPager(
     parameterFlow: Flow<Param>,
     pageSize: Int = DEFAULT_PAGE_SIZE,
@@ -68,7 +68,7 @@ public fun <Param, Key : Any, Value : Any> ViewModel.defaultPager(
     pagingSourceFactory: (Param) -> PagingSource<Key, Value>
 ): Pager<Key, Value> = defaultPager(parameterFlow, viewModelScope, pageSize, initialLoadSize, pagingSourceFactory)
 
-@Deprecated("PagingUtils are replaced by PagerHolder")
+@Deprecated("PagingUtils are replaced by PagerHolder", level = DeprecationLevel.ERROR)
 public fun <Key : Any, Value : Any> ViewModel.pager(
     pageSize: Int = DEFAULT_PAGE_SIZE,
     initialLoadSize: Int = DEFAULT_PAGE_SIZE,
@@ -84,7 +84,7 @@ public fun <Key : Any, Value : Any> ViewModel.pager(
     return result
 }
 
-@Deprecated("PagingUtils are replaced by PagerHolder")
+@Deprecated("PagingUtils are replaced by PagerHolder", level = DeprecationLevel.ERROR)
 public fun <Param, Key : Any, Value : Any> ViewModel.pager(
     parameterFlow: Flow<Param>,
     pageSize: Int = DEFAULT_PAGE_SIZE,
