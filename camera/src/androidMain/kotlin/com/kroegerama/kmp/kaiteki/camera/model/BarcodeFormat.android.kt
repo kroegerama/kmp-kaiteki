@@ -1,9 +1,11 @@
 package com.kroegerama.kmp.kaiteki.camera.model
 
 import com.google.mlkit.vision.barcode.common.Barcode
+import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
 
 internal typealias PlatformBarcodeFormat = Int
 
+@ExperimentalKaitekiCameraApi
 public actual enum class BarcodeFormat(
     public val platformBarcodeFormat: PlatformBarcodeFormat
 ) {

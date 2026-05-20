@@ -1,5 +1,8 @@
 package com.kroegerama.kmp.kaiteki.camera.model
 
+import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
+
+@ExperimentalKaitekiCameraApi
 public expect enum class BarcodeFormat {
     AZTEC,
     CODE_128,

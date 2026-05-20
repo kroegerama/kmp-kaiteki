@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
+import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
 import com.kroegerama.kmp.kaiteki.camera.controller.CameraController
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -28,6 +29,7 @@ import platform.UIKit.UITapGestureRecognizer
 import platform.UIKit.UIView
 import platform.darwin.sel_registerName
 
+@ExperimentalKaitekiCameraApi
 @Composable
 public actual fun CameraView(
     controller: CameraController,
@@ -62,6 +64,7 @@ public actual fun CameraView(
     )
 }
 
+@ExperimentalKaitekiCameraApi
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 private class CameraPreviewUIView(
     private val controller: CameraController,

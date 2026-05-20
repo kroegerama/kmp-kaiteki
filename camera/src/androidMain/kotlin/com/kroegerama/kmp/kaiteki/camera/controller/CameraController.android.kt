@@ -18,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.LifecycleOwner
+import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
 import com.kroegerama.kmp.kaiteki.camera.analyzer.bindBarcodeAnalyzerFlow
 import com.kroegerama.kmp.kaiteki.camera.analyzer.bindTextAnalyzerFlow
 import com.kroegerama.kmp.kaiteki.camera.extensions.CameraControllerExtension
@@ -26,6 +27,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.Executors
 
+@ExperimentalKaitekiCameraApi
 @Immutable
 public actual class CameraController internal constructor(
     private val context: Context,
@@ -112,6 +114,7 @@ public actual class CameraController internal constructor(
     }
 }
 
+@ExperimentalKaitekiCameraApi
 @Composable
 public actual fun rememberCameraController(): CameraController {
     val context = LocalContext.current
@@ -120,6 +123,7 @@ public actual fun rememberCameraController(): CameraController {
     }
 }
 
+@ExperimentalKaitekiCameraApi
 @Composable
 public actual fun rememberBarcodeExtension(
     cameraController: CameraController,
@@ -137,6 +141,7 @@ public actual fun rememberBarcodeExtension(
     }
 }
 
+@ExperimentalKaitekiCameraApi
 @Composable
 public actual fun rememberOcrExtension(
     cameraController: CameraController

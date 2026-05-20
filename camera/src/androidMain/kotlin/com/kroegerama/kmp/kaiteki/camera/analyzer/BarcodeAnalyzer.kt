@@ -8,6 +8,7 @@ import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.ZoomSuggestionOptions
 import com.google.mlkit.vision.common.InputImage
+import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
 import com.kroegerama.kmp.kaiteki.camera.model.BarcodeFormat
 import com.kroegerama.kmp.kaiteki.camera.model.BarcodeResult
 import com.kroegerama.kmp.kaiteki.camera.model.PlatformBarcodeFormat
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import java.util.concurrent.Executor
 
+@ExperimentalKaitekiCameraApi
 public fun ImageAnalysis.bindBarcodeAnalyzerFlow(
     zoomCallback: (Float) -> Boolean,
     formats: List<BarcodeFormat>,
@@ -29,6 +31,7 @@ public fun ImageAnalysis.bindBarcodeAnalyzerFlow(
     awaitClose { clearAnalyzer() }
 }.distinctUntilChanged()
 
+@ExperimentalKaitekiCameraApi
 private class BarcodeAnalyzer(
     zoomCallback: (Float) -> Boolean,
     formats: List<PlatformBarcodeFormat>,

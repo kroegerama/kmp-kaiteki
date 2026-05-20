@@ -1,5 +1,6 @@
 package com.kroegerama.kmp.kaiteki.camera.delegate
 
+import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
 import com.kroegerama.kmp.kaiteki.camera.model.BarcodeFormat
 import com.kroegerama.kmp.kaiteki.camera.model.BarcodeResult
 import com.kroegerama.kmp.kaiteki.camera.withConfiguration
@@ -23,6 +24,7 @@ import platform.darwin.dispatch_queue_create
 import platform.darwin.dispatch_queue_t
 import platform.posix.QOS_CLASS_USER_INITIATED
 
+@ExperimentalKaitekiCameraApi
 @OptIn(ExperimentalForeignApi::class)
 public fun AVCaptureSession.bindBarcodeDelegateFlow(
     formats: List<BarcodeFormat>,
@@ -61,6 +63,7 @@ public fun AVCaptureSession.bindBarcodeDelegateFlow(
     }
 }.distinctUntilChanged()
 
+@ExperimentalKaitekiCameraApi
 @OptIn(ExperimentalForeignApi::class)
 private class BarcodeDelegate(
     private val producer: ProducerScope<BarcodeResult>

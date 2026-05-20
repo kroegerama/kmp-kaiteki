@@ -7,6 +7,7 @@ import androidx.camera.core.ImageProxy
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
 import com.kroegerama.kmp.kaiteki.camera.model.OCRResult
 import com.kroegerama.kmp.kaiteki.camera.model.OCRResultBlock
 import kotlinx.coroutines.channels.ProducerScope
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import java.util.concurrent.Executor
 
+@ExperimentalKaitekiCameraApi
 public fun ImageAnalysis.bindTextAnalyzerFlow(
     executor: Executor
 ): Flow<OCRResult> = callbackFlow {
@@ -24,6 +26,7 @@ public fun ImageAnalysis.bindTextAnalyzerFlow(
     awaitClose { clearAnalyzer() }
 }.distinctUntilChanged()
 
+@ExperimentalKaitekiCameraApi
 private class TextAnalyzer(
     private val producer: ProducerScope<OCRResult>
 ) : ImageAnalysis.Analyzer {

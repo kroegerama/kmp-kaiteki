@@ -1,11 +1,13 @@
 package com.kroegerama.kmp.kaiteki.camera.extensions
 
 import androidx.compose.runtime.Immutable
+import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
 import com.kroegerama.kmp.kaiteki.camera.model.BarcodeFormat
 import com.kroegerama.kmp.kaiteki.camera.model.BarcodeResult
 import com.kroegerama.kmp.kaiteki.camera.model.OCRResult
 import kotlinx.coroutines.flow.Flow
 
+@ExperimentalKaitekiCameraApi
 @Immutable
 public sealed interface CameraControllerExtension {
     @Immutable

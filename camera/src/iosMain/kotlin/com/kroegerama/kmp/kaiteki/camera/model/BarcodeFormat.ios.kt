@@ -1,5 +1,6 @@
 package com.kroegerama.kmp.kaiteki.camera.model
 
+import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
 import platform.AVFoundation.AVMetadataMachineReadableCodeObject
 import platform.AVFoundation.AVMetadataObjectType
 import platform.AVFoundation.AVMetadataObjectTypeAztecCode
@@ -15,6 +16,7 @@ import platform.AVFoundation.AVMetadataObjectTypePDF417Code
 import platform.AVFoundation.AVMetadataObjectTypeQRCode
 import platform.AVFoundation.AVMetadataObjectTypeUPCECode
 
+@ExperimentalKaitekiCameraApi
 public actual enum class BarcodeFormat(
     public val platformBarcodeFormat: AVMetadataObjectType
 ) {

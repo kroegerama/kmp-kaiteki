@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Offset
+import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
 import com.kroegerama.kmp.kaiteki.camera.delegate.bindBarcodeDelegateFlow
 import com.kroegerama.kmp.kaiteki.camera.delegate.bindTextDelegateFlow
 import com.kroegerama.kmp.kaiteki.camera.extensions.CameraControllerExtension
@@ -40,6 +41,7 @@ import platform.darwin.dispatch_queue_attr_make_with_qos_class
 import platform.darwin.dispatch_queue_create
 import platform.posix.QOS_CLASS_USER_INITIATED
 
+@ExperimentalKaitekiCameraApi
 @Immutable
 @OptIn(ExperimentalForeignApi::class, ExperimentalForeignApi::class)
 public actual class CameraController {
@@ -139,6 +141,7 @@ public actual class CameraController {
     }
 }
 
+@ExperimentalKaitekiCameraApi
 @Composable
 public actual fun rememberCameraController(
 ): CameraController {
@@ -147,6 +150,7 @@ public actual fun rememberCameraController(
     }
 }
 
+@ExperimentalKaitekiCameraApi
 @Composable
 public actual fun rememberBarcodeExtension(
     cameraController: CameraController,
@@ -163,6 +167,7 @@ public actual fun rememberBarcodeExtension(
     }
 }
 
+@ExperimentalKaitekiCameraApi
 @Composable
 public actual fun rememberOcrExtension(
     cameraController: CameraController

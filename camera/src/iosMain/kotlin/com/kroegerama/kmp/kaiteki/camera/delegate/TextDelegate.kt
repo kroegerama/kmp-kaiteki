@@ -1,5 +1,6 @@
 package com.kroegerama.kmp.kaiteki.camera.delegate
 
+import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
 import com.kroegerama.kmp.kaiteki.camera.model.OCRResult
 import com.kroegerama.kmp.kaiteki.camera.model.OCRResultBlock
 import com.kroegerama.kmp.kaiteki.camera.withConfiguration
@@ -84,6 +85,7 @@ import platform.posix.memcpy
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
+@ExperimentalKaitekiCameraApi
 @Suppress("MISSING_DEPENDENCY_CLASS_IN_EXPRESSION_TYPE")
 @OptIn(ExperimentalForeignApi::class)
 public fun AVCaptureSession.bindTextDelegateFlow(
@@ -127,6 +129,7 @@ public fun AVCaptureSession.bindTextDelegateFlow(
     }
 }
 
+@ExperimentalKaitekiCameraApi
 @Suppress("MISSING_DEPENDENCY_CLASS_IN_EXPRESSION_TYPE", "UPPER_BOUND_VIOLATED_IN_TYPEALIAS_EXPANSION_DEPRECATION_WARNING")
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class, ExperimentalAtomicApi::class)
 private class TextDelegate(
