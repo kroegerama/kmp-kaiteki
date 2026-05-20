@@ -69,8 +69,8 @@ kotlin {
             implementation(libs.compose.preview)
             implementation(libs.androidx.paging.compose)
 
-            api(project(":core"))
-            api(project(":paging"))
+            api(projects.core)
+            api(projects.paging)
         }
         androidMain.dependencies {
             implementation(libs.androidx.browser)
