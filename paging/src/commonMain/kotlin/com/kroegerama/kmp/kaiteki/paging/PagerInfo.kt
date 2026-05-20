@@ -4,6 +4,10 @@ import androidx.paging.PagingData
 import androidx.paging.PagingSource
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * @see PagerHolder as replacement
+ */
+@Deprecated("PagingUtils are replaced by PagerHolder", level = DeprecationLevel.ERROR)
 public class PagerInfo<T : Any> internal constructor() {
     public lateinit var flow: Flow<PagingData<T>>
         internal set
