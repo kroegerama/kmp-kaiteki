@@ -65,6 +65,8 @@ kotlin {
             implementation(libs.jb.androidx.lifecycle.common)
             implementation(libs.jb.androidx.lifecycle.runtime)
             implementation(libs.jb.androidx.lifecycle.viewmodel.savedstate)
+            implementation(libs.androidx.datastore)
+            implementation(libs.androidx.datastore.preferences)
             implementation(libs.arrow)
             implementation(libs.compose.runtime.annotation)
             implementation(libs.multiplatform.locale)

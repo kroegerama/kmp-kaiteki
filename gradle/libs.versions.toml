@@ -8,6 +8,7 @@ androidx-activity = "1.13.0"
 androidx-browser = "1.10.0"
 androidx-compose = "1.11.2"
 androidx-core = "1.18.0"
+androidx-datastore = "1.2.1"
 androidx-navigation = "2.9.8"
 androidx-paging = "3.5.0"
 androidx-startup = "1.2.0"
@@ -38,6 +39,8 @@ androidx-camera-compose = { module = "androidx.camera:camera-compose", version.r
 androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "camera" }
 androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "camera" }
 androidx-core = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
+androidx-datastore = { module = "androidx.datastore:datastore", version.ref = "androidx-datastore" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "androidx-datastore" }
 androidx-navigation-runtime = { module = "androidx.navigation:navigation-runtime", version.ref = "androidx-navigation" }
 androidx-paging-common = { module = "androidx.paging:paging-common", version.ref = "androidx-paging" }
 androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "androidx-paging" }
