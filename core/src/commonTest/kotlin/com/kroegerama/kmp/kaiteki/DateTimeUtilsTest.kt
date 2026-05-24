@@ -1,7 +1,5 @@
-package com.kroegerama.kmp.kaiteki.formatting
+package com.kroegerama.kmp.kaiteki
 
-import com.kroegerama.kmp.kaiteki.dayDistanceTo
-import com.kroegerama.kmp.kaiteki.toJulianDay
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
