@@ -20,7 +20,10 @@ kotlin {
             "kotlin.time.ExperimentalTime",
             "kotlinx.coroutines.ExperimentalCoroutinesApi"
         )
-        freeCompilerArgs.add("-Xexpect-actual-classes")
+        freeCompilerArgs.addAll(
+            "-Xcontext-parameters",
+            "-Xexpect-actual-classes",
+        )
     }
     coreLibrariesVersion = "2.1.21"
 
