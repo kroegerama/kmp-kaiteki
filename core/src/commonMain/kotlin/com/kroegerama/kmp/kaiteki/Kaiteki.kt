@@ -7,3 +7,8 @@ package com.kroegerama.kmp.kaiteki
 @Retention(AnnotationRetention.BINARY)
 @Target(AnnotationTarget.FUNCTION)
 public annotation class InternalKaitekiApi
+
+@MustBeDocumented
+@Retention(AnnotationRetention.BINARY)
+@RequiresOptIn(level = RequiresOptIn.Level.WARNING)
+public annotation class ExperimentalKaitekiApi
