@@ -25,6 +25,15 @@ kotlin {
     }
     coreLibrariesVersion = "2.1.21"
 
+    applyDefaultHierarchyTemplate {
+        common {
+            group("skiko") {
+                withJvm()
+                withNative()
+            }
+        }
+    }
+
     jvm {
         compilerOptions {
             freeCompilerArgs.add("-Xjdk-release=11")
