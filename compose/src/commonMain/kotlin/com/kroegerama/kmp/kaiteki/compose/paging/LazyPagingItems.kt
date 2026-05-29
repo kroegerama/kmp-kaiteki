@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.paging.LoadStates
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.kroegerama.kmp.kaiteki.paging.pagingDataOf
@@ -32,6 +33,40 @@ public fun <T : Any> lazyPagingItemsOfData(data: () -> List<T>): LazyPagingItems
 @Composable
 public fun <T : Any> lazyPagingItemsOfData(vararg arr: T): LazyPagingItems<T> =
     lazyPagingItemsOfData { arr.asList() }
+
+/**
+ * ##### Note:
+ * This is only intended for `@Preview` composables to provide preview/mock data.
+ */
+@Composable
+public fun <T : Any> lazyPagingItemsOfData(
+    sourceLoadStates: LoadStates,
+    mediatorLoadStates: LoadStates? = null,
+    data: () -> List<T>
+): LazyPagingItems<T> {
+    val flow = remember {
+        pagingDataOf(
+            sourceLoadStates = sourceLoadStates,
+            mediatorLoadStates = mediatorLoadStates,
+            data = data()
+        )
+    }
+    return flow.collectAsLazyPagingItems()
+}
+
+/**
+ * ##### Note:
+ * This is only intended for `@Preview` composables to provide preview/mock data.
+ */
+@Composable
+public fun <T : Any> lazyPagingItemsOfData(
+    sourceLoadStates: LoadStates,
+    vararg arr: T,
+    mediatorLoadStates: LoadStates? = null
+): LazyPagingItems<T> = lazyPagingItemsOfData(
+    sourceLoadStates = sourceLoadStates,
+    mediatorLoadStates = mediatorLoadStates
+) { arr.asList() }
 
 @Preview
 @Composable
