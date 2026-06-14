@@ -4,9 +4,7 @@ import android.icu.text.DisplayContext
 import android.icu.text.RelativeDateTimeFormatter
 import android.icu.util.ULocale
 import androidx.compose.runtime.annotation.RememberInComposition
-import com.vanniktech.locale.Country
-import com.vanniktech.locale.Language
-import com.vanniktech.locale.toJavaLocale
+import com.kroegerama.kmp.kaiteki.locale.PlatformLocale
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
@@ -19,13 +17,11 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DecimalStyle
 import kotlin.time.Instant
 import kotlin.time.toJavaInstant
-import com.vanniktech.locale.Locale as KMPLocale
 import java.time.format.FormatStyle as JvmFormatStyle
-import java.util.Locale as JavaLocale
 
 @RememberInComposition
 public actual fun defaultLocalizedDateTimeFormatter(
-    locale: KMPLocale,
+    locale: PlatformLocale,
     dateStyle: FormatStyle,
     timeStyle: FormatStyle,
     capitalizationMode: CapitalizationMode,
@@ -38,50 +34,38 @@ public actual fun defaultLocalizedDateTimeFormatter(
     zone = zone
 )
 
-@RememberInComposition
-public fun defaultLocalizedDateTimeFormatter(
-    platformLocale: JavaLocale,
-    dateStyle: FormatStyle = FormatStyle.MEDIUM,
-    timeStyle: FormatStyle = FormatStyle.SHORT,
-    capitalizationMode: CapitalizationMode = CapitalizationMode.NONE,
-    zone: TimeZone = TimeZone.currentSystemDefault()
-): LocalizedDateTimeFormatter = defaultLocalizedDateTimeFormatter(
-    locale = KMPLocale.fromOrNull(platformLocale.toString()) ?: KMPLocale(Language.ENGLISH, Country.USA)
-)
-
 internal class DefaultLocalizedDateTimeFormatter(
-    override val locale: KMPLocale,
+    override val locale: PlatformLocale,
     dateStyle: FormatStyle,
     timeStyle: FormatStyle,
     capitalizationMode: CapitalizationMode,
     zone: TimeZone
 ) : LocalizedDateTimeFormatter {
 
-    private val javaLocale = locale.toJavaLocale()
     private val javaZone = zone.toJavaZoneId()
-    private val decimalStyle = DecimalStyle.of(javaLocale)
+    private val decimalStyle = DecimalStyle.of(locale)
 
     private val dateFormatter = DateTimeFormatter
         .ofLocalizedDate(dateStyle.jvmFormatStyle())
-        .withLocale(javaLocale)
+        .withLocale(locale)
         .withDecimalStyle(decimalStyle)
         .withZone(javaZone)
 
     private val timeFormatter = DateTimeFormatter
         .ofLocalizedTime(timeStyle.jvmFormatStyle())
-        .withLocale(javaLocale)
+        .withLocale(locale)
         .withDecimalStyle(decimalStyle)
         .withZone(javaZone)
 
     private val dateTimeFormatter = DateTimeFormatter
         .ofLocalizedDateTime(dateStyle.jvmFormatStyle(), timeStyle.jvmFormatStyle())
-        .withLocale(javaLocale)
+        .withLocale(locale)
         .withDecimalStyle(decimalStyle)
         .withZone(javaZone)
 
     private val relativeDateTimeFormatter = RelativeDateTimeFormatter
         .getInstance(
-            ULocale.forLocale(javaLocale),
+            ULocale.forLocale(locale),
             null,
             RelativeDateTimeFormatter.Style.LONG,
             capitalizationMode.toCapitalizationContext()

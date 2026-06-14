@@ -4,15 +4,17 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.annotation.FrequentlyChangingValue
 import androidx.compose.runtime.annotation.RememberInComposition
 import com.kroegerama.kmp.kaiteki.InternalKaitekiApi
+import com.kroegerama.kmp.kaiteki.locale.PlatformLocale
 import com.kroegerama.kmp.kaiteki.dayDistanceTo
-import com.vanniktech.locale.Language
-import com.vanniktech.locale.Locale
+import com.kroegerama.kmp.kaiteki.locale.language
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlin.math.absoluteValue
 import kotlin.time.Clock
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 public enum class FormatStyle { SHORT, MEDIUM, LONG, FULL }
@@ -23,7 +25,7 @@ public enum class CapitalizationMode { NONE, MIDDLE_OF_SENTENCE, BEGINNING_OF_SE
 
 @Stable
 public interface LocalizedDateTimeFormatter {
-    public val locale: Locale
+    public val locale: PlatformLocale
 
     @Stable
     public fun formatDate(instant: Instant): String
@@ -59,7 +61,7 @@ public interface LocalizedDateTimeFormatter {
     @FrequentlyChangingValue
     public fun formatFancy(
         instant: Instant,
-        dateTimeDivider: (Locale) -> String = ::defaultTimeDivider,
+        dateTimeDivider: (PlatformLocale) -> String = ::defaultTimeDivider,
         switchNowToSeconds: Long = DEFAULT_SWITCH_NOW_TO_SEC,
         switchSecondsToMinutes: Long = DEFAULT_SWITCH_SEC_TO_MIN,
         switchMinutesToTime: Long = DEFAULT_SWITCH_MIN_TO_TIME
@@ -72,15 +74,15 @@ public interface LocalizedDateTimeFormatter {
     ).first
 
     public companion object {
-        public fun defaultTimeDivider(locale: Locale): String = when (locale.language) {
-            Language.CHINESE,
-            Language.JAPANESE,
-            Language.KOREAN,
-            Language.THAI -> " "
+        public fun defaultTimeDivider(locale: PlatformLocale): String = when (locale.language) {
+            "zh",
+            "ja",
+            "ko",
+            "th" -> " "
 
-            Language.ARABIC,
-            Language.FARSI,
-            Language.URDU -> "، "
+            "ar",
+            "fa",
+            "ur" -> "، "
 
             else -> ", "
         }
@@ -95,11 +97,11 @@ public interface LocalizedDateTimeFormatter {
 @FrequentlyChangingValue
 public fun LocalizedDateTimeFormatter.formatFancyInternal(
     instant: Instant,
-    dateTimeDivider: (Locale) -> String,
+    dateTimeDivider: (PlatformLocale) -> String,
     switchNowToSeconds: Long,
     switchSecondsToMinutes: Long,
     switchMinutesToTime: Long
-): Pair<String, Long> {
+): Pair<String, Duration> {
     val now = Clock.System.now()
     val dayOffset = instant.dayDistanceTo(now)
     val millisOffset = instant.toEpochMilliseconds() - now.toEpochMilliseconds()
@@ -108,7 +110,7 @@ public fun LocalizedDateTimeFormatter.formatFancyInternal(
 
     if (secondsOffsetAbsolute < switchNowToSeconds) {
         val nowPlain = formatRelative(Direction.PLAIN, AbsoluteUnit.NOW) ?: formatDateTime(instant)
-        return nowPlain to 1000
+        return nowPlain to 1.seconds
     }
 
     val date: String? = when (dayOffset) {
@@ -123,7 +125,7 @@ public fun LocalizedDateTimeFormatter.formatFancyInternal(
 
         1L -> formatRelative(Direction.NEXT, AbsoluteUnit.DAY) ?: formatDate(instant)
         2L -> formatRelative(Direction.NEXT_2, AbsoluteUnit.DAY) ?: formatDate(instant)
-        else -> return formatDateTime(instant) to 30_000L
+        else -> return formatDateTime(instant) to 30.seconds
     }
 
     val time = if (dayOffset == 0L) {
@@ -138,13 +140,13 @@ public fun LocalizedDateTimeFormatter.formatFancyInternal(
                 secondsOffsetAbsolute.toDouble(),
                 direction,
                 RelativeUnit.SECONDS
-            ) ?: return formatDateTime(instant) to 30_000L
+            ) ?: return formatDateTime(instant) to 30.seconds
 
             secondsOffsetAbsolute < switchMinutesToTime -> formatRelative(
                 secondsOffsetAbsolute.div(60).toDouble(),
                 direction,
                 RelativeUnit.MINUTES
-            ) ?: return formatDateTime(instant) to 30_000L
+            ) ?: return formatDateTime(instant) to 30.seconds
 
             else -> formatTime(instant)
         }
@@ -154,16 +156,16 @@ public fun LocalizedDateTimeFormatter.formatFancyInternal(
 
     val str = listOfNotNull(date, time).joinToString(dateTimeDivider(locale))
     val delay = when {
-        secondsOffsetAbsolute < switchSecondsToMinutes -> 1_000L
-        secondsOffsetAbsolute < switchMinutesToTime -> 10_000L
-        else -> 30_000L
+        secondsOffsetAbsolute < switchSecondsToMinutes -> 1.seconds
+        secondsOffsetAbsolute < switchMinutesToTime -> 10.seconds
+        else -> 30.seconds
     }
     return str to delay
 }
 
 @RememberInComposition
 public expect fun defaultLocalizedDateTimeFormatter(
-    locale: Locale,
+    locale: PlatformLocale,
     dateStyle: FormatStyle = FormatStyle.MEDIUM,
     timeStyle: FormatStyle = FormatStyle.SHORT,
     capitalizationMode: CapitalizationMode = CapitalizationMode.NONE,

@@ -1,28 +1,27 @@
 package com.kroegerama.kmp.kaiteki.formatting
 
 import androidx.compose.runtime.annotation.RememberInComposition
-import com.vanniktech.locale.Locale
-import platform.Foundation.NSLocale
+import com.kroegerama.kmp.kaiteki.locale.PlatformLocale
 import platform.Foundation.NSNumber
 import platform.Foundation.NSNumberFormatter
 import platform.Foundation.NSNumberFormatterDecimalStyle
 
 public actual class DefaultDecimalFormatter @RememberInComposition actual constructor(
-    locale: Locale,
+    locale: PlatformLocale,
     minimumFractionDigits: Int,
     minimumIntegerDigits: Int,
     maximumFractionDigits: Int,
     maximumIntegerDigits: Int,
     isGroupingUsed: Boolean
 ) : DecimalFormatter {
-    private val numberFormatter = NSNumberFormatter().apply {
-        this.locale = NSLocale(locale.toString())
-        numberStyle = NSNumberFormatterDecimalStyle
-        this.minimumFractionDigits = minimumFractionDigits.toULong()
-        this.minimumIntegerDigits = minimumIntegerDigits.toULong()
-        this.maximumFractionDigits = maximumFractionDigits.toULong()
-        this.maximumIntegerDigits = maximumIntegerDigits.toULong()
-        usesGroupingSeparator = isGroupingUsed
+    private val numberFormatter = NSNumberFormatter().also {
+        it.locale = locale
+        it.numberStyle = NSNumberFormatterDecimalStyle
+        it.minimumFractionDigits = minimumFractionDigits.toULong()
+        it.minimumIntegerDigits = minimumIntegerDigits.toULong()
+        it.maximumFractionDigits = maximumFractionDigits.toULong()
+        it.maximumIntegerDigits = maximumIntegerDigits.toULong()
+        it.usesGroupingSeparator = isGroupingUsed
     }
 
     actual override fun format(value: Number): String =

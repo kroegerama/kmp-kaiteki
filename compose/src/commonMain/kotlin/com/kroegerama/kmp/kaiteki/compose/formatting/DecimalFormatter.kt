@@ -9,21 +9,20 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ProvidableCompositionLocal
-import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.compositionLocalWithComputedDefaultOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.kroegerama.kmp.kaiteki.compose.asPlatformLocale
 import com.kroegerama.kmp.kaiteki.formatting.DecimalFormatter
 import com.kroegerama.kmp.kaiteki.formatting.DefaultDecimalFormatter
-import com.vanniktech.locale.Country
-import com.vanniktech.locale.Language
-import com.vanniktech.locale.Locale as KMPLocale
 
 @Composable
 public fun rememberDecimalFormatter(
-    locale: Locale = Locale.current,
+    locale: Locale = LocalLocale.current,
     minimumFractionDigits: Int = 0,
     minimumIntegerDigits: Int = 1,
     maximumFractionDigits: Int = 3,
@@ -38,7 +37,7 @@ public fun rememberDecimalFormatter(
     isGroupingUsed
 ) {
     DefaultDecimalFormatter(
-        locale = KMPLocale.fromOrNull(locale.toString()) ?: KMPLocale(Language.ENGLISH, Country.USA),
+        locale = locale.asPlatformLocale(),
         minimumFractionDigits = minimumFractionDigits,
         minimumIntegerDigits = minimumIntegerDigits,
         maximumFractionDigits = maximumFractionDigits,
@@ -47,9 +46,9 @@ public fun rememberDecimalFormatter(
     )
 }
 
-public val LocalDecimalFormatter: ProvidableCompositionLocal<DecimalFormatter> = compositionLocalOf {
+public val LocalDecimalFormatter: ProvidableCompositionLocal<DecimalFormatter> = compositionLocalWithComputedDefaultOf {
     DefaultDecimalFormatter(
-        locale = KMPLocale.from(Locale.current.toString())
+        locale = LocalLocale.currentValue.asPlatformLocale()
     )
 }
 

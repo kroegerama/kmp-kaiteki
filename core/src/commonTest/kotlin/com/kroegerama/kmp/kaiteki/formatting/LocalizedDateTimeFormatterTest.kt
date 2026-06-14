@@ -1,7 +1,7 @@
 package com.kroegerama.kmp.kaiteki.formatting
 
 import com.kroegerama.kmp.kaiteki.RobolectricTest
-import com.vanniktech.locale.Locale
+import com.kroegerama.kmp.kaiteki.locale.createPlatformLocale
 import kotlinx.datetime.FixedOffsetTimeZone
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -15,21 +15,21 @@ import kotlin.time.Instant
 class LocalizedDateTimeFormatterTest : RobolectricTest() {
 
     private val formatterDE = defaultLocalizedDateTimeFormatter(
-        locale = Locale.from("de-DE"),
+        locale = createPlatformLocale("de-DE"),
         dateStyle = FormatStyle.MEDIUM,
         timeStyle = FormatStyle.SHORT,
         zone = FixedOffsetTimeZone(UtcOffset(2))
     )
 
     private val formatterUS = defaultLocalizedDateTimeFormatter(
-        locale = Locale.from("en-US"),
+        locale = createPlatformLocale("en-US"),
         dateStyle = FormatStyle.MEDIUM,
         timeStyle = FormatStyle.SHORT,
         zone = FixedOffsetTimeZone(UtcOffset(2))
     )
 
     private val formatterAR = defaultLocalizedDateTimeFormatter(
-        locale = Locale.from("ar-EG"),
+        locale = createPlatformLocale("ar-EG"),
         dateStyle = FormatStyle.MEDIUM,
         timeStyle = FormatStyle.SHORT,
         zone = FixedOffsetTimeZone(UtcOffset(2))

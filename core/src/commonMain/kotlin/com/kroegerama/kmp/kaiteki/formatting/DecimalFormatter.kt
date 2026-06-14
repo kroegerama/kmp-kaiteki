@@ -2,7 +2,8 @@ package com.kroegerama.kmp.kaiteki.formatting
 
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.annotation.RememberInComposition
-import com.vanniktech.locale.Locale
+import com.kroegerama.kmp.kaiteki.locale.PlatformLocale
+import com.kroegerama.kmp.kaiteki.locale.currentPlatformLocale
 
 @Stable
 public interface DecimalFormatter {
@@ -18,7 +19,7 @@ public interface DecimalFormatter {
 
 public expect class DefaultDecimalFormatter
 @RememberInComposition constructor(
-    locale: Locale,
+    locale: PlatformLocale = currentPlatformLocale(),
     minimumFractionDigits: Int = 0,
     minimumIntegerDigits: Int = 1,
     maximumFractionDigits: Int = 3,

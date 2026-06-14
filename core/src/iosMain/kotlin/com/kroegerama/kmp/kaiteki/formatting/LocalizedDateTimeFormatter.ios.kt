@@ -1,8 +1,7 @@
 package com.kroegerama.kmp.kaiteki.formatting
 
 import androidx.compose.runtime.annotation.RememberInComposition
-import com.vanniktech.locale.Country
-import com.vanniktech.locale.Language
+import com.kroegerama.kmp.kaiteki.locale.PlatformLocale
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
@@ -25,16 +24,14 @@ import platform.Foundation.NSFormattingContextListItem
 import platform.Foundation.NSFormattingContextMiddleOfSentence
 import platform.Foundation.NSFormattingContextStandalone
 import platform.Foundation.NSFormattingContextUnknown
-import platform.Foundation.NSLocale
 import platform.Foundation.NSRelativeDateTimeFormatter
 import platform.Foundation.NSRelativeDateTimeFormatterStyleNamed
 import platform.Foundation.NSRelativeDateTimeFormatterUnitsStyleFull
 import kotlin.time.Instant
-import com.vanniktech.locale.Locale as KMPLocale
 
 @RememberInComposition
 public actual fun defaultLocalizedDateTimeFormatter(
-    locale: KMPLocale,
+    locale: PlatformLocale,
     dateStyle: FormatStyle,
     timeStyle: FormatStyle,
     capitalizationMode: CapitalizationMode,
@@ -47,53 +44,40 @@ public actual fun defaultLocalizedDateTimeFormatter(
     zone = zone
 )
 
-@RememberInComposition
-public fun defaultLocalizedDateTimeFormatter(
-    platformLocale: NSLocale,
-    dateStyle: FormatStyle = FormatStyle.MEDIUM,
-    timeStyle: FormatStyle = FormatStyle.SHORT,
-    capitalizationMode: CapitalizationMode = CapitalizationMode.NONE,
-    zone: TimeZone = TimeZone.currentSystemDefault()
-): LocalizedDateTimeFormatter = defaultLocalizedDateTimeFormatter(
-    locale = KMPLocale.fromOrNull(platformLocale.toString()) ?: KMPLocale(Language.ENGLISH, Country.USA)
-)
-
 internal class DefaultLocalizedDateTimeFormatter(
-    override val locale: KMPLocale,
+    override val locale: PlatformLocale,
     dateStyle: FormatStyle,
     timeStyle: FormatStyle,
     capitalizationMode: CapitalizationMode,
     zone: TimeZone
 ) : LocalizedDateTimeFormatter {
 
-    private val nsLocale = NSLocale(locale.toString())
-
-    private val dateFormatter: NSDateFormatter = NSDateFormatter().apply {
-        this.locale = nsLocale
-        this.timeZone = zone.toNSTimeZone()
-        this.dateStyle = dateStyle.toNSDateFormatterStyle()
-        this.timeStyle = NSDateFormatterNoStyle
+    private val dateFormatter: NSDateFormatter = NSDateFormatter().also {
+        it.locale = locale
+        it.timeZone = zone.toNSTimeZone()
+        it.dateStyle = dateStyle.toNSDateFormatterStyle()
+        it.timeStyle = NSDateFormatterNoStyle
     }
-    private val timeFormatter: NSDateFormatter = NSDateFormatter().apply {
-        this.locale = nsLocale
-        this.timeZone = zone.toNSTimeZone()
-        this.dateStyle = NSDateFormatterNoStyle
-        this.timeStyle = timeStyle.toNSDateFormatterStyle()
+    private val timeFormatter: NSDateFormatter = NSDateFormatter().also {
+        it.locale = locale
+        it.timeZone = zone.toNSTimeZone()
+        it.dateStyle = NSDateFormatterNoStyle
+        it.timeStyle = timeStyle.toNSDateFormatterStyle()
     }
-    private val dateTimeFormatter: NSDateFormatter = NSDateFormatter().apply {
-        this.locale = nsLocale
-        this.timeZone = zone.toNSTimeZone()
-        this.dateStyle = dateStyle.toNSDateFormatterStyle()
-        this.timeStyle = timeStyle.toNSDateFormatterStyle()
+    private val dateTimeFormatter: NSDateFormatter = NSDateFormatter().also {
+        it.locale = locale
+        it.timeZone = zone.toNSTimeZone()
+        it.dateStyle = dateStyle.toNSDateFormatterStyle()
+        it.timeStyle = timeStyle.toNSDateFormatterStyle()
     }
-    private val calendar = NSCalendar.currentCalendar.apply {
-        setTimeZone(zone.toNSTimeZone())
+    private val calendar = NSCalendar.currentCalendar.also {
+        it.setTimeZone(zone.toNSTimeZone())
     }
-    private val relativeDateTimeFormatter = NSRelativeDateTimeFormatter().apply {
-        this.locale = nsLocale
-        this.unitsStyle = NSRelativeDateTimeFormatterUnitsStyleFull
-        this.dateTimeStyle = NSRelativeDateTimeFormatterStyleNamed
-        this.formattingContext = capitalizationMode.toNSFormattingContext()
+    private val relativeDateTimeFormatter = NSRelativeDateTimeFormatter().also {
+        it.locale = locale
+        it.unitsStyle = NSRelativeDateTimeFormatterUnitsStyleFull
+        it.dateTimeStyle = NSRelativeDateTimeFormatterStyleNamed
+        it.formattingContext = capitalizationMode.toNSFormattingContext()
     }
 
     override fun formatDate(instant: Instant): String = dateFormatter.stringFromDate(instant.toNSDate())

@@ -1,17 +1,17 @@
 package com.kroegerama.kmp.kaiteki.formatting
 
-import com.vanniktech.locale.Locale
+import com.kroegerama.kmp.kaiteki.locale.Locales
 import kotlin.test.Test
 import kotlin.test.expect
 
 class DefaultDecimalFormatterTest {
 
     private val formatterDE = DefaultDecimalFormatter(
-        locale = Locale.from("de-DE")
+        locale = Locales.GERMANY
     )
 
     private val formatterUS = DefaultDecimalFormatter(
-        locale = Locale.from("en-US")
+        locale = Locales.US
     )
 
     @Test

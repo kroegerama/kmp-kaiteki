@@ -15,15 +15,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.State
-import androidx.compose.runtime.annotation.RememberInComposition
-import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.compositionLocalWithComputedDefaultOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLocale
+import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.kroegerama.kmp.kaiteki.InternalKaitekiApi
+import com.kroegerama.kmp.kaiteki.locale.PlatformLocale
+import com.kroegerama.kmp.kaiteki.compose.asPlatformLocale
 import com.kroegerama.kmp.kaiteki.formatting.CapitalizationMode
 import com.kroegerama.kmp.kaiteki.formatting.FormatStyle
 import com.kroegerama.kmp.kaiteki.formatting.LocalizedDateTimeFormatter
@@ -32,8 +35,6 @@ import com.kroegerama.kmp.kaiteki.formatting.LocalizedDateTimeFormatter.Companio
 import com.kroegerama.kmp.kaiteki.formatting.LocalizedDateTimeFormatter.Companion.DEFAULT_SWITCH_SEC_TO_MIN
 import com.kroegerama.kmp.kaiteki.formatting.defaultLocalizedDateTimeFormatter
 import com.kroegerama.kmp.kaiteki.formatting.formatFancyInternal
-import com.vanniktech.locale.Country
-import com.vanniktech.locale.Language
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.datetime.TimeZone
@@ -43,19 +44,17 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
-import androidx.compose.ui.text.intl.Locale as ComposeLocale
-import com.vanniktech.locale.Locale as KMPLocale
 
 @Composable
 public fun rememberLocalizedDateTimeFormatter(
-    locale: ComposeLocale = ComposeLocale.current,
+    locale: Locale = Locale.current,
     dateStyle: FormatStyle = FormatStyle.MEDIUM,
     timeStyle: FormatStyle = FormatStyle.SHORT,
     capitalizationMode: CapitalizationMode = CapitalizationMode.NONE,
     zone: TimeZone = TimeZone.currentSystemDefault()
 ): LocalizedDateTimeFormatter = remember(locale, dateStyle, timeStyle, capitalizationMode, zone) {
     defaultLocalizedDateTimeFormatter(
-        composeLocale = locale,
+        locale = locale.asPlatformLocale(),
         dateStyle = dateStyle,
         timeStyle = timeStyle,
         capitalizationMode = capitalizationMode,
@@ -63,20 +62,9 @@ public fun rememberLocalizedDateTimeFormatter(
     )
 }
 
-@RememberInComposition
-public fun defaultLocalizedDateTimeFormatter(
-    composeLocale: ComposeLocale,
-    dateStyle: FormatStyle = FormatStyle.MEDIUM,
-    timeStyle: FormatStyle = FormatStyle.SHORT,
-    capitalizationMode: CapitalizationMode = CapitalizationMode.NONE,
-    zone: TimeZone = TimeZone.currentSystemDefault()
-): LocalizedDateTimeFormatter = defaultLocalizedDateTimeFormatter(
-    locale = KMPLocale.fromOrNull(composeLocale.toString()) ?: KMPLocale(Language.ENGLISH, Country.USA)
-)
-
-public val LocalLocalizedDateTimeFormatter: ProvidableCompositionLocal<LocalizedDateTimeFormatter> = compositionLocalOf {
+public val LocalLocalizedDateTimeFormatter: ProvidableCompositionLocal<LocalizedDateTimeFormatter> = compositionLocalWithComputedDefaultOf {
     defaultLocalizedDateTimeFormatter(
-        locale = KMPLocale.from(ComposeLocale.current.toString())
+        locale = LocalLocale.currentValue.asPlatformLocale()
     )
 }
 
@@ -84,7 +72,7 @@ public val LocalLocalizedDateTimeFormatter: ProvidableCompositionLocal<Localized
 @Composable
 public fun LocalizedDateTimeFormatter.formatFancyAsState(
     instant: Instant,
-    dateTimeDivider: (KMPLocale) -> String = LocalizedDateTimeFormatter::defaultTimeDivider,
+    dateTimeDivider: (PlatformLocale) -> String = LocalizedDateTimeFormatter::defaultTimeDivider,
     switchNowToSeconds: Long = DEFAULT_SWITCH_NOW_TO_SEC,
     switchSecondsToMinutes: Long = DEFAULT_SWITCH_SEC_TO_MIN,
     switchMinutesToTime: Long = DEFAULT_SWITCH_MIN_TO_TIME

@@ -1,19 +1,18 @@
 package com.kroegerama.kmp.kaiteki.formatting
 
 import androidx.compose.runtime.annotation.RememberInComposition
-import com.vanniktech.locale.Locale
-import com.vanniktech.locale.toJavaLocale
+import com.kroegerama.kmp.kaiteki.locale.PlatformLocale
 import java.text.DecimalFormat
 
 public actual class DefaultDecimalFormatter @RememberInComposition actual constructor(
-    locale: Locale,
+    locale: PlatformLocale,
     minimumFractionDigits: Int,
     minimumIntegerDigits: Int,
     maximumFractionDigits: Int,
     maximumIntegerDigits: Int,
     isGroupingUsed: Boolean
 ) : DecimalFormatter {
-    private val decimalFormat = DecimalFormat.getInstance(locale.toJavaLocale()).apply {
+    private val decimalFormat = DecimalFormat.getInstance(locale).apply {
         this.minimumFractionDigits = minimumFractionDigits
         this.minimumIntegerDigits = minimumIntegerDigits
         this.maximumFractionDigits = maximumFractionDigits
