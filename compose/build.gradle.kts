@@ -61,6 +61,10 @@ kotlin {
             consumerKeepRules.publish = true
             consumerKeepRules.file("consumer-proguard-rules.pro")
         }
+
+        withHostTest {
+            isIncludeAndroidResources = true
+        }
     }
 
     iosArm64()
@@ -70,8 +74,8 @@ kotlin {
         commonMain.dependencies {
             implementation(libs.kotlinx.datetime)
             implementation(libs.jb.androidx.lifecycle.viewmodel)
+            implementation(libs.jb.androidx.navigation3.ui)
             implementation(libs.arrow)
-            implementation(libs.multiplatform.locale)
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
@@ -85,7 +89,6 @@ kotlin {
             implementation(libs.androidx.browser)
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.core)
-            implementation(libs.androidx.navigation.runtime)
             implementation(libs.hilt.lifecycle.viewmodel.compose)
         }
         jvmMain.dependencies {

@@ -55,7 +55,9 @@ kotlin {
             consumerKeepRules.file("consumer-proguard-rules.pro")
         }
 
-        withHostTest { }
+        withHostTest {
+            isIncludeAndroidResources = true
+        }
     }
 
     iosArm64()
@@ -72,7 +74,6 @@ kotlin {
             implementation(libs.androidx.datastore.preferences)
             implementation(libs.arrow)
             implementation(libs.compose.runtime.annotation)
-            implementation(libs.multiplatform.locale)
         }
         androidMain.dependencies {
             implementation(libs.androidx.startup)
