@@ -1,4 +1,4 @@
-package com.kroegerama.kmp.kaiteki
+package com.kroegerama.kmp.kaiteki.datetime
 
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -9,7 +9,7 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Instant
 
-class DateTimeUtilsTest {
+class JulianDayTest {
 
     @Test
     fun julianDayInstantTest() {

@@ -1,5 +1,7 @@
-package com.kroegerama.kmp.kaiteki
+package com.kroegerama.kmp.kaiteki.datetime
 
+import com.kroegerama.kmp.kaiteki.datetime.dayDistanceTo
+import com.kroegerama.kmp.kaiteki.datetime.toJulianDay
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
@@ -32,7 +34,7 @@ public fun Instant.toJulianDay(
  *
  * The result will be negative if the other date is later than this one.
  *
- * @see [LocalDate.toEpochDays]
+ * @see [toEpochDays]
  */
 public infix fun LocalDate.dayDistanceTo(other: LocalDate): Long =
     toEpochDays() - other.toEpochDays()

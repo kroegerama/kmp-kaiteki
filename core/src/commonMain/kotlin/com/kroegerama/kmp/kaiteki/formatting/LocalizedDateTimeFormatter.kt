@@ -4,8 +4,8 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.annotation.FrequentlyChangingValue
 import androidx.compose.runtime.annotation.RememberInComposition
 import com.kroegerama.kmp.kaiteki.InternalKaitekiApi
+import com.kroegerama.kmp.kaiteki.datetime.dayDistanceTo
 import com.kroegerama.kmp.kaiteki.locale.PlatformLocale
-import com.kroegerama.kmp.kaiteki.dayDistanceTo
 import com.kroegerama.kmp.kaiteki.locale.language
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
