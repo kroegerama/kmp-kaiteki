@@ -5,3 +5,5 @@ public actual abstract class PlatformContext private constructor() {
         public val INSTANCE: PlatformContext = object : PlatformContext() {}
     }
 }
+
+public actual val platformContext: PlatformContext get() = PlatformContext.INSTANCE
