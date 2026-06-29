@@ -17,12 +17,6 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
-public enum class FormatStyle { SHORT, MEDIUM, LONG, FULL }
-public enum class Direction { LAST_2, LAST, THIS, NEXT, NEXT_2, PLAIN }
-public enum class AbsoluteUnit { DAY, MONTH, YEAR, NOW }
-public enum class RelativeUnit { SECONDS, MINUTES, HOURS, DAYS, MONTHS, YEARS }
-public enum class CapitalizationMode { NONE, MIDDLE_OF_SENTENCE, BEGINNING_OF_SENTENCE, UI_LIST_OR_MENU, STANDALONE }
-
 @Stable
 public interface LocalizedDateTimeFormatter {
     public val locale: PlatformLocale
