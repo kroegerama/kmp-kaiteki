@@ -4,6 +4,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.YearMonth
 import kotlin.test.Test
 import kotlin.test.assertFails
 import kotlin.test.expect
@@ -60,6 +61,22 @@ class DateTimeUtilsTest {
     fun localTimeNowWithOffset() {
         expect(LocalTime(12, 30, 45)) {
             LocalTime.now(TimeZone.of("UTC+2"), clock)
+        }
+    }
+
+    @Test
+    fun yearMonthNow() {
+        expect(YearMonth(2025, 6)) {
+            YearMonth.now(TimeZone.UTC, clock)
+        }
+    }
+
+    @Test
+    fun yearMonthNowWithOffset() {
+        // 2025-06-30T23:30:45Z in UTC+2 is 2025-07-01T01:30:45
+        val lateNightClock = fixedClock(Instant.parse("2025-06-30T23:30:45Z"))
+        expect(YearMonth(2025, 7)) {
+            YearMonth.now(TimeZone.of("UTC+2"), lateNightClock)
         }
     }
 

@@ -4,7 +4,10 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.YearMonth
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.todayIn
+import kotlinx.datetime.yearMonth
 import kotlin.time.Clock
 
 public fun LocalDateTime.Companion.now(
@@ -15,12 +18,17 @@ public fun LocalDateTime.Companion.now(
 public fun LocalDate.Companion.now(
     timeZone: TimeZone = TimeZone.currentSystemDefault(),
     clock: Clock = Clock.System
-): LocalDate = LocalDateTime.now(timeZone, clock).date
+): LocalDate = clock.todayIn(timeZone)
 
 public fun LocalTime.Companion.now(
     timeZone: TimeZone = TimeZone.currentSystemDefault(),
     clock: Clock = Clock.System
 ): LocalTime = LocalDateTime.now(timeZone, clock).time
+
+public fun YearMonth.Companion.now(
+    timeZone: TimeZone = TimeZone.currentSystemDefault(),
+    clock: Clock = Clock.System
+): YearMonth = LocalDate.now(timeZone, clock).yearMonth
 
 internal const val MINUTES_PER_HOUR = 60
 internal const val MINUTES_PER_DAY = MINUTES_PER_HOUR * 24
