@@ -13,6 +13,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.paging.LoadState
@@ -28,6 +29,7 @@ import com.kroegerama.kmp.kaiteki.paging.PagerHolder
 import com.kroegerama.kmp.kaiteki.paging.pagingsource.SinglePagePagingSource
 import kotlinx.coroutines.delay
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.milliseconds
 
 public fun LazyListScope.pagingHeaders(
     lazyPagingItems: LazyPagingItems<*>,
@@ -162,11 +164,12 @@ private fun LazyListPreview() {
 @Preview
 @Composable
 private fun LazyListPullToRefreshPreview() {
+    val scope = rememberCoroutineScope()
     val items = remember {
-        PagerHolder {
+        PagerHolder(scope) {
             object : SinglePagePagingSource<String, List<Int>, String>() {
                 override suspend fun makeCall(): Either<String, List<Int>> {
-                    delay(1000)
+                    delay(1000.milliseconds)
                     return if (Random.nextBoolean()) {
                         List(5) { Random.nextInt() }.right()
                     } else {
