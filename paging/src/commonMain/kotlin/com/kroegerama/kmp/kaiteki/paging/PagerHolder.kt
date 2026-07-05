@@ -15,40 +15,55 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 
+/**
+ * In the `parameterFlow` variant, the backing pager only exists once [flow] is collected
+ * and the parameter flow has emitted; until then [append], [prepend], [refresh], and
+ * [retry] are no-ops.
+ */
 public class PagerHolder<Key : Any, Value : Any> private constructor() {
 
-    private lateinit var currentPager: Pager<Key, Value>
+    private var currentPager: Pager<Key, Value>? = null
 
     /**
-     * @see androidx.paging.Pager.flow
+     * @see Pager.flow
      */
     public lateinit var flow: Flow<PagingData<Value>>
         private set
 
     /**
-     * @see androidx.paging.Pager.append
+     * @see Pager.append
      */
-    public fun append(): Unit = currentPager.append()
+    public fun append() {
+        currentPager?.append()
+    }
 
     /**
-     * @see androidx.paging.Pager.prepend
+     * @see Pager.prepend
      */
-    public fun prepend(): Unit = currentPager.prepend()
+    public fun prepend() {
+        currentPager?.prepend()
+    }
 
     /**
-     * @see androidx.paging.Pager.refresh
+     * @see Pager.refresh
      */
-    public fun refresh(): Unit = currentPager.refresh()
+    public fun refresh() {
+        currentPager?.refresh()
+    }
 
     /**
-     * @see androidx.paging.Pager.refresh
+     * @see Pager.refresh
      */
-    public fun refresh(item: Value): Unit = currentPager.refresh(item)
+    public fun refresh(item: Value) {
+        currentPager?.refresh(item)
+    }
 
     /**
-     * @see androidx.paging.Pager.retry
+     * @see Pager.retry
      */
-    public fun retry(): Unit = currentPager.retry()
+    public fun retry() {
+        currentPager?.retry()
+    }
 
     /**
      * @see androidx.paging.cachedIn
@@ -70,7 +85,7 @@ public class PagerHolder<Key : Any, Value : Any> private constructor() {
 
     public companion object {
         public operator fun <Key : Any, Value : Any> invoke(
-            config: PagingConfig = PagingConfig(10),
+            config: PagingConfig = DEFAULT_PAGING_CONFIG,
             initialKey: Key? = null,
             pagingSourceFactory: () -> PagingSource<Key, Value>
         ): PagerHolder<Key, Value> {
@@ -88,7 +103,7 @@ public class PagerHolder<Key : Any, Value : Any> private constructor() {
         @OptIn(ExperimentalCoroutinesApi::class)
         public operator fun <Param, Key : Any, Value : Any> invoke(
             parameterFlow: Flow<Param>,
-            config: PagingConfig = PagingConfig(10),
+            config: PagingConfig = DEFAULT_PAGING_CONFIG,
             initialKey: (Param) -> Key? = { null },
             pagingSourceFactory: (Param) -> PagingSource<Key, Value>
         ): PagerHolder<Key, Value> {
@@ -106,3 +121,8 @@ public class PagerHolder<Key : Any, Value : Any> private constructor() {
         }
     }
 }
+
+public val DEFAULT_PAGING_CONFIG: PagingConfig = PagingConfig(
+    pageSize = 15,
+    enablePlaceholders = false
+)
