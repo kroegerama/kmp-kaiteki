@@ -36,6 +36,8 @@ public fun VerticalScrollbar(
     color: Color = MaterialTheme.colorScheme.outline.copy(alpha = .75f),
 ) {
     Canvas(modifier = modifier.width(width)) {
+        if (scrollState.maxValue == Int.MAX_VALUE) return@Canvas
+
         val viewportHeight = size.height
         val contentHeight = viewportHeight + scrollState.maxValue
         if (contentHeight <= viewportHeight) return@Canvas
@@ -65,6 +67,8 @@ public fun HorizontalScrollbar(
     color: Color = MaterialTheme.colorScheme.outline.copy(alpha = .75f),
 ) {
     Canvas(modifier = modifier.height(height)) {
+        if (scrollState.maxValue == Int.MAX_VALUE) return@Canvas
+
         val viewportWidth = size.width
         val contentWidth = viewportWidth + scrollState.maxValue
 
