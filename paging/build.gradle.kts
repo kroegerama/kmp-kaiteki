@@ -48,6 +48,10 @@ kotlin {
             consumerKeepRules.publish = true
             consumerKeepRules.file("consumer-proguard-rules.pro")
         }
+
+        withHostTest {
+            isIncludeAndroidResources = true
+        }
     }
 
     iosArm64()
@@ -58,6 +62,11 @@ kotlin {
             implementation(libs.androidx.paging.common)
             implementation(libs.arrow)
             implementation(libs.jb.androidx.lifecycle.viewmodel)
+        }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.androidx.paging.testing)
         }
     }
 }

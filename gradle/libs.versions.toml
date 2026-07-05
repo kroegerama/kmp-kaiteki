@@ -16,7 +16,7 @@ arrow = "2.2.3"
 camera = "1.6.1"
 compose = "1.11.1"
 compose-material3 = "1.11.0-alpha07"
-jb-androidx-lifecycle = "2.11.0-beta02"
+jb-androidx-lifecycle = "2.11.0-rc01"
 maven-publish = "0.37.0"
 robolectric = "4.16.1"
 turbine = "1.2.1"
@@ -41,6 +41,7 @@ androidx-datastore = { module = "androidx.datastore:datastore", version.ref = "a
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "androidx-datastore" }
 androidx-paging-common = { module = "androidx.paging:paging-common", version.ref = "androidx-paging" }
 androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "androidx-paging" }
+androidx-paging-testing = { module = "androidx.paging:paging-testing", version.ref = "androidx-paging" }
 androidx-startup = { module = "androidx.startup:startup-runtime", version.ref = "androidx-startup" }
 arrow = { module = "io.arrow-kt:arrow-core", version.ref = "arrow" }
 icu4j = { module = "com.ibm.icu:icu4j", version.ref = "icu4j" }
@@ -50,6 +51,7 @@ jb-androidx-lifecycle-viewmodel = { module = "org.jetbrains.androidx.lifecycle:l
 jb-androidx-lifecycle-viewmodel-savedstate = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-savedstate", version.ref = "jb-androidx-lifecycle" }
 jb-androidx-lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "jb-androidx-lifecycle" }
 jb-androidx-navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version.ref = "androidx-navigation3" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx-serialization" }

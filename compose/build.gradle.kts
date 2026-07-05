@@ -91,11 +91,11 @@ kotlin {
             implementation(libs.androidx.core)
             implementation(libs.hilt.lifecycle.viewmodel.compose)
         }
-        jvmMain.dependencies {
-            implementation(compose.desktop.currentOs)
-        }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+        }
+        jvmTest.dependencies {
+            implementation(compose.desktop.currentOs)
         }
     }
 }

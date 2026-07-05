@@ -66,6 +66,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.kotlinx.datetime)
+            implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.core)
             implementation(libs.jb.androidx.lifecycle.common)
             implementation(libs.jb.androidx.lifecycle.runtime)
