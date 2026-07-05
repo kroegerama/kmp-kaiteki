@@ -4,19 +4,18 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.annotation.RememberInComposition
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.retain.retain
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
@@ -27,15 +26,14 @@ public fun rememberValidatingTextFieldState(
     autoClearError: Boolean = true,
     validator: ValidationRaiserScope.(CharSequence) -> Unit
 ): ValidatingTextFieldState {
-    val scope = rememberCoroutineScope()
-    return retain {
-        ValidatingTextFieldState(
-            scope = scope,
-            initialText = initialText,
-            autoClearError = autoClearError,
-            validator = validator
-        )
+    val result = retain {
+        ValidatingTextFieldState(initialText = initialText, validator = validator)
     }
+    result.validator = validator
+    if (autoClearError) {
+        LaunchedEffect(result) { result.autoClearErrors() }
+    }
+    return result
 }
 
 @Composable
@@ -44,15 +42,15 @@ public fun <T> rememberSimpleValidatingState(
     autoClearError: Boolean = true,
     validator: ValidationRaiserScope.(T) -> Unit
 ): SimpleValidatingState<T> {
-    val scope = rememberCoroutineScope()
-    return retain {
-        SimpleValidatingState(
-            scope = scope,
-            state = state,
-            autoClearError = autoClearError,
-            validator = validator
-        )
+    val result = retain {
+        SimpleValidatingState(state = state, validator = validator)
     }
+    result.source = state
+    result.validator = validator
+    if (autoClearError) {
+        LaunchedEffect(result) { result.autoClearErrors() }
+    }
+    return result
 }
 
 @RememberInComposition
@@ -60,44 +58,62 @@ public fun ViewModel.ValidatingTextFieldState(
     initialText: String = "",
     autoClearError: Boolean = true,
     validator: ValidationRaiserScope.(CharSequence) -> Unit
-): ValidatingTextFieldState = ValidatingTextFieldState(
-    scope = viewModelScope,
+): ValidatingTextFieldState = createValidatingTextFieldState(
+    viewModel = this,
     initialText = initialText,
     autoClearError = autoClearError,
     validator = validator
 )
+
+private fun createValidatingTextFieldState(
+    viewModel: ViewModel,
+    initialText: String = "",
+    autoClearError: Boolean = true,
+    validator: ValidationRaiserScope.(CharSequence) -> Unit
+): ValidatingTextFieldState = ValidatingTextFieldState(
+    initialText = initialText,
+    validator = validator
+).also { validatingState ->
+    if (autoClearError) {
+        viewModel.viewModelScope.launch { validatingState.autoClearErrors() }
+    }
+}
 
 @RememberInComposition
 public fun <T> ViewModel.SimpleValidatingState(
     state: State<T>,
     autoClearError: Boolean = true,
     validator: ValidationRaiserScope.(T) -> Unit
-): SimpleValidatingState<T> = SimpleValidatingState(
-    scope = viewModelScope,
+): SimpleValidatingState<T> = createSimpleValidatingState(
+    viewModel = this,
     state = state,
     autoClearError = autoClearError,
     validator = validator
 )
 
+private fun <T> createSimpleValidatingState(
+    viewModel: ViewModel,
+    state: State<T>,
+    autoClearError: Boolean = true,
+    validator: ValidationRaiserScope.(T) -> Unit
+): SimpleValidatingState<T> = SimpleValidatingState(
+    state = state,
+    validator = validator
+).also { validatingState ->
+    if (autoClearError) {
+        viewModel.viewModelScope.launch { validatingState.autoClearErrors() }
+    }
+}
+
 @Stable
 public class ValidatingTextFieldState @RememberInComposition constructor(
-    scope: CoroutineScope,
     initialText: String = "",
-    autoClearError: Boolean = true,
     validator: ValidationRaiserScope.(CharSequence) -> Unit
 ) : BaseValidatingState<CharSequence>(validator) {
     public val state: TextFieldState = TextFieldState(initialText)
     public val text: CharSequence by state::text
     public val string: String by state::string
     override val value: CharSequence by state::text
-
-    init {
-        if (autoClearError) {
-            scope.launch {
-                snapshotFlow { value }.collect { clearError() }
-            }
-        }
-    }
 
     public fun clear() {
         state.clearText()
@@ -111,24 +127,15 @@ public class ValidatingTextFieldState @RememberInComposition constructor(
 
 @Stable
 public class SimpleValidatingState<T> @RememberInComposition constructor(
-    scope: CoroutineScope,
     state: State<T>,
-    autoClearError: Boolean = true,
     validator: ValidationRaiserScope.(T) -> Unit
 ) : BaseValidatingState<T>(validator) {
-    override val value: T by state
-
-    init {
-        if (autoClearError) {
-            scope.launch {
-                snapshotFlow { value }.collect { clearError() }
-            }
-        }
-    }
+    internal var source: State<T> by mutableStateOf(state)
+    override val value: T get() = source.value
 }
 
 public abstract class BaseValidatingState<T>(
-    private val validator: (@ValidationDSL ValidationRaiserScope).(T) -> Unit
+    internal var validator: (@ValidationDSL ValidationRaiserScope).(T) -> Unit
 ) : Validator {
     private var validationResultState: ErrorGeneratorLambda? by mutableStateOf(null)
 
@@ -152,6 +159,10 @@ public abstract class BaseValidatingState<T>(
 
     override fun clearError() {
         validationResultState = null
+    }
+
+    internal suspend fun autoClearErrors() {
+        snapshotFlow { value }.collect { clearError() }
     }
 }
 
