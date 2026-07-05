@@ -9,9 +9,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 
 context(vm: ViewModel)
-public fun <T> Flow<ItemSnapshotList<T>>.asStateFlow(
-    initialList: ItemSnapshotList<T> = emptyItemSnapshotList()
-): StateFlow<ItemSnapshotList<T>> = stateIn(vm.viewModelScope, SharingStarted.Lazily, initialList)
+public fun <T> Flow<ItemSnapshotList<T>>.asItemSnapshotStateFlow(
+    initialList: ItemSnapshotList<T> = emptyItemSnapshotList(),
+    started: SharingStarted = SharingStarted.WhileSubscribed(5_000)
+): StateFlow<ItemSnapshotList<T>> = stateIn(vm.viewModelScope, started, initialList)
 
 public fun <T> emptyItemSnapshotList(): ItemSnapshotList<T> =
     ItemSnapshotList(0, 0, emptyList())
