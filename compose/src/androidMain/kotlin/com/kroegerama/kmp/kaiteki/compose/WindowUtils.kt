@@ -32,7 +32,7 @@ public fun ScreenBrightnessEffect(
     brightness: Float = 1f
 ) {
     val activity = LocalActivity.current ?: return
-    DisposableEffect(Unit) {
+    DisposableEffect(activity, brightness) {
         val window = activity.window
         val oldBrightness = window.screenBrightness
         window.screenBrightness = brightness
