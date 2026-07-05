@@ -14,6 +14,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.annotation.RememberInComposition
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -101,10 +102,12 @@ public fun InputTransformation.decimalInput(
     decimalFormatter: DecimalFormatter = rememberDecimalFormatter(),
     maxDecimalPlaces: Int = 3
 ): InputTransformation = this.then(
-    DecimalInputTransformation(
-        decimalFormatter = decimalFormatter,
-        maxDecimalPlaces = maxDecimalPlaces
-    )
+    remember(decimalFormatter, maxDecimalPlaces) {
+        DecimalInputTransformation(
+            decimalFormatter = decimalFormatter,
+            maxDecimalPlaces = maxDecimalPlaces
+        )
+    }
 )
 
 @Preview
