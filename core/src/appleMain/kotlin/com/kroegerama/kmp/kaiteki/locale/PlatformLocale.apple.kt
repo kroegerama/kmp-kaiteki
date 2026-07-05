@@ -8,7 +8,6 @@ import platform.Foundation.NSLocaleScriptCode
 import platform.Foundation.NSLocaleVariantCode
 import platform.Foundation.countryCode
 import platform.Foundation.languageCode
-import platform.Foundation.languageIdentifier
 import platform.Foundation.localeIdentifier
 import platform.Foundation.preferredLanguages
 import platform.Foundation.scriptCode
@@ -23,7 +22,7 @@ public actual fun currentPlatformLocale(): PlatformLocale {
 
 public actual fun createPlatformLocale(languageTag: String): PlatformLocale = NSLocale(languageTag)
 
-public actual val PlatformLocale.languageTag: String get() = languageIdentifier
+public actual val PlatformLocale.languageTag: String get() = localeIdentifier.substringBefore('@').replace('_', '-')
 
 public actual val PlatformLocale.language: String get() = languageCode
 public actual val PlatformLocale.country: String get() = countryCode ?: ""

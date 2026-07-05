@@ -94,7 +94,6 @@ class PlatformLocaleTest : RobolectricTest() {
     @Test
     fun languageTagRoundTrip() {
         val locale = createPlatformLocale("de-DE")
-        assertContains(locale.languageTag, "de")
-        assertContains(locale.languageTag, "DE")
+        assertEquals("de-DE", locale.languageTag)
     }
 }
