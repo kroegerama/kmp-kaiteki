@@ -3,6 +3,7 @@ package com.kroegerama.kmp.kaiteki.paging
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 class PagerHolderTest {
@@ -20,8 +21,8 @@ class PagerHolderTest {
      * threw `UninitializedPropertyAccessException`.
      */
     @Test
-    fun operationsBeforeFirstParameterEmissionAreNoOps() {
-        val holder = PagerHolder(parameterFlow = emptyFlow<Int>()) { _ -> DummySource() }
+    fun operationsBeforeFirstParameterEmissionAreNoOps() = runTest {
+        val holder = PagerHolder(scope = backgroundScope, parameterFlow = emptyFlow<Int>()) { _ -> DummySource() }
 
         holder.append()
         holder.prepend()

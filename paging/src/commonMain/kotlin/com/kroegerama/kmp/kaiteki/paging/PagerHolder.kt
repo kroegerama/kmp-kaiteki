@@ -16,6 +16,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 
 /**
+ * Holds a single, shared paging pipeline.
+ *
+ * [flow] is already cached in the scope passed at construction, so it can be collected from
+ * multiple places (e.g. the UI via `collectAsLazyPagingItems` and business logic via
+ * [asItemSnapshotListFlow]) without spawning independent paging pipelines or duplicating
+ * network traffic.
+ *
  * In the `parameterFlow` variant, the backing pager only exists once [flow] is collected
  * and the parameter flow has emitted; until then [append], [prepend], [refresh], and
  * [retry] are no-ops.
@@ -25,7 +32,10 @@ public class PagerHolder<Key : Any, Value : Any> private constructor() {
     private var currentPager: Pager<Key, Value>? = null
 
     /**
+     * The shared, cached paging flow. Safe to collect from multiple collectors.
+     *
      * @see Pager.flow
+     * @see androidx.paging.cachedIn
      */
     public lateinit var flow: Flow<PagingData<Value>>
         private set
@@ -66,17 +76,6 @@ public class PagerHolder<Key : Any, Value : Any> private constructor() {
     }
 
     /**
-     * @see androidx.paging.cachedIn
-     */
-    context(vm: ViewModel)
-    public fun cachedIn(scope: CoroutineScope = vm.viewModelScope): Flow<PagingData<Value>> = flow.cachedIn(scope)
-
-    /**
-     * @see androidx.paging.cachedIn
-     */
-    public fun cachedIn(scope: CoroutineScope): Flow<PagingData<Value>> = flow.cachedIn(scope)
-
-    /**
      * @see androidx.paging.asItemSnapshotListFlow
      */
     public fun asItemSnapshotListFlow(
@@ -85,6 +84,7 @@ public class PagerHolder<Key : Any, Value : Any> private constructor() {
 
     public companion object {
         public operator fun <Key : Any, Value : Any> invoke(
+            scope: CoroutineScope,
             config: PagingConfig = DEFAULT_PAGING_CONFIG,
             initialKey: Key? = null,
             pagingSourceFactory: () -> PagingSource<Key, Value>
@@ -96,12 +96,25 @@ public class PagerHolder<Key : Any, Value : Any> private constructor() {
                 pagingSourceFactory = pagingSourceFactory
             )
             result.currentPager = pager
-            result.flow = pager.flow
+            result.flow = pager.flow.cachedIn(scope)
             return result
         }
 
+        context(vm: ViewModel)
+        public operator fun <Key : Any, Value : Any> invoke(
+            config: PagingConfig = DEFAULT_PAGING_CONFIG,
+            initialKey: Key? = null,
+            pagingSourceFactory: () -> PagingSource<Key, Value>
+        ): PagerHolder<Key, Value> = invoke(
+            scope = vm.viewModelScope,
+            config = config,
+            initialKey = initialKey,
+            pagingSourceFactory = pagingSourceFactory
+        )
+
         @OptIn(ExperimentalCoroutinesApi::class)
         public operator fun <Param, Key : Any, Value : Any> invoke(
+            scope: CoroutineScope,
             parameterFlow: Flow<Param>,
             config: PagingConfig = DEFAULT_PAGING_CONFIG,
             initialKey: (Param) -> Key? = { null },
@@ -116,9 +129,23 @@ public class PagerHolder<Key : Any, Value : Any> private constructor() {
                 ).also {
                     result.currentPager = it
                 }.flow
-            }
+            }.cachedIn(scope)
             return result
         }
+
+        context(vm: ViewModel)
+        public operator fun <Param, Key : Any, Value : Any> invoke(
+            parameterFlow: Flow<Param>,
+            config: PagingConfig = DEFAULT_PAGING_CONFIG,
+            initialKey: (Param) -> Key? = { null },
+            pagingSourceFactory: (Param) -> PagingSource<Key, Value>
+        ): PagerHolder<Key, Value> = invoke(
+            scope = vm.viewModelScope,
+            parameterFlow = parameterFlow,
+            config = config,
+            initialKey = initialKey,
+            pagingSourceFactory = pagingSourceFactory
+        )
     }
 }
 
