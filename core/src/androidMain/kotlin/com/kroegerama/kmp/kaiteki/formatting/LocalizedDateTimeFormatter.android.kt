@@ -39,7 +39,7 @@ internal class DefaultLocalizedDateTimeFormatter(
     dateStyle: FormatStyle,
     timeStyle: FormatStyle,
     capitalizationMode: CapitalizationMode,
-    zone: TimeZone
+    override val zone: TimeZone
 ) : LocalizedDateTimeFormatter {
 
     private val javaZone = zone.toJavaZoneId()

@@ -1,5 +1,6 @@
 package com.kroegerama.kmp.kaiteki.formatting
 
+import com.kroegerama.kmp.kaiteki.InternalKaitekiApi
 import com.kroegerama.kmp.kaiteki.RobolectricTest
 import com.kroegerama.kmp.kaiteki.locale.createPlatformLocale
 import kotlinx.datetime.FixedOffsetTimeZone
@@ -10,6 +11,7 @@ import kotlinx.datetime.UtcOffset
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.expect
+import kotlin.time.Clock
 import kotlin.time.Instant
 
 class LocalizedDateTimeFormatterTest : RobolectricTest() {
@@ -188,5 +190,28 @@ class LocalizedDateTimeFormatterTest : RobolectricTest() {
 
         expect("vor 45 Sekunden") { formatterDE.formatRelative(45.0, Direction.LAST, RelativeUnit.SECONDS) }
         expect("in 45 Sekunden") { formatterDE.formatRelative(45.0, Direction.NEXT, RelativeUnit.SECONDS) }
+    }
+
+    @OptIn(InternalKaitekiApi::class)
+    @Test
+    fun formatFancyUsesFormatterZone() {
+        // fixed "now" is 2025-10-02T01:30 in the formatter zone (UTC+2), but still 2025-10-01 in UTC —
+        // day labels must follow the formatter zone, regardless of the host's system zone
+        val fixedClock = object : Clock {
+            override fun now(): Instant = Instant.parse("2025-10-01T23:30:00Z")
+        }
+
+        fun fancy(instant: Instant): String = formatterUS.formatFancyInternal(
+            instant = instant,
+            dateTimeDivider = LocalizedDateTimeFormatter.Companion::defaultTimeDivider,
+            switchNowToSeconds = LocalizedDateTimeFormatter.DEFAULT_SWITCH_NOW_TO_SEC,
+            switchSecondsToMinutes = LocalizedDateTimeFormatter.DEFAULT_SWITCH_SEC_TO_MIN,
+            switchMinutesToTime = LocalizedDateTimeFormatter.DEFAULT_SWITCH_MIN_TO_TIME,
+            clock = fixedClock
+        ).first.replace(' ', ' ')
+
+        expect("yesterday, 10:00 PM") { fancy(Instant.parse("2025-10-01T20:00:00Z")) }
+        expect("today, 7:00 AM") { fancy(Instant.parse("2025-10-02T05:00:00Z")) }
+        expect("tomorrow, 7:00 AM") { fancy(Instant.parse("2025-10-03T05:00:00Z")) }
     }
 }

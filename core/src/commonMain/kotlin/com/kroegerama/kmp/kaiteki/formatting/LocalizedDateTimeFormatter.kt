@@ -20,6 +20,7 @@ import kotlin.time.Instant
 @Stable
 public interface LocalizedDateTimeFormatter {
     public val locale: PlatformLocale
+    public val zone: TimeZone
 
     @Stable
     public fun formatDate(instant: Instant): String
@@ -94,10 +95,11 @@ public fun LocalizedDateTimeFormatter.formatFancyInternal(
     dateTimeDivider: (PlatformLocale) -> String,
     switchNowToSeconds: Long,
     switchSecondsToMinutes: Long,
-    switchMinutesToTime: Long
+    switchMinutesToTime: Long,
+    clock: Clock = Clock.System
 ): Pair<String, Duration> {
-    val now = Clock.System.now()
-    val dayOffset = instant.dayDistanceTo(now)
+    val now = clock.now()
+    val dayOffset = instant.dayDistanceTo(now, zone)
     val millisOffset = instant.toEpochMilliseconds() - now.toEpochMilliseconds()
     val past = millisOffset < 0
     val secondsOffsetAbsolute = (millisOffset / 1000).absoluteValue

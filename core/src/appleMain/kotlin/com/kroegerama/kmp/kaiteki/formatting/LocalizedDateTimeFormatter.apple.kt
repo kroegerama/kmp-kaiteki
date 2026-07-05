@@ -10,6 +10,7 @@ import kotlinx.datetime.toNSDate
 import kotlinx.datetime.toNSDateComponents
 import kotlinx.datetime.toNSTimeZone
 import platform.Foundation.NSCalendar
+import platform.Foundation.NSCalendarIdentifierGregorian
 import platform.Foundation.NSDate
 import platform.Foundation.NSDateComponents
 import platform.Foundation.NSDateFormatter
@@ -49,7 +50,7 @@ internal class DefaultLocalizedDateTimeFormatter(
     dateStyle: FormatStyle,
     timeStyle: FormatStyle,
     capitalizationMode: CapitalizationMode,
-    zone: TimeZone
+    override val zone: TimeZone
 ) : LocalizedDateTimeFormatter {
 
     private val dateFormatter: NSDateFormatter = NSDateFormatter().also {
@@ -70,7 +71,9 @@ internal class DefaultLocalizedDateTimeFormatter(
         it.dateStyle = dateStyle.toNSDateFormatterStyle()
         it.timeStyle = timeStyle.toNSDateFormatterStyle()
     }
-    private val calendar = NSCalendar.currentCalendar.also {
+    // pinned to Gregorian: kotlinx-datetime components are ISO; the user's current calendar
+    // (e.g. Buddhist, Japanese) would reinterpret the year and shift dates by centuries
+    private val calendar = NSCalendar.calendarWithIdentifier(NSCalendarIdentifierGregorian)!!.also {
         it.setTimeZone(zone.toNSTimeZone())
     }
     private val relativeDateTimeFormatter = NSRelativeDateTimeFormatter().also {
