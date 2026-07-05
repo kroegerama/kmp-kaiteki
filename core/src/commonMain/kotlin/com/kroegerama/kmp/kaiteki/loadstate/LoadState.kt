@@ -98,7 +98,7 @@ public sealed class LoadState<out E, out T> {
         return this@LoadState is Error
     }
 
-    public inline fun <C> map(crossinline f: (success: T) -> C): LoadState<E, C> {
+    public inline fun <C> map(f: (success: T) -> C): LoadState<E, C> {
         contract {
             callsInPlace(f, InvocationKind.AT_MOST_ONCE)
         }
@@ -117,7 +117,7 @@ public sealed class LoadState<out E, out T> {
         }
     }
 
-    public inline fun <C> mapError(crossinline f: (error: E) -> C): LoadState<C, T> {
+    public inline fun <C> mapError(f: (error: E) -> C): LoadState<C, T> {
         contract {
             callsInPlace(f, InvocationKind.AT_MOST_ONCE)
         }
@@ -137,29 +137,27 @@ public sealed class LoadState<out E, out T> {
     }
 
     public inline fun <C> fold(
-        crossinline onLoading: (dataOrStale: Option<T>) -> Option<C>,
-        crossinline onSuccess: (success: T) -> C,
-        crossinline onError: (error: E) -> C
-    ): LoadState<Nothing, C> {
+        onIdle: () -> C,
+        onLoading: (refreshCount: Int, dataOrStale: Option<T>) -> C,
+        onSuccess: (success: T) -> C,
+        onError: (error: E, stale: Option<T>) -> C
+    ): C {
         contract {
+            callsInPlace(onIdle, InvocationKind.AT_MOST_ONCE)
             callsInPlace(onLoading, InvocationKind.AT_MOST_ONCE)
             callsInPlace(onSuccess, InvocationKind.AT_MOST_ONCE)
             callsInPlace(onError, InvocationKind.AT_MOST_ONCE)
         }
         return when (this) {
-            Idle -> Idle
-            is Loading -> Loading(
-                refreshCount = refreshCount,
-                staleData = onLoading(staleData)
-            )
-
-            is Success -> Success(onSuccess(data))
-            is Error -> Success(onError(error))
+            Idle -> onIdle()
+            is Loading -> onLoading(refreshCount, staleData)
+            is Success -> onSuccess(data)
+            is Error -> onError(error, staleData)
         }
     }
 }
 
-public inline fun <E, T> LoadState<E, T>.recover(crossinline f: (error: E) -> T): LoadState<Nothing, T> {
+public inline fun <E, T> LoadState<E, T>.recover(f: (error: E) -> T): LoadState<Nothing, T> {
     contract {
         callsInPlace(f, InvocationKind.AT_MOST_ONCE)
     }
@@ -171,7 +169,7 @@ public inline fun <E, T> LoadState<E, T>.recover(crossinline f: (error: E) -> T)
     }
 }
 
-public fun <T> LoadState<T, T>.flatten(): LoadState<Nothing, T> {
+public fun <T> LoadState<T, T>.merge(): LoadState<Nothing, T> {
     return when (this) {
         LoadState.Idle -> LoadState.Idle
         is LoadState.Loading -> this
