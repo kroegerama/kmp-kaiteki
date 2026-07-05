@@ -33,7 +33,7 @@ public fun rememberDecimalFormatter(
     minimumFractionDigits,
     minimumIntegerDigits,
     maximumFractionDigits,
-    minimumFractionDigits,
+    maximumIntegerDigits,
     isGroupingUsed
 ) {
     DefaultDecimalFormatter(
