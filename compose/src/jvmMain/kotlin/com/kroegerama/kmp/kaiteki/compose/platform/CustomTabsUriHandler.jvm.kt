@@ -21,10 +21,10 @@ public class DesktopUriHandler @RememberInComposition constructor(
     }
 
     override fun openUri(uri: String) {
-        val desktop = Desktop.getDesktop()
-        if (desktop.isSupported(Desktop.Action.BROWSE)) {
-            desktop.browse(URI(uri))
-        } else {
+        val browsed = Desktop.isDesktopSupported() &&
+                Desktop.getDesktop().isSupported(Desktop.Action.BROWSE) &&
+                runCatching { Desktop.getDesktop().browse(URI(uri)) }.isSuccess
+        if (!browsed) {
             fallbackUriHandler(uri)
         }
     }
