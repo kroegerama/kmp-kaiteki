@@ -48,7 +48,7 @@ public fun BaseButton(
         icon?.let { icon ->
             Icon(
                 imageVector = icon,
-                contentDescription = text,
+                contentDescription = null,
                 modifier = Modifier.size(ButtonDefaults.iconSizeFor(size)),
             )
             Spacer(Modifier.size(ButtonDefaults.iconSpacingFor(size)))

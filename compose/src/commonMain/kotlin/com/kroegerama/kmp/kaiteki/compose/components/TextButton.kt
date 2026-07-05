@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ButtonColors
@@ -36,7 +37,7 @@ public fun BaseTextButton(
     TextButton(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier,
+        modifier = modifier.heightIn(size),
         shapes = ButtonDefaults.shapesFor(size),
         contentPadding = ButtonDefaults.contentPaddingFor(
             buttonHeight = size,
@@ -47,7 +48,7 @@ public fun BaseTextButton(
         icon?.let { icon ->
             Icon(
                 imageVector = icon,
-                contentDescription = text,
+                contentDescription = null,
                 modifier = Modifier.size(ButtonDefaults.iconSizeFor(size)),
             )
             Spacer(Modifier.size(ButtonDefaults.iconSpacingFor(size)))
