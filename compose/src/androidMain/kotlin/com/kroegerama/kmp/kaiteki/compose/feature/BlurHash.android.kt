@@ -22,22 +22,23 @@ internal actual fun createBlurHashBrush(
         componentsX = decoded.componentsX,
         componentsY = decoded.componentsY
     )
-    val shader = RuntimeShader(source).apply {
-        setFloatUniform("factors", decoded.factors)
-    }
     return BlurHashShaderBrush(
-        shader = shader,
+        shaderSource = source,
+        blurHash = decoded,
         intrinsicSize = intrinsicSize
     )
 }
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 internal class BlurHashShaderBrush(
-    private val shader: RuntimeShader,
+    private val shaderSource: String,
+    private val blurHash: BlurHash,
     override val intrinsicSize: Size
 ) : ShaderBrush() {
     override fun createShader(size: Size): Shader {
-        shader.setFloatUniform("resolution", size.width, size.height)
-        return shader
+        return RuntimeShader(shaderSource).apply {
+            setFloatUniform("factors", blurHash.factors)
+            setFloatUniform("resolution", size.width, size.height)
+        }
     }
 }

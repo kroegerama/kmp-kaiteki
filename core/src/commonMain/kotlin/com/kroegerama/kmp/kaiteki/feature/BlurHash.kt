@@ -15,7 +15,7 @@ public data class BlurHash(
     public companion object {
         public fun decode(
             blurHash: String,
-            @FloatRange(0.0, 1.0)
+            @FloatRange(from = 0.0)
             punch: Float = 1f
         ): BlurHash? = BlurHashDecoder.decode(
             blurHash = blurHash,
@@ -55,7 +55,7 @@ internal object BlurHashDecoder {
             return null
         }
 
-        val sizeFlag = decode83(blurHash, 0, 1)
+        val sizeFlag = decode83(blurHash, 0, 1) ?: return null
         val componentsX = (sizeFlag % 9) + 1
         val componentsY = (sizeFlag / 9) + 1
 
@@ -63,12 +63,12 @@ internal object BlurHashDecoder {
             return null
         }
 
-        val maxAcQuant = decode83(blurHash, 1, 2)
+        val maxAcQuant = decode83(blurHash, 1, 2) ?: return null
         val maxAc = (maxAcQuant + 1) / 166f
 
         val factors = FloatArray(componentsX * componentsY * 3)
 
-        val dcQuant = decode83(blurHash, 2, 6)
+        val dcQuant = decode83(blurHash, 2, 6) ?: return null
         decodeDc(dcQuant, factors)
         val dcR = linearToSrgb(factors[0])
         val dcG = linearToSrgb(factors[1])
@@ -78,7 +78,7 @@ internal object BlurHashDecoder {
         var idx = 1
         while (idx < componentsX * componentsY) {
             val start = 4 + idx * 2
-            val acQuant = decode83(blurHash, start, start + 2)
+            val acQuant = decode83(blurHash, start, start + 2) ?: return null
             decodeAc(acQuant, maxAc * punch, factors, idx * 3)
             idx++
         }
@@ -91,10 +91,12 @@ internal object BlurHashDecoder {
         )
     }
 
-    private fun decode83(chars: String, start: Int, end: Int): Int {
+    private fun decode83(chars: String, start: Int, end: Int): Int? {
         var result = 0
         for (i in start..<end) {
-            result = result * 83 + BASE_83_CHARS.indexOf(chars[i])
+            val digit = BASE_83_CHARS.indexOf(chars[i])
+            if (digit < 0) return null
+            result = result * 83 + digit
         }
         return result
     }

@@ -45,6 +45,16 @@ class BlurHashTest {
     }
 
     @Test
+    fun decodeReturnsNullForInvalidBase83Characters() {
+        val valid = "LGF5?xYk^6#M@-5c,1J5@[or[Q6."
+        // '!', '(' and ' ' are not part of the Base83 alphabet; length stays valid
+        assertNull(BlurHash.decode("!" + valid.drop(1))) // size flag
+        assertNull(BlurHash.decode("L(" + valid.drop(2))) // max AC
+        assertNull(BlurHash.decode(valid.take(3) + "!" + valid.drop(4))) // DC
+        assertNull(BlurHash.decode(valid.dropLast(1) + " ")) // AC
+    }
+
+    @Test
     fun averageColorIsConsistent() {
         val result1 = BlurHash.decode("LGF5?xYk^6#M@-5c,1J5@[or[Q6.")
         val result2 = BlurHash.decode("LGF5?xYk^6#M@-5c,1J5@[or[Q6.")

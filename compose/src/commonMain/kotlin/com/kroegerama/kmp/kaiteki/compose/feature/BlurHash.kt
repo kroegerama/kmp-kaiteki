@@ -36,7 +36,7 @@ internal expect fun createBlurHashBrush(
 @Composable
 public fun rememberBlurHash(
     blurHash: String,
-    @FloatRange(0.0, 1.0)
+    @FloatRange(from = 0.0)
     punch: Float = 1f
 ): BlurHash? = remember(blurHash, punch) {
     BlurHash.decode(blurHash, punch)
@@ -46,7 +46,7 @@ public fun rememberBlurHash(
 @Composable
 public fun rememberBlurHashPainter(
     blurHash: String,
-    @FloatRange(0.0, 1.0)
+    @FloatRange(from = 0.0)
     punch: Float = 1f,
     fallback: Color = Color.Transparent,
     intrinsicSize: Size = Size.Unspecified
@@ -70,7 +70,7 @@ public fun rememberBlurHashPainter(
 @ExperimentalKaitekiApi
 public fun Modifier.blurHash(
     blurHash: String,
-    @FloatRange(0.0, 1.0)
+    @FloatRange(from = 0.0)
     punch: Float = 1f,
     fallback: Color = Color.Transparent
 ): Modifier = composed(
