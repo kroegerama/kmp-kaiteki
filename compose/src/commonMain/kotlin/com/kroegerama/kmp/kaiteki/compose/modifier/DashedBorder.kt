@@ -22,7 +22,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 
 @Stable
@@ -55,7 +54,7 @@ public fun Modifier.dashedBorder(
             size.width - strokeWidth,
             size.height - strokeWidth
         ),
-        layoutDirection = LayoutDirection.Ltr,
+        layoutDirection = layoutDirection,
         density = this
     )
 
