@@ -22,6 +22,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * usage
@@ -77,7 +78,7 @@ private fun ConsumableStateExample() {
     var toast by remember { mutableStateOf("") }
     state.Consume {
         toast = it
-        delay(2000)
+        delay(2000.milliseconds)
         toast = ""
     }
     Surface {

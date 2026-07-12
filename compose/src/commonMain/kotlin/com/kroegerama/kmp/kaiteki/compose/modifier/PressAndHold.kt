@@ -12,6 +12,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 public fun Modifier.pressAndHold(
     enabled: Boolean = true,
@@ -31,7 +32,7 @@ public fun Modifier.pressAndHold(
             val job = scope.launch {
                 var currentDelayMillis = maxDelayMillis
                 while (isActive && down.pressed) {
-                    delay(currentDelayMillis)
+                    delay(currentDelayMillis.milliseconds)
                     updatedOnClick()
                     val nextMillis = currentDelayMillis - (currentDelayMillis * delayDecayFactor)
                     currentDelayMillis = nextMillis.toLong().coerceAtLeast(minDelayMillis)
