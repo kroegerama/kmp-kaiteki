@@ -12,7 +12,9 @@ androidx-datastore = "1.2.1"
 androidx-navigation3 = "1.1.1"
 androidx-paging = "3.5.0"
 androidx-startup = "1.2.0"
+androidx-test = "1.7.0"
 arrow = "2.2.3"
+junit = "4.13.2"
 camera = "1.6.1"
 compose = "1.11.1"
 compose-material3 = "1.11.0-alpha07"
@@ -43,6 +45,8 @@ androidx-paging-common = { module = "androidx.paging:paging-common", version.ref
 androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "androidx-paging" }
 androidx-paging-testing = { module = "androidx.paging:paging-testing", version.ref = "androidx-paging" }
 androidx-startup = { module = "androidx.startup:startup-runtime", version.ref = "androidx-startup" }
+androidx-test-core = { module = "androidx.test:core-ktx", version.ref = "androidx-test" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-test" }
 arrow = { module = "io.arrow-kt:arrow-core", version.ref = "arrow" }
 icu4j = { module = "com.ibm.icu:icu4j", version.ref = "icu4j" }
 jb-androidx-lifecycle-common = { module = "org.jetbrains.androidx.lifecycle:lifecycle-common", version.ref = "jb-androidx-lifecycle" }
@@ -65,7 +69,9 @@ compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.re
 compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose" }
 compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "compose-material3" }
 compose-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "compose" }
+compose-uiTestManifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "androidx-compose" }
 compose-uiTooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "compose" }
+junit = { module = "junit:junit", version.ref = "junit" }
 mlkit-barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "mlkit-barcode" }
 mlkit-text-recognition = { module = "com.google.mlkit:text-recognition", version.ref = "mlkit-text" }
 
