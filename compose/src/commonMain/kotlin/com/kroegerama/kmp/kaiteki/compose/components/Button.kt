@@ -2,19 +2,16 @@ package com.kroegerama.kmp.kaiteki.compose.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ButtonElevation
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -28,34 +25,34 @@ import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
 public fun BaseButton(
     onClick: () -> Unit,
     text: String,
-    size: Dp,
+    containerHeight: Dp,
     modifier: Modifier = Modifier,
-    icon: ImageVector? = null,
+    startIcon: ImageVector? = null,
+    endIcon: ImageVector? = null,
     enabled: Boolean = true,
-    colors: ButtonColors = ButtonDefaults.buttonColors()
+    colors: ButtonColors = ButtonDefaults.buttonColors(),
+    elevation: ButtonElevation? = ButtonDefaults.buttonElevation(),
 ) {
     Button(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier.heightIn(size),
-        shapes = ButtonDefaults.shapesFor(size),
+        modifier = modifier.heightIn(containerHeight),
+        shapes = ButtonDefaults.shapesFor(containerHeight),
         contentPadding = ButtonDefaults.contentPaddingFor(
-            buttonHeight = size,
-            hasStartIcon = icon != null
+            buttonHeight = containerHeight,
+            hasStartIcon = startIcon != null,
+            hasEndIcon = endIcon != null
         ),
-        colors = colors
+        colors = colors,
+        elevation = elevation,
     ) {
-        icon?.let { icon ->
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(ButtonDefaults.iconSizeFor(size)),
-            )
-            Spacer(Modifier.size(ButtonDefaults.iconSpacingFor(size)))
-        }
-        Text(
+        ButtonContentLayout(
             text = text,
-            style = ButtonDefaults.textStyleFor(size)
+            style = ButtonDefaults.textStyleFor(containerHeight),
+            startIcon = startIcon,
+            endIcon = endIcon,
+            iconSize = ButtonDefaults.iconSizeFor(containerHeight),
+            iconSpacing = ButtonDefaults.iconSpacingFor(containerHeight)
         )
     }
 }
@@ -66,18 +63,22 @@ public fun ButtonExtraSmall(
     onClick: () -> Unit,
     text: String,
     modifier: Modifier = Modifier,
-    icon: ImageVector? = null,
+    startIcon: ImageVector? = null,
+    endIcon: ImageVector? = null,
     enabled: Boolean = true,
     colors: ButtonColors = ButtonDefaults.buttonColors(),
+    elevation: ButtonElevation? = ButtonDefaults.buttonElevation(),
 ) {
     BaseButton(
-        size = ButtonDefaults.ExtraSmallContainerHeight,
+        containerHeight = ButtonDefaults.ExtraSmallContainerHeight,
         onClick = onClick,
         text = text,
         modifier = modifier,
-        icon = icon,
+        startIcon = startIcon,
+        endIcon = endIcon,
         enabled = enabled,
         colors = colors,
+        elevation = elevation,
     )
 }
 
@@ -87,18 +88,22 @@ public fun ButtonSmall(
     onClick: () -> Unit,
     text: String,
     modifier: Modifier = Modifier,
-    icon: ImageVector? = null,
+    startIcon: ImageVector? = null,
+    endIcon: ImageVector? = null,
     enabled: Boolean = true,
     colors: ButtonColors = ButtonDefaults.buttonColors(),
+    elevation: ButtonElevation? = ButtonDefaults.buttonElevation(),
 ) {
     BaseButton(
-        size = ButtonDefaults.MinHeight,
+        containerHeight = ButtonDefaults.MinHeight,
         onClick = onClick,
         text = text,
         modifier = modifier,
-        icon = icon,
+        startIcon = startIcon,
+        endIcon = endIcon,
         enabled = enabled,
         colors = colors,
+        elevation = elevation,
     )
 }
 
@@ -108,18 +113,22 @@ public fun ButtonMedium(
     onClick: () -> Unit,
     text: String,
     modifier: Modifier = Modifier,
-    icon: ImageVector? = null,
+    startIcon: ImageVector? = null,
+    endIcon: ImageVector? = null,
     enabled: Boolean = true,
     colors: ButtonColors = ButtonDefaults.buttonColors(),
+    elevation: ButtonElevation? = ButtonDefaults.buttonElevation(),
 ) {
     BaseButton(
-        size = ButtonDefaults.MediumContainerHeight,
+        containerHeight = ButtonDefaults.MediumContainerHeight,
         onClick = onClick,
         text = text,
         modifier = modifier,
-        icon = icon,
+        startIcon = startIcon,
+        endIcon = endIcon,
         enabled = enabled,
         colors = colors,
+        elevation = elevation,
     )
 }
 
@@ -129,18 +138,22 @@ public fun ButtonLarge(
     onClick: () -> Unit,
     text: String,
     modifier: Modifier = Modifier,
-    icon: ImageVector? = null,
+    startIcon: ImageVector? = null,
+    endIcon: ImageVector? = null,
     enabled: Boolean = true,
     colors: ButtonColors = ButtonDefaults.buttonColors(),
+    elevation: ButtonElevation? = ButtonDefaults.buttonElevation(),
 ) {
     BaseButton(
-        size = ButtonDefaults.LargeContainerHeight,
+        containerHeight = ButtonDefaults.LargeContainerHeight,
         onClick = onClick,
         text = text,
         modifier = modifier,
-        icon = icon,
+        startIcon = startIcon,
+        endIcon = endIcon,
         enabled = enabled,
         colors = colors,
+        elevation = elevation,
     )
 }
 
@@ -150,18 +163,22 @@ public fun ButtonExtraLarge(
     onClick: () -> Unit,
     text: String,
     modifier: Modifier = Modifier,
-    icon: ImageVector? = null,
+    startIcon: ImageVector? = null,
+    endIcon: ImageVector? = null,
     enabled: Boolean = true,
     colors: ButtonColors = ButtonDefaults.buttonColors(),
+    elevation: ButtonElevation? = ButtonDefaults.buttonElevation(),
 ) {
     BaseButton(
-        size = ButtonDefaults.ExtraLargeContainerHeight,
+        containerHeight = ButtonDefaults.ExtraLargeContainerHeight,
         onClick = onClick,
         text = text,
         modifier = modifier,
-        icon = icon,
+        startIcon = startIcon,
+        endIcon = endIcon,
         enabled = enabled,
         colors = colors,
+        elevation = elevation,
     )
 }
 
@@ -170,17 +187,22 @@ public fun ButtonExtraLarge(
 @Composable
 private fun ButtonPreview() {
     MaterialTheme {
-        Scaffold { innerPadding ->
+        Surface {
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
+                    .safeDrawingPadding()
                     .padding(16.dp)
             ) {
                 ButtonExtraSmall(
                     onClick = {},
                     text = "ButtonExtraSmall"
+                )
+                ButtonExtraSmall(
+                    onClick = {},
+                    text = "ButtonExtraSmall w/icons",
+                    startIcon = KaitekiIcon,
+                    endIcon = KaitekiIcon
                 )
                 ButtonSmall(
                     onClick = {},
@@ -189,7 +211,7 @@ private fun ButtonPreview() {
                 ButtonSmall(
                     onClick = {},
                     text = "ButtonSmall w/icon",
-                    icon = KaitekiIcon
+                    startIcon = KaitekiIcon
                 )
                 ButtonMedium(
                     onClick = {},
@@ -202,7 +224,7 @@ private fun ButtonPreview() {
                 ButtonLarge(
                     onClick = {},
                     text = "ButtonLarge w/icon",
-                    icon = KaitekiIcon
+                    endIcon = KaitekiIcon
                 )
                 ButtonExtraLarge(
                     onClick = {},

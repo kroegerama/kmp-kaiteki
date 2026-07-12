@@ -2,16 +2,17 @@ package com.kroegerama.kmp.kaiteki.compose.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.IconButtonShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -28,20 +29,22 @@ public fun BaseIconButton(
     icon: ImageVector,
     containerSize: DpSize,
     iconSize: Dp,
+    shapes: IconButtonShapes,
     modifier: Modifier = Modifier,
+    contentDescription: String? = null,
     enabled: Boolean = true,
     colors: IconButtonColors = IconButtonDefaults.iconButtonColors()
 ) {
     IconButton(
         onClick = onClick,
-        shapes = IconButtonDefaults.shapes(),
+        shapes = shapes,
         modifier = modifier.size(containerSize),
         colors = colors,
         enabled = enabled
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = null,
+            contentDescription = contentDescription,
             modifier = Modifier.size(iconSize),
         )
     }
@@ -53,6 +56,7 @@ public fun IconButtonExtraSmall(
     onClick: () -> Unit,
     icon: ImageVector,
     modifier: Modifier = Modifier,
+    contentDescription: String? = null,
     enabled: Boolean = true,
     colors: IconButtonColors = IconButtonDefaults.iconButtonColors()
 ) {
@@ -61,7 +65,12 @@ public fun IconButtonExtraSmall(
         icon = icon,
         containerSize = IconButtonDefaults.extraSmallContainerSize(),
         iconSize = IconButtonDefaults.extraSmallIconSize,
+        shapes = IconButtonDefaults.shapes(
+            shape = IconButtonDefaults.extraSmallRoundShape,
+            pressedShape = IconButtonDefaults.extraSmallPressedShape,
+        ),
         modifier = modifier,
+        contentDescription = contentDescription,
         enabled = enabled,
         colors = colors
     )
@@ -73,6 +82,7 @@ public fun IconButtonSmall(
     onClick: () -> Unit,
     icon: ImageVector,
     modifier: Modifier = Modifier,
+    contentDescription: String? = null,
     enabled: Boolean = true,
     colors: IconButtonColors = IconButtonDefaults.iconButtonColors()
 ) {
@@ -81,7 +91,12 @@ public fun IconButtonSmall(
         icon = icon,
         containerSize = IconButtonDefaults.smallContainerSize(),
         iconSize = IconButtonDefaults.smallIconSize,
+        shapes = IconButtonDefaults.shapes(
+            shape = IconButtonDefaults.smallRoundShape,
+            pressedShape = IconButtonDefaults.smallPressedShape,
+        ),
         modifier = modifier,
+        contentDescription = contentDescription,
         enabled = enabled,
         colors = colors
     )
@@ -93,6 +108,7 @@ public fun IconButtonMedium(
     onClick: () -> Unit,
     icon: ImageVector,
     modifier: Modifier = Modifier,
+    contentDescription: String? = null,
     enabled: Boolean = true,
     colors: IconButtonColors = IconButtonDefaults.iconButtonColors()
 ) {
@@ -101,7 +117,12 @@ public fun IconButtonMedium(
         icon = icon,
         containerSize = IconButtonDefaults.mediumContainerSize(),
         iconSize = IconButtonDefaults.mediumIconSize,
+        shapes = IconButtonDefaults.shapes(
+            shape = IconButtonDefaults.mediumRoundShape,
+            pressedShape = IconButtonDefaults.mediumPressedShape,
+        ),
         modifier = modifier,
+        contentDescription = contentDescription,
         enabled = enabled,
         colors = colors
     )
@@ -113,6 +134,7 @@ public fun IconButtonLarge(
     onClick: () -> Unit,
     icon: ImageVector,
     modifier: Modifier = Modifier,
+    contentDescription: String? = null,
     enabled: Boolean = true,
     colors: IconButtonColors = IconButtonDefaults.iconButtonColors()
 ) {
@@ -121,7 +143,12 @@ public fun IconButtonLarge(
         icon = icon,
         containerSize = IconButtonDefaults.largeContainerSize(),
         iconSize = IconButtonDefaults.largeIconSize,
+        shapes = IconButtonDefaults.shapes(
+            shape = IconButtonDefaults.largeRoundShape,
+            pressedShape = IconButtonDefaults.largePressedShape,
+        ),
         modifier = modifier,
+        contentDescription = contentDescription,
         enabled = enabled,
         colors = colors
     )
@@ -133,6 +160,7 @@ public fun IconButtonExtraLarge(
     onClick: () -> Unit,
     icon: ImageVector,
     modifier: Modifier = Modifier,
+    contentDescription: String? = null,
     enabled: Boolean = true,
     colors: IconButtonColors = IconButtonDefaults.iconButtonColors()
 ) {
@@ -141,7 +169,12 @@ public fun IconButtonExtraLarge(
         icon = icon,
         containerSize = IconButtonDefaults.extraLargeContainerSize(),
         iconSize = IconButtonDefaults.extraLargeIconSize,
+        shapes = IconButtonDefaults.shapes(
+            shape = IconButtonDefaults.extraLargeRoundShape,
+            pressedShape = IconButtonDefaults.extraLargePressedShape,
+        ),
         modifier = modifier,
+        contentDescription = contentDescription,
         enabled = enabled,
         colors = colors
     )
@@ -152,12 +185,11 @@ public fun IconButtonExtraLarge(
 @Composable
 private fun IconButtonPreview() {
     MaterialTheme {
-        Scaffold { innerPadding ->
+        Surface {
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
+                    .safeDrawingPadding()
                     .padding(16.dp)
             ) {
                 IconButtonExtraSmall(

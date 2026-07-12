@@ -6,14 +6,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.FilledTonalIconToggleButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.IconButtonShapes
+import androidx.compose.material3.IconToggleButtonColors
+import androidx.compose.material3.IconToggleButtonShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
@@ -24,23 +28,25 @@ import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
 
 @ExperimentalMaterial3ExpressiveApi
 @Composable
-public fun BaseFilledTonalIconButton(
-    onClick: () -> Unit,
+public fun BaseFilledTonalIconToggleButton(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
     icon: ImageVector,
     containerSize: DpSize,
     iconSize: Dp,
-    shapes: IconButtonShapes,
+    shapes: IconToggleButtonShapes,
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
     enabled: Boolean = true,
-    colors: IconButtonColors = IconButtonDefaults.filledTonalIconButtonColors()
+    colors: IconToggleButtonColors = IconButtonDefaults.filledTonalIconToggleButtonColors(),
 ) {
-    FilledTonalIconButton(
-        onClick = onClick,
+    FilledTonalIconToggleButton(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
         shapes = shapes,
         modifier = modifier.size(containerSize),
+        enabled = enabled,
         colors = colors,
-        enabled = enabled
     ) {
         Icon(
             imageVector = icon,
@@ -52,138 +58,153 @@ public fun BaseFilledTonalIconButton(
 
 @ExperimentalMaterial3ExpressiveApi
 @Composable
-public fun FilledTonalIconButtonExtraSmall(
-    onClick: () -> Unit,
+public fun FilledTonalIconToggleButtonExtraSmall(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
     icon: ImageVector,
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
     enabled: Boolean = true,
-    colors: IconButtonColors = IconButtonDefaults.filledTonalIconButtonColors()
+    colors: IconToggleButtonColors = IconButtonDefaults.filledTonalIconToggleButtonColors(),
 ) {
-    BaseFilledTonalIconButton(
-        onClick = onClick,
+    BaseFilledTonalIconToggleButton(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
         icon = icon,
         containerSize = IconButtonDefaults.extraSmallContainerSize(),
         iconSize = IconButtonDefaults.extraSmallIconSize,
-        shapes = IconButtonDefaults.shapes(
+        shapes = IconButtonDefaults.toggleableShapes(
             shape = IconButtonDefaults.extraSmallRoundShape,
             pressedShape = IconButtonDefaults.extraSmallPressedShape,
+            checkedShape = IconButtonDefaults.extraSmallSelectedRoundShape,
         ),
         modifier = modifier,
         contentDescription = contentDescription,
         enabled = enabled,
-        colors = colors
+        colors = colors,
     )
 }
 
 @ExperimentalMaterial3ExpressiveApi
 @Composable
-public fun FilledTonalIconButtonSmall(
-    onClick: () -> Unit,
+public fun FilledTonalIconToggleButtonSmall(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
     icon: ImageVector,
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
     enabled: Boolean = true,
-    colors: IconButtonColors = IconButtonDefaults.filledTonalIconButtonColors()
+    colors: IconToggleButtonColors = IconButtonDefaults.filledTonalIconToggleButtonColors(),
 ) {
-    BaseFilledTonalIconButton(
-        onClick = onClick,
+    BaseFilledTonalIconToggleButton(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
         icon = icon,
         containerSize = IconButtonDefaults.smallContainerSize(),
         iconSize = IconButtonDefaults.smallIconSize,
-        shapes = IconButtonDefaults.shapes(
+        shapes = IconButtonDefaults.toggleableShapes(
             shape = IconButtonDefaults.smallRoundShape,
             pressedShape = IconButtonDefaults.smallPressedShape,
+            checkedShape = IconButtonDefaults.smallSelectedRoundShape,
         ),
         modifier = modifier,
         contentDescription = contentDescription,
         enabled = enabled,
-        colors = colors
+        colors = colors,
     )
 }
 
 @ExperimentalMaterial3ExpressiveApi
 @Composable
-public fun FilledTonalIconButtonMedium(
-    onClick: () -> Unit,
+public fun FilledTonalIconToggleButtonMedium(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
     icon: ImageVector,
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
     enabled: Boolean = true,
-    colors: IconButtonColors = IconButtonDefaults.filledTonalIconButtonColors()
+    colors: IconToggleButtonColors = IconButtonDefaults.filledTonalIconToggleButtonColors(),
 ) {
-    BaseFilledTonalIconButton(
-        onClick = onClick,
+    BaseFilledTonalIconToggleButton(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
         icon = icon,
         containerSize = IconButtonDefaults.mediumContainerSize(),
         iconSize = IconButtonDefaults.mediumIconSize,
-        shapes = IconButtonDefaults.shapes(
+        shapes = IconButtonDefaults.toggleableShapes(
             shape = IconButtonDefaults.mediumRoundShape,
             pressedShape = IconButtonDefaults.mediumPressedShape,
+            checkedShape = IconButtonDefaults.mediumSelectedRoundShape,
         ),
         modifier = modifier,
         contentDescription = contentDescription,
         enabled = enabled,
-        colors = colors
+        colors = colors,
     )
 }
 
 @ExperimentalMaterial3ExpressiveApi
 @Composable
-public fun FilledTonalIconButtonLarge(
-    onClick: () -> Unit,
+public fun FilledTonalIconToggleButtonLarge(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
     icon: ImageVector,
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
     enabled: Boolean = true,
-    colors: IconButtonColors = IconButtonDefaults.filledTonalIconButtonColors()
+    colors: IconToggleButtonColors = IconButtonDefaults.filledTonalIconToggleButtonColors(),
 ) {
-    BaseFilledTonalIconButton(
-        onClick = onClick,
+    BaseFilledTonalIconToggleButton(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
         icon = icon,
         containerSize = IconButtonDefaults.largeContainerSize(),
         iconSize = IconButtonDefaults.largeIconSize,
-        shapes = IconButtonDefaults.shapes(
+        shapes = IconButtonDefaults.toggleableShapes(
             shape = IconButtonDefaults.largeRoundShape,
             pressedShape = IconButtonDefaults.largePressedShape,
+            checkedShape = IconButtonDefaults.largeSelectedRoundShape,
         ),
         modifier = modifier,
         contentDescription = contentDescription,
         enabled = enabled,
-        colors = colors
+        colors = colors,
     )
 }
 
 @ExperimentalMaterial3ExpressiveApi
 @Composable
-public fun FilledTonalIconButtonExtraLarge(
-    onClick: () -> Unit,
+public fun FilledTonalIconToggleButtonExtraLarge(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
     icon: ImageVector,
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
     enabled: Boolean = true,
-    colors: IconButtonColors = IconButtonDefaults.filledTonalIconButtonColors()
+    colors: IconToggleButtonColors = IconButtonDefaults.filledTonalIconToggleButtonColors(),
 ) {
-    BaseFilledTonalIconButton(
-        onClick = onClick,
+    BaseFilledTonalIconToggleButton(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
         icon = icon,
         containerSize = IconButtonDefaults.extraLargeContainerSize(),
         iconSize = IconButtonDefaults.extraLargeIconSize,
-        shapes = IconButtonDefaults.shapes(
+        shapes = IconButtonDefaults.toggleableShapes(
             shape = IconButtonDefaults.extraLargeRoundShape,
             pressedShape = IconButtonDefaults.extraLargePressedShape,
+            checkedShape = IconButtonDefaults.extraLargeSelectedRoundShape,
         ),
         modifier = modifier,
         contentDescription = contentDescription,
         enabled = enabled,
-        colors = colors
+        colors = colors,
     )
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Preview
 @Composable
-private fun FilledTonalIconButtonPreview() {
+private fun FilledTonalIconToggleButtonPreview() {
     MaterialTheme {
         Surface {
             Column(
@@ -192,24 +213,30 @@ private fun FilledTonalIconButtonPreview() {
                     .safeDrawingPadding()
                     .padding(16.dp)
             ) {
-                FilledTonalIconButtonExtraSmall(
-                    onClick = {},
+                var checked by remember { mutableStateOf(false) }
+                FilledTonalIconToggleButtonExtraSmall(
+                    checked = checked,
+                    onCheckedChange = { checked = it },
                     icon = KaitekiIcon
                 )
-                FilledTonalIconButtonSmall(
-                    onClick = {},
+                FilledTonalIconToggleButtonSmall(
+                    checked = checked,
+                    onCheckedChange = { checked = it },
                     icon = KaitekiIcon
                 )
-                FilledTonalIconButtonMedium(
-                    onClick = {},
+                FilledTonalIconToggleButtonMedium(
+                    checked = checked,
+                    onCheckedChange = { checked = it },
                     icon = KaitekiIcon
                 )
-                FilledTonalIconButtonLarge(
-                    onClick = {},
+                FilledTonalIconToggleButtonLarge(
+                    checked = checked,
+                    onCheckedChange = { checked = it },
                     icon = KaitekiIcon
                 )
-                FilledTonalIconButtonExtraLarge(
-                    onClick = {},
+                FilledTonalIconToggleButtonExtraLarge(
+                    checked = checked,
+                    onCheckedChange = { checked = it },
                     icon = KaitekiIcon
                 )
             }

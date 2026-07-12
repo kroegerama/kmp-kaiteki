@@ -2,18 +2,14 @@ package com.kroegerama.kmp.kaiteki.compose.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -28,34 +24,32 @@ import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
 public fun BaseTextButton(
     onClick: () -> Unit,
     text: String,
-    size: Dp,
+    containerHeight: Dp,
     modifier: Modifier = Modifier,
-    icon: ImageVector? = null,
+    startIcon: ImageVector? = null,
+    endIcon: ImageVector? = null,
     enabled: Boolean = true,
     colors: ButtonColors = ButtonDefaults.textButtonColors()
 ) {
     TextButton(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier.heightIn(size),
-        shapes = ButtonDefaults.shapesFor(size),
+        modifier = modifier.heightIn(containerHeight),
+        shapes = ButtonDefaults.shapesFor(containerHeight),
         contentPadding = ButtonDefaults.contentPaddingFor(
-            buttonHeight = size,
-            hasStartIcon = icon != null
+            buttonHeight = containerHeight,
+            hasStartIcon = startIcon != null,
+            hasEndIcon = endIcon != null
         ),
         colors = colors
     ) {
-        icon?.let { icon ->
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(ButtonDefaults.iconSizeFor(size)),
-            )
-            Spacer(Modifier.size(ButtonDefaults.iconSpacingFor(size)))
-        }
-        Text(
+        ButtonContentLayout(
             text = text,
-            style = ButtonDefaults.textStyleFor(size)
+            style = ButtonDefaults.textStyleFor(containerHeight),
+            startIcon = startIcon,
+            endIcon = endIcon,
+            iconSize = ButtonDefaults.iconSizeFor(containerHeight),
+            iconSpacing = ButtonDefaults.iconSpacingFor(containerHeight)
         )
     }
 }
@@ -66,16 +60,18 @@ public fun TextButtonExtraSmall(
     onClick: () -> Unit,
     text: String,
     modifier: Modifier = Modifier,
-    icon: ImageVector? = null,
+    startIcon: ImageVector? = null,
+    endIcon: ImageVector? = null,
     enabled: Boolean = true,
     colors: ButtonColors = ButtonDefaults.textButtonColors(),
 ) {
     BaseTextButton(
-        size = ButtonDefaults.ExtraSmallContainerHeight,
+        containerHeight = ButtonDefaults.ExtraSmallContainerHeight,
         onClick = onClick,
         text = text,
         modifier = modifier,
-        icon = icon,
+        startIcon = startIcon,
+        endIcon = endIcon,
         enabled = enabled,
         colors = colors
     )
@@ -87,16 +83,18 @@ public fun TextButtonSmall(
     onClick: () -> Unit,
     text: String,
     modifier: Modifier = Modifier,
-    icon: ImageVector? = null,
+    startIcon: ImageVector? = null,
+    endIcon: ImageVector? = null,
     enabled: Boolean = true,
     colors: ButtonColors = ButtonDefaults.textButtonColors(),
 ) {
     BaseTextButton(
-        size = ButtonDefaults.MinHeight,
+        containerHeight = ButtonDefaults.MinHeight,
         onClick = onClick,
         text = text,
         modifier = modifier,
-        icon = icon,
+        startIcon = startIcon,
+        endIcon = endIcon,
         enabled = enabled,
         colors = colors
     )
@@ -108,16 +106,18 @@ public fun TextButtonMedium(
     onClick: () -> Unit,
     text: String,
     modifier: Modifier = Modifier,
-    icon: ImageVector? = null,
+    startIcon: ImageVector? = null,
+    endIcon: ImageVector? = null,
     enabled: Boolean = true,
     colors: ButtonColors = ButtonDefaults.textButtonColors(),
 ) {
     BaseTextButton(
-        size = ButtonDefaults.MediumContainerHeight,
+        containerHeight = ButtonDefaults.MediumContainerHeight,
         onClick = onClick,
         text = text,
         modifier = modifier,
-        icon = icon,
+        startIcon = startIcon,
+        endIcon = endIcon,
         enabled = enabled,
         colors = colors
     )
@@ -129,16 +129,18 @@ public fun TextButtonLarge(
     onClick: () -> Unit,
     text: String,
     modifier: Modifier = Modifier,
-    icon: ImageVector? = null,
+    startIcon: ImageVector? = null,
+    endIcon: ImageVector? = null,
     enabled: Boolean = true,
     colors: ButtonColors = ButtonDefaults.textButtonColors(),
 ) {
     BaseTextButton(
-        size = ButtonDefaults.LargeContainerHeight,
+        containerHeight = ButtonDefaults.LargeContainerHeight,
         onClick = onClick,
         text = text,
         modifier = modifier,
-        icon = icon,
+        startIcon = startIcon,
+        endIcon = endIcon,
         enabled = enabled,
         colors = colors
     )
@@ -150,16 +152,18 @@ public fun TextButtonExtraLarge(
     onClick: () -> Unit,
     text: String,
     modifier: Modifier = Modifier,
-    icon: ImageVector? = null,
+    startIcon: ImageVector? = null,
+    endIcon: ImageVector? = null,
     enabled: Boolean = true,
     colors: ButtonColors = ButtonDefaults.textButtonColors(),
 ) {
     BaseTextButton(
-        size = ButtonDefaults.ExtraLargeContainerHeight,
+        containerHeight = ButtonDefaults.ExtraLargeContainerHeight,
         onClick = onClick,
         text = text,
         modifier = modifier,
-        icon = icon,
+        startIcon = startIcon,
+        endIcon = endIcon,
         enabled = enabled,
         colors = colors
     )
@@ -170,12 +174,11 @@ public fun TextButtonExtraLarge(
 @Composable
 private fun ButtonPreview() {
     MaterialTheme {
-        Scaffold { innerPadding ->
+        Surface {
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
+                    .safeDrawingPadding()
                     .padding(16.dp)
             ) {
                 TextButtonExtraSmall(
@@ -189,7 +192,7 @@ private fun ButtonPreview() {
                 TextButtonSmall(
                     onClick = {},
                     text = "TextButtonSmall w/icon",
-                    icon = KaitekiIcon
+                    startIcon = KaitekiIcon
                 )
                 TextButtonMedium(
                     onClick = {},
@@ -202,7 +205,7 @@ private fun ButtonPreview() {
                 TextButtonLarge(
                     onClick = {},
                     text = "TextButtonLarge w/icon",
-                    icon = KaitekiIcon
+                    endIcon = KaitekiIcon
                 )
                 TextButtonExtraLarge(
                     onClick = {},
