@@ -2,7 +2,6 @@ package com.kroegerama.kmp.kaiteki.compose.feature
 
 import androidx.annotation.FloatRange
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalGridApi
 import androidx.compose.foundation.layout.Grid
@@ -12,15 +11,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
-import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.graphics.painter.BrushPainter
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.platform.debugInspectorInfo
+import androidx.compose.ui.node.DrawModifierNode
+import androidx.compose.ui.node.ModifierNodeElement
+import androidx.compose.ui.node.invalidateDraw
+import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
@@ -32,6 +33,14 @@ internal expect fun createBlurHashBrush(
     intrinsicSize: Size
 ): Brush
 
+/**
+ * Decodes [blurHash] and remembers the result across recompositions.
+ *
+ * @param blurHash the encoded [BlurHash](https://blurha.sh) string.
+ * @param punch contrast multiplier applied to the color components; `1` keeps the original
+ *   contrast, higher values increase it.
+ * @return the decoded [BlurHash], or `null` if [blurHash] is malformed.
+ */
 @ExperimentalKaitekiApi
 @Composable
 public fun rememberBlurHash(
@@ -42,6 +51,15 @@ public fun rememberBlurHash(
     BlurHash.decode(blurHash, punch)
 }
 
+/**
+ * Decodes [blurHash] and remembers a [Painter] that renders it.
+ *
+ * @param blurHash the encoded [BlurHash](https://blurha.sh) string.
+ * @param punch contrast multiplier applied to the color components; `1` keeps the original
+ *   contrast, higher values increase it.
+ * @param fallback color drawn when [blurHash] is malformed.
+ * @param intrinsicSize the painter's intrinsic size, or [Size.Unspecified] to leave it unsized.
+ */
 @ExperimentalKaitekiApi
 @Composable
 public fun rememberBlurHashPainter(
@@ -56,6 +74,13 @@ public fun rememberBlurHashPainter(
     intrinsicSize = intrinsicSize
 )
 
+/**
+ * Remembers a [Painter] that renders the already-decoded [blurHash].
+ *
+ * @param blurHash the decoded [BlurHash], or `null` to draw [fallback].
+ * @param fallback color drawn when [blurHash] is `null`; defaults to the hash's average color.
+ * @param intrinsicSize the painter's intrinsic size, or [Size.Unspecified] to leave it unsized.
+ */
 @ExperimentalKaitekiApi
 @Composable
 public fun rememberBlurHashPainter(
@@ -67,32 +92,107 @@ public fun rememberBlurHashPainter(
     BrushPainter(createBlurHashBrush(blurHash, intrinsicSize))
 }
 
+/**
+ * Draws the decoded [blurHash] behind the content, filling the layout bounds.
+ *
+ * @param blurHash the encoded [BlurHash](https://blurha.sh) string.
+ * @param punch contrast multiplier applied to the color components; `1` keeps the original
+ *   contrast, higher values increase it.
+ * @param fallback color drawn when [blurHash] is malformed.
+ */
 @ExperimentalKaitekiApi
 public fun Modifier.blurHash(
     blurHash: String,
     @FloatRange(from = 0.0)
     punch: Float = 1f,
     fallback: Color = Color.Transparent
-): Modifier = composed(
-    fullyQualifiedName = "com.kroegerama.kmp.kaiteki.compose.feature",
-    blurHash,
-    punch,
-    fallback,
-    inspectorInfo = debugInspectorInfo {
+): Modifier = this then BlurHashElement(
+    blurHash = blurHash,
+    punch = punch,
+    fallback = fallback
+)
+
+private class BlurHashElement(
+    val blurHash: String,
+    val punch: Float,
+    val fallback: Color
+) : ModifierNodeElement<BlurHashNode>() {
+
+    override fun create() = BlurHashNode(blurHash, punch, fallback)
+
+    override fun update(node: BlurHashNode) {
+        node.update(blurHash, punch, fallback)
+    }
+
+    override fun InspectorInfo.inspectableProperties() {
         name = "blurHash"
         properties["blurHash"] = blurHash
         properties["punch"] = punch
         properties["fallback"] = fallback
-    },
-) {
-    val brush = remember(blurHash, punch) {
-        val decoded = BlurHash.decode(blurHash, punch) ?: return@remember null
-        createBlurHashBrush(decoded, Size.Unspecified)
-    } ?: return@composed background(fallback)
-    drawWithCache {
-        onDrawBehind {
-            drawRect(brush)
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is BlurHashElement) return false
+        return blurHash == other.blurHash &&
+                punch == other.punch &&
+                fallback == other.fallback
+    }
+
+    override fun hashCode(): Int {
+        var result = blurHash.hashCode()
+        result = 31 * result + punch.hashCode()
+        result = 31 * result + fallback.hashCode()
+        return result
+    }
+}
+
+private class BlurHashNode(
+    private var blurHash: String,
+    private var punch: Float,
+    private var fallback: Color
+) : Modifier.Node(), DrawModifierNode {
+
+    // decoded once per hash/punch change; the shader itself is compiled lazily and cached by the
+    // ShaderBrush per draw size, so the draw path stays a single drawRect
+    private var brush: Brush? = null
+
+    override fun onAttach() {
+        rebuildBrush()
+    }
+
+    fun update(
+        blurHash: String,
+        punch: Float,
+        fallback: Color
+    ) {
+        var invalidate = false
+        if (this.blurHash != blurHash || this.punch != punch) {
+            this.blurHash = blurHash
+            this.punch = punch
+            rebuildBrush()
+            invalidate = true
         }
+        if (this.fallback != fallback) {
+            this.fallback = fallback
+            invalidate = true
+        }
+        if (invalidate) invalidateDraw()
+    }
+
+    private fun rebuildBrush() {
+        val decoded = BlurHash.decode(blurHash, punch)
+        brush = decoded?.let { createBlurHashBrush(it, Size.Unspecified) }
+    }
+
+    override fun ContentDrawScope.draw() {
+        val brush = brush
+        if (brush != null) {
+            drawRect(brush)
+        } else {
+            drawRect(fallback)
+        }
+        drawContent()
     }
 }
 
@@ -179,30 +279,14 @@ private fun BlurHashModifierPreview() {
             gap(4.dp)
         }
     ) {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .aspectRatio(1.5f)
-                .blurHash(blurHash)
-        )
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .aspectRatio(1.5f)
-                .blurHash(blurHash, .75f)
-        )
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .aspectRatio(1.5f)
-                .blurHash(blurHash, .5f)
-        )
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .aspectRatio(1.5f)
-                .blurHash(blurHash, .25f)
-        )
+        listOf(0.25f, 0.5f, 0.75f, 1f, 1.5f, 2f).fastForEach { punch ->
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1.5f)
+                    .blurHash(blurHash, punch)
+            )
+        }
     }
 }
 
@@ -219,34 +303,15 @@ private fun BlurHashPainterPreview() {
             gap(4.dp)
         }
     ) {
-        Image(
-            painter = rememberBlurHashPainter(blurHash),
-            contentDescription = null,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1.5f)
-        )
-        Image(
-            painter = rememberBlurHashPainter(blurHash, .75f),
-            contentDescription = null,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1.5f)
-        )
-        Image(
-            painter = rememberBlurHashPainter(blurHash, .5f),
-            contentDescription = null,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1.5f)
-        )
-        Image(
-            painter = rememberBlurHashPainter(blurHash, .25f),
-            contentDescription = null,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1.5f)
-        )
+        listOf(0.25f, 0.5f, 0.75f, 1f, 1.5f, 2f).fastForEach { punch ->
+            Image(
+                painter = rememberBlurHashPainter(blurHash, punch),
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1.5f)
+            )
+        }
     }
 }
 
