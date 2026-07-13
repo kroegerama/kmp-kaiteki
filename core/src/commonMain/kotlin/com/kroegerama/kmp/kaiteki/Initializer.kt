@@ -1,7 +1,11 @@
 package com.kroegerama.kmp.kaiteki
 
 /**
- * This can be used for dependency injection e.g. with Metro
+ * Marker interface for startup logic that should run once when the application launches.
+ *
+ * Collect all implementations through a dependency-injection framework (e.g. Metro) and invoke
+ * [init] on each at startup.
+ *
  * ```kotlin
  * @ContributesIntoSet(AppScope::class)
  * @SingleIn(AppScope::class)
@@ -25,5 +29,6 @@ package com.kroegerama.kmp.kaiteki
  * ```
  */
 public interface Initializer {
+    /** Runs the initialization logic. [isDebug] signals a debug build so behavior can be adjusted. */
     public fun init(isDebug: Boolean)
 }

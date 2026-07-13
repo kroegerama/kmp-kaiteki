@@ -27,4 +27,10 @@ public fun isoCountryCodeToFlag(isoCode: String, fallback: String = ""): String 
     }.toString()
 }
 
+/**
+ * The regional-indicator flag emoji for this locale's country, or an empty string when the locale
+ * has no country component.
+ *
+ * @see isoCountryCodeToFlag
+ */
 public expect val PlatformLocale.unicodeFlag: String

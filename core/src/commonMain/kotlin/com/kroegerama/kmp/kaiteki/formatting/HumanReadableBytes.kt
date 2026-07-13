@@ -3,6 +3,13 @@ package com.kroegerama.kmp.kaiteki.formatting
 import kotlin.math.ln
 import kotlin.math.pow
 
+/**
+ * Formats this byte count as a short human-readable string, e.g. `1536.asHumanReadableBytes()` →
+ * `"1.5 KiB"`.
+ *
+ * @param si when `true`, uses decimal SI units (powers of 1000: `kB`, `MB`, …); when `false`,
+ *   binary units (powers of 1024: `KiB`, `MiB`, …).
+ */
 public fun Long.asHumanReadableBytes(si: Boolean = false): String {
     val unit = if (si) 1000f else 1024f
     if (this < unit) return "$this B"

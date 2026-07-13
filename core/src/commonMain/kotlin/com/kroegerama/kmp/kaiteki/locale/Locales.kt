@@ -1,5 +1,10 @@
 package com.kroegerama.kmp.kaiteki.locale
 
+/**
+ * Common set of predefined [PlatformLocale] constants, mirroring the well-known locales from
+ * `java.util.Locale`. Language-only entries (e.g. [GERMAN]) carry no country; country entries
+ * (e.g. [GERMANY]) do.
+ */
 public expect object Locales {
     public val ENGLISH: PlatformLocale
     public val FRENCH: PlatformLocale

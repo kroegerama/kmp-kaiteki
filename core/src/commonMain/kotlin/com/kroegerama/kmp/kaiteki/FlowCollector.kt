@@ -11,17 +11,23 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlin.jvm.JvmInline
 
+/** DSL marker restricting the receiver scope of [observeMultipleFlows]. */
 @DslMarker
 @Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
 public annotation class FlowCollectorDsl
 
 /**
- * Safe collection of flows in [LifecycleOwner]s Uses [flowWithLifecycle] under the hood.
+ * Collects this flow while [lifecycleOwner] is at least in [minActiveState], suspending collection
+ * whenever the lifecycle drops below that state and resuming when it returns.
+ *
+ * The collection runs in the owner's [lifecycleScope]; the returned [Job] is cancelled automatically
+ * when the lifecycle is destroyed.
  *
  * Example:
  * ```
- * observeFlow(flow) { /* ... */ }
+ * flow.observeWithLifecycle(this) { /* ... */ }
  * ```
+ * @param minActiveState minimum lifecycle state during which collection is active.
  * @see flowWithLifecycle
  */
 public fun <T> Flow<T>.observeWithLifecycle(
@@ -32,6 +38,11 @@ public fun <T> Flow<T>.observeWithLifecycle(
     flowWithLifecycle(lifecycleOwner.lifecycle, minActiveState).collect(action)
 }
 
+/**
+ * Convenience for [observeWithLifecycle] with this [LifecycleOwner] as the receiver.
+ *
+ * @param minActiveState minimum lifecycle state during which collection is active.
+ */
 public fun <T> LifecycleOwner.observeFlow(
     flow: Flow<T>,
     minActiveState: Lifecycle.State = Lifecycle.State.STARTED,
@@ -39,7 +50,11 @@ public fun <T> LifecycleOwner.observeFlow(
 ): Job = flow.observeWithLifecycle(this, minActiveState, action)
 
 /**
- * Collect multiple flows at the same time. Uses [Lifecycle.repeatOnLifecycle] under the hood.
+ * Collects multiple flows in parallel while this owner is at least in [minActiveState], restarting
+ * all of them each time the lifecycle re-enters that state. Uses [Lifecycle.repeatOnLifecycle] under
+ * the hood.
+ *
+ * Register each flow with [MultipleFlowCollectorContext.observe] inside [block].
  *
  * Example:
  * ```
@@ -48,6 +63,7 @@ public fun <T> LifecycleOwner.observeFlow(
  *     observe(flow2) { /* ... */ }
  * }
  * ```
+ * @param minActiveState minimum lifecycle state during which collection is active.
  * @see Lifecycle.repeatOnLifecycle
  */
 public fun LifecycleOwner.observeMultipleFlows(
@@ -63,6 +79,7 @@ public fun LifecycleOwner.observeMultipleFlows(
     }
 }
 
+/** Scope for registering flows inside [observeMultipleFlows]. */
 @JvmInline
 @FlowCollectorDsl
 public value class MultipleFlowCollectorContext @PublishedApi internal constructor(
@@ -90,6 +107,7 @@ public value class MultipleFlowCollectorContext @PublishedApi internal construct
         block: (@FlowCollectorDsl MultipleFlowCollectorContext).() -> Unit
     ): Nothing = error("Not allowed in this context")
 
+    /** Launches collection of [flow] within the enclosing [observeMultipleFlows] scope. */
     public fun <T> observe(
         flow: Flow<T>,
         action: suspend (T) -> Unit

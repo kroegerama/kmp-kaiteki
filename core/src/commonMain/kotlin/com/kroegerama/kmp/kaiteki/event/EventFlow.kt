@@ -6,14 +6,17 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 
 /**
- * usage
+ * A fire-and-forget event bus backed by a [SharedFlow].
  *
- * in singleton / controller / ViewModel:
+ * Events are delivered only to active collectors (no replay). The buffer holds up to 16 events and
+ * drops the oldest on overflow, so [send] never suspends and never fails.
+ *
+ * Create one in a singleton, controller or ViewModel:
  * ```kotlin
  * val myEventFlow = EventFlow<Int>()
  * ```
  *
- * in ViewModel:
+ * Collect and emit, e.g. from a ViewModel:
  * ```kotlin
  *    val events: Flow<Int> = injected.myEventFlow
  *
@@ -30,9 +33,11 @@ import kotlinx.coroutines.flow.SharedFlow
  */
 @OptIn(ExperimentalForInheritanceCoroutinesApi::class)
 public interface EventFlow<T> : SharedFlow<T> {
+    /** Emits [event] to current collectors, dropping the oldest buffered event on overflow. */
     public fun send(event: T)
 
     public companion object {
+        /** Creates a new [EventFlow]. */
         public operator fun <T> invoke(): EventFlow<T> {
             val sharedFlow = MutableSharedFlow<T>(
                 replay = 0,
@@ -48,4 +53,5 @@ public interface EventFlow<T> : SharedFlow<T> {
     }
 }
 
+/** Sends a [Unit] event, for event flows that only signal that something happened. */
 public fun EventFlow<Unit>.send(): Unit = send(Unit)

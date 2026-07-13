@@ -4,6 +4,19 @@ import androidx.lifecycle.SavedStateHandle
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
+/**
+ * Exposes a value stored in this [SavedStateHandle] as a read/write property delegate.
+ *
+ * Reads return the stored value, or the result of [init] the first time (which is then persisted).
+ * Writes update the handle, so the value survives process death.
+ *
+ * ```kotlin
+ * var query: String by savedStateHandle.field { "" }
+ * ```
+ *
+ * @param key storage key; defaults to the enclosing class name plus the property name.
+ * @param init produces the initial value when nothing is stored yet.
+ */
 public fun <T : Any> SavedStateHandle.field(
     key: String? = null,
     init: () -> T,

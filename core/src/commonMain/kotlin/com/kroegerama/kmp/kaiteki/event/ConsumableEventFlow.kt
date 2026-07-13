@@ -12,14 +12,19 @@ import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
 /**
- * usage
+ * An event flow that holds a single value until it is explicitly consumed.
  *
- * in singleton / controller / ViewModel:
+ * Unlike [EventFlow], the current value is retained (and re-delivered to new collectors) until a
+ * collector calls [ConsumableData.consume] or [ConsumableData.use]. This makes it suitable for
+ * one-shot UI effects (snackbars, navigation) that must not be lost across recompositions or
+ * configuration changes, yet must fire only once.
+ *
+ * Create one in a singleton, controller or ViewModel:
  * ```kotlin
  * val myConsumableFlow = ConsumableEventFlow<String>()
  * ```
  *
- * in ViewModel:
+ * Collect and emit, e.g. from a ViewModel:
  * ```kotlin
  * val consumables = injected.myConsumableFlow
  *
@@ -38,9 +43,11 @@ import kotlin.contracts.contract
  */
 public interface ConsumableEventFlow<T> : Flow<ConsumableData<T>> {
 
+    /** Sets [event] as the current value, replacing any previous unconsumed one. */
     public fun send(event: T)
 
     public companion object {
+        /** Creates a new [ConsumableEventFlow]. */
         public operator fun <T> invoke(): ConsumableEventFlow<T> {
             val upstream = MutableStateFlow<Option<T>>(None)
 
@@ -60,13 +67,19 @@ public interface ConsumableEventFlow<T> : Flow<ConsumableData<T>> {
     }
 }
 
+/**
+ * A single event value emitted by a [ConsumableEventFlow], together with the means to mark it
+ * consumed so it is not delivered again.
+ */
 @Stable
 public data class ConsumableData<T>(
     public val data: T,
     private val onConsume: () -> Unit
 ) {
+    /** Marks this event as consumed without reading [data]. */
     public fun consume(): Unit = onConsume.invoke()
 
+    /** Passes [data] to [block] and marks the event consumed, returning [block]'s result. */
     public inline fun <R> use(block: (T) -> R): R {
         contract {
             callsInPlace(block, InvocationKind.EXACTLY_ONCE)
@@ -75,4 +88,5 @@ public data class ConsumableData<T>(
     }
 }
 
+/** Sends a [Unit] event, for consumable flows that only signal that something happened. */
 public fun ConsumableEventFlow<Unit>.send(): Unit = send(Unit)

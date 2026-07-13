@@ -21,18 +21,48 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.flow.update
 
+/**
+ * A reactive holder around a suspending loader that exposes its outcome as a [LoadState].
+ *
+ * The loader runs lazily while there are active subscribers, keeps the last successful value as
+ * stale data across refreshes, and can be re-run via [refresh] or short-circuited via [override].
+ * Create instances through the companion [invoke] factories (or [ofData]).
+ *
+ * @param E the error type.
+ * @param T the loaded data type.
+ */
 @Stable
 public abstract class LoadStateFlow<E, T> {
+    /** The current load state, updated as the loader runs. */
     public abstract val flow: StateFlow<LoadState<E, T>>
+
+    /** The latest value or last known stale value, mirroring [LoadState.dataOrStale]. */
     public abstract val dataOrStale: StateFlow<Option<T>>
+
+    /** Whether a load is currently in progress. */
     public abstract val loading: StateFlow<Boolean>
 
+    /**
+     * Re-runs the loader.
+     *
+     * @param withLoading when `true`, emits a [LoadState.Loading] state (carrying stale data) before
+     *   the loader completes; when `false`, updates silently in place.
+     */
     public abstract fun refresh(withLoading: Boolean = true)
+
+    /** Immediately replaces the state with [LoadState.Success] holding [newData], without loading. */
     public abstract fun override(newData: T)
 
     public companion object {
         private val DEFAULT_SHARING_STARTED = SharingStarted.WhileSubscribed(5_000)
 
+        /**
+         * Creates a [LoadStateFlow] scoped to the ambient [ViewModel]'s `viewModelScope`.
+         *
+         * @param sharingStarted sharing policy for the backing [StateFlow].
+         * @param onError invoked on each failure with the error and a `retry` action.
+         * @param block the suspending loader producing an [Either] error or value.
+         */
         context(vm: ViewModel)
         public operator fun <E, T> invoke(
             sharingStarted: SharingStarted = DEFAULT_SHARING_STARTED,
@@ -45,6 +75,15 @@ public abstract class LoadStateFlow<E, T> {
             block = block
         )
 
+        /**
+         * Creates a [LoadStateFlow] scoped to the ambient [ViewModel] that reloads whenever
+         * [parameterFlow] emits a new parameter.
+         *
+         * @param parameterFlow drives reloads; each emitted value is passed to [block].
+         * @param sharingStarted sharing policy for the backing [StateFlow].
+         * @param onError invoked on each failure with the error and a `retry` action.
+         * @param block the suspending loader mapping a parameter to an [Either] error or value.
+         */
         context(vm: ViewModel)
         public operator fun <Param, E, T> invoke(
             parameterFlow: Flow<Param>,
@@ -59,6 +98,14 @@ public abstract class LoadStateFlow<E, T> {
             block = block
         )
 
+        /**
+         * Creates a [LoadStateFlow] running in the given [scope].
+         *
+         * @param scope coroutine scope the loader runs in.
+         * @param sharingStarted sharing policy for the backing [StateFlow].
+         * @param onError invoked on each failure with the error and a `retry` action.
+         * @param block the suspending loader producing an [Either] error or value.
+         */
         public operator fun <E, T> invoke(
             scope: CoroutineScope,
             sharingStarted: SharingStarted = DEFAULT_SHARING_STARTED,
@@ -107,6 +154,16 @@ public abstract class LoadStateFlow<E, T> {
             }
         }
 
+        /**
+         * Creates a [LoadStateFlow] running in the given [scope] that reloads whenever
+         * [parameterFlow] emits a new parameter.
+         *
+         * @param scope coroutine scope the loader runs in.
+         * @param parameterFlow drives reloads; each emitted value is passed to [block].
+         * @param sharingStarted sharing policy for the backing [StateFlow].
+         * @param onError invoked on each failure with the error and a `retry` action.
+         * @param block the suspending loader mapping a parameter to an [Either] error or value.
+         */
         public operator fun <Param, E, T> invoke(
             scope: CoroutineScope,
             parameterFlow: Flow<Param>,
@@ -158,6 +215,10 @@ public abstract class LoadStateFlow<E, T> {
             }
         }
 
+        /**
+         * Creates a [LoadStateFlow] that is permanently [LoadState.Success] with [data] and never
+         * loads. Useful for previews, tests, or already-available values.
+         */
         public fun <T> ofData(
             data: T
         ): LoadStateFlow<Nothing, T> = object : LoadStateFlow<Nothing, T>() {

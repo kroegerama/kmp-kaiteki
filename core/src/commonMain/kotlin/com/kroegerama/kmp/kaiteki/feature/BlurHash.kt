@@ -5,6 +5,18 @@ import androidx.compose.runtime.Immutable
 import kotlin.math.pow
 import kotlin.math.withSign
 
+/**
+ * A decoded [BlurHash](https://blurha.sh) placeholder: the compact frequency-domain representation
+ * of a blurred image, ready to be rendered into a bitmap.
+ *
+ * Obtain one with [decode]. Rendering to an actual image is left to the consuming module.
+ *
+ * @property componentsX number of horizontal DCT components encoded in the hash.
+ * @property componentsY number of vertical DCT components encoded in the hash.
+ * @property averageColor the image's average color as an ARGB integer, useful as an instant
+ *   solid-color placeholder.
+ * @property factors the decoded DCT coefficients, laid out as `[r, g, b]` triples per component.
+ */
 @Immutable
 public data class BlurHash(
     val componentsX: Int,
@@ -13,6 +25,13 @@ public data class BlurHash(
     val factors: FloatArray
 ) {
     public companion object {
+        /**
+         * Decodes a BlurHash string, or returns `null` if it is malformed.
+         *
+         * @param blurHash the encoded BlurHash string.
+         * @param punch contrast multiplier applied to the color components; `1` keeps the original
+         *   contrast, higher values increase it.
+         */
         public fun decode(
             blurHash: String,
             @FloatRange(from = 0.0)
