@@ -20,6 +20,22 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
 
+/**
+ * Material 3 Expressive `FilledTonalButton` whose corner shapes, content padding, icon size and
+ * text style are all derived from [containerHeight]. Lays out an optional [startIcon], the [text]
+ * and an optional [endIcon] on a single line; the text truncates before the icons are pushed out.
+ *
+ * Prefer the fixed-size `FilledTonalButton*` variants unless you need a custom container height.
+ *
+ * @param onClick Called when the button is clicked.
+ * @param text Label shown on the button.
+ * @param containerHeight Target container height; drives shape, padding, icon size and typography.
+ * @param startIcon Optional icon shown before the text.
+ * @param endIcon Optional icon shown after the text.
+ * @param enabled Whether the button responds to input.
+ * @param colors [ButtonColors] used for the container and content.
+ * @param elevation [ButtonElevation] used across the button's states, or null for no elevation.
+ */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun BaseFilledTonalButton(
@@ -57,6 +73,7 @@ public fun BaseFilledTonalButton(
     }
 }
 
+/** [BaseFilledTonalButton] with the extra-small container height. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledTonalButtonExtraSmall(
@@ -82,6 +99,7 @@ public fun FilledTonalButtonExtraSmall(
     )
 }
 
+/** [BaseFilledTonalButton] with the small container height. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledTonalButtonSmall(
@@ -107,6 +125,7 @@ public fun FilledTonalButtonSmall(
     )
 }
 
+/** [BaseFilledTonalButton] with the medium container height. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledTonalButtonMedium(
@@ -132,6 +151,7 @@ public fun FilledTonalButtonMedium(
     )
 }
 
+/** [BaseFilledTonalButton] with the large container height. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledTonalButtonLarge(
@@ -157,6 +177,7 @@ public fun FilledTonalButtonLarge(
     )
 }
 
+/** [BaseFilledTonalButton] with the extra-large container height. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledTonalButtonExtraLarge(

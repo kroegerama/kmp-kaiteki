@@ -20,6 +20,17 @@ import com.kroegerama.kmp.kaiteki.compose.asPlatformLocale
 import com.kroegerama.kmp.kaiteki.formatting.DecimalFormatter
 import com.kroegerama.kmp.kaiteki.formatting.DefaultDecimalFormatter
 
+/**
+ * Remembers a [DecimalFormatter] for the given [locale] and digit constraints, recomputed whenever
+ * any argument changes.
+ *
+ * @param locale Locale used for digit grouping and the decimal separator.
+ * @param minimumFractionDigits Minimum digits shown after the decimal separator.
+ * @param minimumIntegerDigits Minimum digits shown before the decimal separator.
+ * @param maximumFractionDigits Maximum digits shown after the decimal separator.
+ * @param maximumIntegerDigits Maximum digits shown before the decimal separator.
+ * @param isGroupingUsed Whether digit grouping (e.g. thousands separators) is applied.
+ */
 @Composable
 public fun rememberDecimalFormatter(
     locale: Locale = LocalLocale.current,
@@ -46,6 +57,7 @@ public fun rememberDecimalFormatter(
     )
 }
 
+/** [CompositionLocal] providing a [DecimalFormatter] derived from the current locale. */
 public val LocalDecimalFormatter: ProvidableCompositionLocal<DecimalFormatter> = compositionLocalWithComputedDefaultOf {
     DefaultDecimalFormatter(
         locale = LocalLocale.currentValue.asPlatformLocale()

@@ -26,6 +26,22 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
 
+/**
+ * Material 3 Expressive [IconToggleButton] that renders [icon] centered inside a fixed
+ * [containerSize] and reflects [checked] through its colors and [shapes].
+ *
+ * Prefer the fixed-size `IconToggleButton*` variants unless you need a custom container size.
+ *
+ * @param checked Whether the button is currently checked.
+ * @param onCheckedChange Called with the requested checked state when the button is toggled.
+ * @param icon Icon drawn in the center of the button.
+ * @param containerSize Size of the container and touch target.
+ * @param iconSize Size the [icon] is drawn at.
+ * @param shapes Resting, pressed and checked shapes of the container.
+ * @param contentDescription Accessibility description of the [icon], or null if it is decorative.
+ * @param enabled Whether the button responds to input.
+ * @param colors [IconToggleButtonColors] used for the container and icon across states.
+ */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun BaseIconToggleButton(
@@ -56,6 +72,7 @@ public fun BaseIconToggleButton(
     }
 }
 
+/** [BaseIconToggleButton] with the extra-small container size. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun IconToggleButtonExtraSmall(
@@ -85,6 +102,7 @@ public fun IconToggleButtonExtraSmall(
     )
 }
 
+/** [BaseIconToggleButton] with the small container size. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun IconToggleButtonSmall(
@@ -114,6 +132,7 @@ public fun IconToggleButtonSmall(
     )
 }
 
+/** [BaseIconToggleButton] with the medium container size. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun IconToggleButtonMedium(
@@ -143,6 +162,7 @@ public fun IconToggleButtonMedium(
     )
 }
 
+/** [BaseIconToggleButton] with the large container size. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun IconToggleButtonLarge(
@@ -172,6 +192,7 @@ public fun IconToggleButtonLarge(
     )
 }
 
+/** [BaseIconToggleButton] with the extra-large container size. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun IconToggleButtonExtraLarge(

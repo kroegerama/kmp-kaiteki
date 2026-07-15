@@ -25,6 +25,13 @@ internal data object TopAppBarKey : NavMetadataKey<@Composable () -> Unit>
 
 internal const val TOP_APP_BAR_SHARED_CONTENT_KEY = "kaiteki.top.app.bar"
 
+/**
+ * [SceneDecoratorStrategy] that wraps every Navigation 3 scene in a Material 3 [Scaffold] and shares
+ * a single top app bar across destinations through a shared-element transition. Supply the top app
+ * bar per entry via [topAppBar] metadata; entries without it render no app bar.
+ *
+ * Obtain an instance with [rememberScaffoldSceneDecorator].
+ */
 public class ScaffoldSceneDecorator<T : Any>(
     private val sharedTransitionScope: SharedTransitionScope,
 ) : SceneDecoratorStrategy<T> {
@@ -36,6 +43,10 @@ public class ScaffoldSceneDecorator<T : Any>(
     }
 
     public companion object {
+        /**
+         * Builds navigation entry metadata carrying the top app bar [content] for that entry's
+         * scene. Combine with other metadata using `+`.
+         */
         public fun topAppBar(content: @Composable () -> Unit): Map<String, Any> = metadata {
             put(TopAppBarKey, content)
         }

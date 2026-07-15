@@ -20,6 +20,21 @@ import androidx.paging.LoadState
 import androidx.paging.LoadStates
 import androidx.paging.compose.LazyPagingItems
 
+/**
+ * Adds header items to a lazy grid that render the refresh and prepend [LoadState]s of
+ * [lazyPagingItems], plus an empty-state item shown when no items were loaded.
+ *
+ * Call this at the top of the `LazyVerticalGrid` / `LazyHorizontalGrid` content, before emitting
+ * the paged items, and pair it with [pagingFooters] for the append state.
+ *
+ * @param lazyPagingItems Paging items whose load states drive the header content.
+ * @param onEmpty Shown when [lazyPagingItems] is empty; receives the current refresh [LoadState].
+ * @param onRefreshLoading Shown while the initial refresh is loading.
+ * @param onPrependLoading Shown while a prepend (load-before) is in progress.
+ * @param onRefreshError Shown when the initial refresh failed; receives the error.
+ * @param onPrependError Shown when a prepend failed; receives the error.
+ * @param span Span applied to the header and empty items; defaults to a full line.
+ */
 public fun LazyGridScope.pagingHeaders(
     lazyPagingItems: LazyPagingItems<*>,
     onEmpty: @Composable LazyGridItemScope.(refresh: LoadState) -> Unit = {},
@@ -61,6 +76,15 @@ public fun LazyGridScope.pagingHeaders(
     }
 }
 
+/**
+ * Adds a footer item to a lazy grid that renders the append [LoadState] of [lazyPagingItems].
+ * Call this at the bottom of the content, after emitting the paged items.
+ *
+ * @param lazyPagingItems Paging items whose append load state drives the footer content.
+ * @param onAppendLoading Shown while an append (load-after) is in progress.
+ * @param onAppendError Shown when an append failed; receives the error.
+ * @param span Span applied to the footer item; defaults to a full line.
+ */
 public fun LazyGridScope.pagingFooters(
     lazyPagingItems: LazyPagingItems<*>,
     onAppendLoading: @Composable LazyGridItemScope.() -> Unit = {},

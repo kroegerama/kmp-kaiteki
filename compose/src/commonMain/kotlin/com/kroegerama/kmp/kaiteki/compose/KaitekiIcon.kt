@@ -6,6 +6,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
+/**
+ * The Kaiteki logo as an [ImageVector]. Mainly used as placeholder artwork in the library's
+ * `@Preview` composables, but available to consumers as well.
+ */
 public val KaitekiIcon: ImageVector
     get() {
         if (_KaitekiIcon != null) {

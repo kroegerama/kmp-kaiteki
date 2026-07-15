@@ -11,6 +11,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 
+/**
+ * [PullToRefreshBox] that defaults its [indicator] to the Material 3 Expressive
+ * [PullToRefreshDefaults.LoadingIndicator], aligned to the top center. Behaves like the standard
+ * `PullToRefreshBox` in every other respect.
+ *
+ * @param isRefreshing Whether a refresh is currently in progress.
+ * @param onRefresh Called when the user triggers a refresh by pulling down.
+ * @param state State controlling the pull gesture and indicator position.
+ * @param contentAlignment Alignment of the [content] inside the box.
+ * @param indicator Refresh indicator drawn on top of the content.
+ * @param enabled Whether the pull-to-refresh gesture is enabled.
+ * @param threshold Pull distance past which [onRefresh] is triggered on release.
+ * @param content Scrollable content shown inside the box.
+ */
 @Composable
 public fun ExpressivePullToRefreshBox(
     isRefreshing: Boolean,

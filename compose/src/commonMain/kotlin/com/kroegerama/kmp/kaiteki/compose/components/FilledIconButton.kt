@@ -22,6 +22,22 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
 
+/**
+ * Material 3 Expressive `FilledIconButton` that renders [icon] centered inside a fixed
+ * [containerSize], drawing the icon at [iconSize] with the given [shapes] for its resting and
+ * pressed states.
+ *
+ * Prefer the fixed-size `FilledIconButton*` variants unless you need a custom container size.
+ *
+ * @param onClick Called when the button is clicked.
+ * @param icon Icon drawn in the center of the button.
+ * @param containerSize Size of the container and touch target.
+ * @param iconSize Size the [icon] is drawn at.
+ * @param shapes Resting and pressed shapes of the container.
+ * @param contentDescription Accessibility description of the [icon], or null if it is decorative.
+ * @param enabled Whether the button responds to input.
+ * @param colors [IconButtonColors] used for the container and icon.
+ */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun BaseFilledIconButton(
@@ -50,6 +66,7 @@ public fun BaseFilledIconButton(
     }
 }
 
+/** [BaseFilledIconButton] with the extra-small container size. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledIconButtonExtraSmall(
@@ -76,6 +93,7 @@ public fun FilledIconButtonExtraSmall(
     )
 }
 
+/** [BaseFilledIconButton] with the small container size. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledIconButtonSmall(
@@ -102,6 +120,7 @@ public fun FilledIconButtonSmall(
     )
 }
 
+/** [BaseFilledIconButton] with the medium container size. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledIconButtonMedium(
@@ -128,6 +147,7 @@ public fun FilledIconButtonMedium(
     )
 }
 
+/** [BaseFilledIconButton] with the large container size. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledIconButtonLarge(
@@ -154,6 +174,7 @@ public fun FilledIconButtonLarge(
     )
 }
 
+/** [BaseFilledIconButton] with the extra-large container size. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledIconButtonExtraLarge(

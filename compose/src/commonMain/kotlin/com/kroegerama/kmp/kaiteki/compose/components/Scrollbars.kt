@@ -27,6 +27,18 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.max
 
+/**
+ * Draws a simple vertical scrollbar thumb for a [ScrollState]. Place it in a `Box` on top of the
+ * scrollable content, e.g. aligned to `CenterEnd` and filling the available height.
+ *
+ * The thumb is sized proportionally to the visible fraction of the content (clamped to
+ * [minThumbHeight]) and hidden while the content fits without scrolling.
+ *
+ * @param scrollState Scroll state of the content the scrollbar reflects.
+ * @param width Thickness of the thumb.
+ * @param minThumbHeight Minimum thumb height, so it stays grabbable for very long content.
+ * @param color Color of the thumb.
+ */
 @Composable
 public fun VerticalScrollbar(
     scrollState: ScrollState,
@@ -58,6 +70,18 @@ public fun VerticalScrollbar(
     }
 }
 
+/**
+ * Draws a simple horizontal scrollbar thumb for a [ScrollState]. Place it in a `Box` on top of the
+ * scrollable content, e.g. aligned to `BottomCenter` and filling the available width.
+ *
+ * The thumb is sized proportionally to the visible fraction of the content (clamped to
+ * [minThumbWidth]) and hidden while the content fits without scrolling.
+ *
+ * @param scrollState Scroll state of the content the scrollbar reflects.
+ * @param height Thickness of the thumb.
+ * @param minThumbWidth Minimum thumb width, so it stays grabbable for very wide content.
+ * @param color Color of the thumb.
+ */
 @Composable
 public fun HorizontalScrollbar(
     scrollState: ScrollState,

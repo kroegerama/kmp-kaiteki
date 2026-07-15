@@ -25,7 +25,6 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.kroegerama.kmp.kaiteki.InternalKaitekiApi
-import com.kroegerama.kmp.kaiteki.locale.PlatformLocale
 import com.kroegerama.kmp.kaiteki.compose.asPlatformLocale
 import com.kroegerama.kmp.kaiteki.formatting.CapitalizationMode
 import com.kroegerama.kmp.kaiteki.formatting.FormatStyle
@@ -35,6 +34,7 @@ import com.kroegerama.kmp.kaiteki.formatting.LocalizedDateTimeFormatter.Companio
 import com.kroegerama.kmp.kaiteki.formatting.LocalizedDateTimeFormatter.Companion.DEFAULT_SWITCH_SEC_TO_MIN
 import com.kroegerama.kmp.kaiteki.formatting.defaultLocalizedDateTimeFormatter
 import com.kroegerama.kmp.kaiteki.formatting.formatFancyInternal
+import com.kroegerama.kmp.kaiteki.locale.PlatformLocale
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.datetime.TimeZone
@@ -45,6 +45,16 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
+/**
+ * Remembers a [LocalizedDateTimeFormatter] configured for the given [locale] and styles, recomputed
+ * whenever any argument changes.
+ *
+ * @param locale Locale used for formatting.
+ * @param dateStyle Length of the formatted date.
+ * @param timeStyle Length of the formatted time.
+ * @param capitalizationMode Capitalization applied to the output.
+ * @param zone Time zone the instants are formatted in.
+ */
 @Composable
 public fun rememberLocalizedDateTimeFormatter(
     locale: Locale = Locale.current,
@@ -62,12 +72,24 @@ public fun rememberLocalizedDateTimeFormatter(
     )
 }
 
+/** [CompositionLocal] providing a [LocalizedDateTimeFormatter] derived from the current locale. */
 public val LocalLocalizedDateTimeFormatter: ProvidableCompositionLocal<LocalizedDateTimeFormatter> = compositionLocalWithComputedDefaultOf {
     defaultLocalizedDateTimeFormatter(
         locale = LocalLocale.currentValue.asPlatformLocale()
     )
 }
 
+/**
+ * Formats [instant] as a relative, self-updating "fancy" string (e.g. "now", "5 minutes ago"),
+ * emitting a new value each time the wording is due to change and eventually switching to an
+ * absolute date/time.
+ *
+ * @param instant Instant to format relative to the current time.
+ * @param dateTimeDivider Separator inserted between date and time in the absolute representation.
+ * @param switchNowToSeconds Age (seconds) below which the value reads as "now".
+ * @param switchSecondsToMinutes Age (seconds) at which the value switches from seconds to minutes.
+ * @param switchMinutesToTime Age (seconds) at which the value switches to an absolute time.
+ */
 @OptIn(InternalKaitekiApi::class)
 @Composable
 public fun LocalizedDateTimeFormatter.formatFancyAsState(

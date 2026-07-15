@@ -39,6 +39,16 @@ private class TintedPainter(
     }
 }
 
+/**
+ * Remembers a [Painter] that draws [imageVector] recolored with [tint] via a [ColorFilter].
+ * Unlike `Icon`, the result is a plain painter, so it can be used anywhere a [Painter] is expected,
+ * e.g. with `Image` or as a background.
+ *
+ * @param imageVector Vector to draw.
+ * @param tint Color applied to the vector.
+ * @param blendMode Blend mode used to combine [tint] with the vector. Defaults to [BlendMode.SrcIn],
+ * which replaces the vector's colors with [tint].
+ */
 @Composable
 public fun rememberTintedVectorPainter(
     imageVector: ImageVector,

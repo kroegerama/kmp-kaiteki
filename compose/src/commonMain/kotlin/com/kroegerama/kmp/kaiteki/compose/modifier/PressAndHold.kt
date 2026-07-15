@@ -14,6 +14,20 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
+/**
+ * Invokes [onClick] once on press and then repeatedly while the pointer stays down, accelerating
+ * over time. Useful for steppers or increment/decrement buttons where holding should keep firing.
+ *
+ * The first repeat happens after [maxDelayMillis]. Each subsequent delay is shortened by
+ * [delayDecayFactor] until it reaches [minDelayMillis], so the longer the press is held the faster
+ * the callbacks arrive.
+ *
+ * @param enabled Whether the gesture is active. When false, no callbacks are emitted.
+ * @param maxDelayMillis Delay before the first repeat, and the slowest repeat rate.
+ * @param minDelayMillis Shortest delay between repeats, i.e. the fastest repeat rate.
+ * @param delayDecayFactor Fraction by which the delay shrinks after each repeat. Must be in `0..1`.
+ * @param onClick Invoked on the initial press and on every repeat.
+ */
 public fun Modifier.pressAndHold(
     enabled: Boolean = true,
     maxDelayMillis: Long = 600,

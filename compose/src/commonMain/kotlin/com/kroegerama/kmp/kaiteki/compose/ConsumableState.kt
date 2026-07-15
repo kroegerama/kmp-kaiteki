@@ -25,7 +25,13 @@ import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
- * usage
+ * Holder for one-shot events that must be delivered to the UI exactly once, such as showing a
+ * snackbar or triggering navigation. Events are buffered in a [Channel], so they survive while no
+ * collector is attached (e.g. during a configuration change) and are never delivered twice.
+ *
+ * Create it in a `ViewModel`, push events with [set], and collect them from Compose with [Consume].
+ *
+ * Usage
  *
  * ViewModel
  * ```kotlin
@@ -55,11 +61,18 @@ public class ConsumableState<T> @RememberInComposition constructor() {
         onBufferOverflow = BufferOverflow.SUSPEND
     )
 
+    /** Enqueues [state] to be delivered to the current or next [Consume] collector. */
     public fun set(state: T) {
         channel.trySend(state)
     }
 }
 
+/**
+ * Collects events from this [ConsumableState] while in the composition, invoking [block] for each
+ * one. Each event is consumed exactly once.
+ *
+ * @param block Suspending handler run for every event, e.g. to show a snackbar or navigate.
+ */
 @Composable
 public inline fun <T> ConsumableState<T>.Consume(
     crossinline block: suspend (T) -> Unit

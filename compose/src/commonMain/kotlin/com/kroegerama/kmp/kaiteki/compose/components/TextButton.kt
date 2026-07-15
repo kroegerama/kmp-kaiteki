@@ -19,6 +19,21 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
 
+/**
+ * Material 3 Expressive `TextButton` whose corner shapes, content padding, icon size and text
+ * style are all derived from [containerHeight]. Lays out an optional [startIcon], the [text] and an
+ * optional [endIcon] on a single line; the text truncates before the icons are pushed out.
+ *
+ * Prefer the fixed-size `TextButton*` variants unless you need a custom container height.
+ *
+ * @param onClick Called when the button is clicked.
+ * @param text Label shown on the button.
+ * @param containerHeight Target container height; drives shape, padding, icon size and typography.
+ * @param startIcon Optional icon shown before the text.
+ * @param endIcon Optional icon shown after the text.
+ * @param enabled Whether the button responds to input.
+ * @param colors [ButtonColors] used for the container and content.
+ */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun BaseTextButton(
@@ -54,6 +69,7 @@ public fun BaseTextButton(
     }
 }
 
+/** [BaseTextButton] with the extra-small container height. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun TextButtonExtraSmall(
@@ -77,6 +93,7 @@ public fun TextButtonExtraSmall(
     )
 }
 
+/** [BaseTextButton] with the small container height. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun TextButtonSmall(
@@ -100,6 +117,7 @@ public fun TextButtonSmall(
     )
 }
 
+/** [BaseTextButton] with the medium container height. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun TextButtonMedium(
@@ -123,6 +141,7 @@ public fun TextButtonMedium(
     )
 }
 
+/** [BaseTextButton] with the large container height. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun TextButtonLarge(
@@ -146,6 +165,7 @@ public fun TextButtonLarge(
     )
 }
 
+/** [BaseTextButton] with the extra-large container height. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun TextButtonExtraLarge(

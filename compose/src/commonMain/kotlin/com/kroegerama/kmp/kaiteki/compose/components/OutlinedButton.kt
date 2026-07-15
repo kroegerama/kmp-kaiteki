@@ -20,6 +20,22 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
 
+/**
+ * Material 3 Expressive [OutlinedButton] whose corner shapes, content padding, icon size and text
+ * style are all derived from [containerHeight]. Lays out an optional [startIcon], the [text] and an
+ * optional [endIcon] on a single line; the text truncates before the icons are pushed out.
+ *
+ * Prefer the fixed-size `OutlinedButton*` variants unless you need a custom container height.
+ *
+ * @param onClick Called when the button is clicked.
+ * @param text Label shown on the button.
+ * @param containerHeight Target container height; drives shape, padding, icon size and typography.
+ * @param startIcon Optional icon shown before the text.
+ * @param endIcon Optional icon shown after the text.
+ * @param enabled Whether the button responds to input.
+ * @param colors [ButtonColors] used for the container and content.
+ * @param border Border stroke drawn around the button, or null for no border.
+ */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun BaseOutlinedButton(
@@ -57,6 +73,7 @@ public fun BaseOutlinedButton(
     }
 }
 
+/** [BaseOutlinedButton] with the extra-small container height. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun OutlinedButtonExtraSmall(
@@ -82,6 +99,7 @@ public fun OutlinedButtonExtraSmall(
     )
 }
 
+/** [BaseOutlinedButton] with the small container height. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun OutlinedButtonSmall(
@@ -107,6 +125,7 @@ public fun OutlinedButtonSmall(
     )
 }
 
+/** [BaseOutlinedButton] with the medium container height. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun OutlinedButtonMedium(
@@ -132,6 +151,7 @@ public fun OutlinedButtonMedium(
     )
 }
 
+/** [BaseOutlinedButton] with the large container height. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun OutlinedButtonLarge(
@@ -157,6 +177,7 @@ public fun OutlinedButtonLarge(
     )
 }
 
+/** [BaseOutlinedButton] with the extra-large container height. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun OutlinedButtonExtraLarge(

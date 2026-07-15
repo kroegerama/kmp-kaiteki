@@ -22,6 +22,15 @@ import androidx.compose.ui.unit.dp
 import com.kroegerama.kmp.kaiteki.compose.formatting.rememberDecimalFormatter
 import com.kroegerama.kmp.kaiteki.formatting.DecimalFormatter
 
+/**
+ * [InputTransformation] that restricts a text field to a single non-negative decimal number using
+ * the locale-specific decimal separator of [decimalFormatter]. It rejects non-numeric input,
+ * collapses redundant leading zeros, prefills a leading zero for values entered as `.5`, and limits
+ * the fraction to [maxDecimalPlaces] digits. Also requests the decimal keyboard.
+ *
+ * @param decimalFormatter Provides the decimal separator to accept.
+ * @param maxDecimalPlaces Maximum number of digits allowed after the decimal separator.
+ */
 @Stable
 public class DecimalInputTransformation @RememberInComposition constructor(
     decimalFormatter: DecimalFormatter,
@@ -96,6 +105,14 @@ public class DecimalInputTransformation @RememberInComposition constructor(
     }
 }
 
+/**
+ * Chains a [DecimalInputTransformation] onto this [InputTransformation], so the field only accepts a
+ * locale-aware decimal number with at most [maxDecimalPlaces] fraction digits.
+ *
+ * @param decimalFormatter Formatter providing the decimal separator; defaults to
+ * [rememberDecimalFormatter].
+ * @param maxDecimalPlaces Maximum number of digits allowed after the decimal separator.
+ */
 @Composable
 @Stable
 public fun InputTransformation.decimalInput(

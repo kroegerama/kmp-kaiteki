@@ -20,6 +20,23 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
 
+/**
+ * Material 3 Expressive filled [Button] whose corner shapes, content padding, icon size and text
+ * style are all derived from [containerHeight]. Lays out an optional [startIcon], the [text] and an
+ * optional [endIcon] on a single line; the text truncates before the icons are pushed out.
+ *
+ * Prefer the fixed-size variants [ButtonExtraSmall], [ButtonSmall], [ButtonMedium], [ButtonLarge]
+ * and [ButtonExtraLarge] unless you need a custom container height.
+ *
+ * @param onClick Called when the button is clicked.
+ * @param text Label shown on the button.
+ * @param containerHeight Target container height; drives shape, padding, icon size and typography.
+ * @param startIcon Optional icon shown before the text.
+ * @param endIcon Optional icon shown after the text.
+ * @param enabled Whether the button responds to input.
+ * @param colors [ButtonColors] used for the container and content.
+ * @param elevation [ButtonElevation] used across the button's states, or null for no elevation.
+ */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun BaseButton(
@@ -57,6 +74,7 @@ public fun BaseButton(
     }
 }
 
+/** [BaseButton] with the extra-small container height. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun ButtonExtraSmall(
@@ -82,6 +100,7 @@ public fun ButtonExtraSmall(
     )
 }
 
+/** [BaseButton] with the small container height. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun ButtonSmall(
@@ -107,6 +126,7 @@ public fun ButtonSmall(
     )
 }
 
+/** [BaseButton] with the medium container height. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun ButtonMedium(
@@ -132,6 +152,7 @@ public fun ButtonMedium(
     )
 }
 
+/** [BaseButton] with the large container height. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun ButtonLarge(
@@ -157,6 +178,7 @@ public fun ButtonLarge(
     )
 }
 
+/** [BaseButton] with the extra-large container height. */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun ButtonExtraLarge(

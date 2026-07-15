@@ -20,6 +20,15 @@ import kotlinx.coroutines.launch
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
+/**
+ * Creates and retains a [ValidatingTextFieldState] backed by a [TextFieldState], running
+ * [validator] against the current text to derive its error.
+ *
+ * @param initialText Initial text of the field.
+ * @param autoClearError Whether the error is cleared automatically whenever the text changes.
+ * @param validator Validation logic; call [ValidationRaiserScope.raise] or
+ * [ValidationRaiserScope.require] to flag the value as invalid.
+ */
 @Composable
 public fun rememberValidatingTextFieldState(
     initialText: String = "",
@@ -36,6 +45,14 @@ public fun rememberValidatingTextFieldState(
     return result
 }
 
+/**
+ * Creates and retains a [SimpleValidatingState] that validates an arbitrary observable [state]
+ * value instead of a text field, e.g. a checkbox, dropdown selection or date.
+ *
+ * @param state Source value to validate.
+ * @param autoClearError Whether the error is cleared automatically whenever the value changes.
+ * @param validator Validation logic for the value.
+ */
 @Composable
 public fun <T> rememberSimpleValidatingState(
     state: State<T>,
@@ -53,6 +70,15 @@ public fun <T> rememberSimpleValidatingState(
     return result
 }
 
+/**
+ * Creates a [ValidatingTextFieldState] owned by this [ViewModel], so the field state and its
+ * validation survive configuration changes. Use [rememberValidatingTextFieldState] instead when the
+ * state should live in the composition.
+ *
+ * @param initialText Initial text of the field.
+ * @param autoClearError Whether the error is cleared automatically whenever the text changes.
+ * @param validator Validation logic for the text.
+ */
 @RememberInComposition
 public fun ViewModel.ValidatingTextFieldState(
     initialText: String = "",
@@ -79,6 +105,14 @@ private fun createValidatingTextFieldState(
     }
 }
 
+/**
+ * Creates a [SimpleValidatingState] owned by this [ViewModel]. Use [rememberSimpleValidatingState]
+ * instead when the state should live in the composition.
+ *
+ * @param state Source value to validate.
+ * @param autoClearError Whether the error is cleared automatically whenever the value changes.
+ * @param validator Validation logic for the value.
+ */
 @RememberInComposition
 public fun <T> ViewModel.SimpleValidatingState(
     state: State<T>,
@@ -105,26 +139,41 @@ private fun <T> createSimpleValidatingState(
     }
 }
 
+/**
+ * A [Validator] wrapping a [TextFieldState]. Pass [state] to a text field composable and read
+ * [isError] / [validationError] to reflect validation results in the UI.
+ */
 @Stable
 public class ValidatingTextFieldState @RememberInComposition constructor(
     initialText: String = "",
     validator: ValidationRaiserScope.(CharSequence) -> Unit
 ) : BaseValidatingState<CharSequence>(validator) {
+    /** Underlying [TextFieldState] to pass to a text field composable. */
     public val state: TextFieldState = TextFieldState(initialText)
+
+    /** Current text of the field. */
     public val text: CharSequence by state::text
+
+    /** Current text of the field as a [String]. */
     public val string: String by state::string
     override val value: CharSequence by state::text
 
+    /** Clears the text and any current error. */
     public fun clear() {
         state.clearText()
         clearError()
     }
 
+    /** Trims leading and trailing whitespace from the text. */
     public fun trim() {
         state.trim()
     }
 }
 
+/**
+ * A [Validator] over an arbitrary observable value, for validating non-text inputs such as a
+ * checkbox, dropdown selection or date.
+ */
 @Stable
 public class SimpleValidatingState<T> @RememberInComposition constructor(
     state: State<T>,
@@ -134,6 +183,10 @@ public class SimpleValidatingState<T> @RememberInComposition constructor(
     override val value: T get() = source.value
 }
 
+/**
+ * Base [Validator] implementation shared by [ValidatingTextFieldState] and [SimpleValidatingState].
+ * Runs [validator] against [value] and exposes the resulting error state.
+ */
 public abstract class BaseValidatingState<T>(
     internal var validator: (@ValidationDSL ValidationRaiserScope).(T) -> Unit
 ) : Validator {
@@ -166,6 +219,12 @@ public abstract class BaseValidatingState<T>(
     }
 }
 
+/**
+ * Validates all [validators] and returns a combined [TextFieldValidationResult]. Every validator is
+ * run (so all error messages update) regardless of how many already failed.
+ *
+ * @return result carrying the number of validators that failed.
+ */
 public fun validate(vararg validators: Validator): TextFieldValidationResult {
     val errorCount = validators.count { validator ->
         !validator.validate()
@@ -175,10 +234,12 @@ public fun validate(vararg validators: Validator): TextFieldValidationResult {
 
 private typealias ErrorGeneratorLambda = @Composable () -> String?
 
+/** DSL marker for the validation builder scope. */
 @DslMarker
 @Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE)
 public annotation class ValidationDSL
 
+/** Receiver scope of a validator lambda, used to flag the validated value as invalid. */
 @ValidationDSL
 public interface ValidationRaiserScope {
     /**
@@ -196,14 +257,17 @@ public interface ValidationRaiserScope {
      */
     public fun raise(block: ErrorGeneratorLambda): Nothing
 
+    /** Raises an error without a message unless [condition] holds. */
     public fun require(condition: Boolean) {
         if (!condition) raise()
     }
 
+    /** Raises an error with the given [error] message unless [condition] holds. */
     public fun require(condition: Boolean, error: String) {
         if (!condition) raise(error)
     }
 
+    /** Raises an error whose message is produced by [block] unless [condition] holds. */
     public fun require(condition: Boolean, block: ErrorGeneratorLambda) {
         if (!condition) raise(block)
     }
@@ -229,19 +293,31 @@ private class ValidationRaiserImpl : ValidationRaiserScope, ValidationRaiserProv
 
 private class ValidationRaiserCancellationException : CancellationException("Validation failed")
 
+/** Something whose validity can be evaluated and whose error state can be observed from Compose. */
 public interface Validator {
+    /** Whether the last [validate] call found the value invalid. */
     public val isError: Boolean
+
+    /**
+     * Message for the current error, or null when valid. Composable so that error strings can be
+     * resolved (e.g. localized) lazily at read time.
+     */
     public val validationError: String?
         @Composable get
 
+    /** Runs validation, updates [isError] / [validationError], and returns true if the value is valid. */
     public fun validate(): Boolean
+
+    /** Clears the current error without re-running validation. */
     public fun clearError()
 }
 
+/** Aggregate result of validating multiple [Validator]s, produced by [validate]. */
 @Immutable
 public data class TextFieldValidationResult(
     val errorCount: Int
 ) {
+    /** Runs [block] if every validator passed, and returns this result for chaining. */
     public inline fun onValid(block: () -> Unit): TextFieldValidationResult {
         contract {
             callsInPlace(block, InvocationKind.AT_MOST_ONCE)
@@ -249,6 +325,7 @@ public data class TextFieldValidationResult(
         return also { if (errorCount == 0) block() }
     }
 
+    /** Runs [block] with the number of failed validators if any failed, and returns this result. */
     public inline fun onError(block: (Int) -> Unit): TextFieldValidationResult {
         contract {
             callsInPlace(block, InvocationKind.AT_MOST_ONCE)
