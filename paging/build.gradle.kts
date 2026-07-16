@@ -61,7 +61,7 @@ kotlin {
         commonMain.dependencies {
             implementation(libs.androidx.paging.common)
             implementation(libs.arrow)
-            implementation(libs.jb.androidx.lifecycle.viewmodel)
+            implementation(libs.androidx.lifecycle.viewmodel)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

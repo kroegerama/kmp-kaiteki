@@ -68,9 +68,9 @@ kotlin {
             implementation(libs.kotlinx.datetime)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.core)
-            implementation(libs.jb.androidx.lifecycle.common)
-            implementation(libs.jb.androidx.lifecycle.runtime)
-            implementation(libs.jb.androidx.lifecycle.viewmodel.savedstate)
+            implementation(libs.androidx.lifecycle.common)
+            implementation(libs.androidx.lifecycle.runtime)
+            implementation(libs.androidx.lifecycle.viewmodel.savedstate)
             implementation(libs.androidx.datastore)
             implementation(libs.androidx.datastore.preferences)
             implementation(libs.arrow)
@@ -87,8 +87,7 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.turbine)
         }
-        val androidHostTest by getting
-        androidHostTest.dependencies {
+        getByName("androidHostTest").dependencies {
             implementation(libs.robolectric)
         }
     }
