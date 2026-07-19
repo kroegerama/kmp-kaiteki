@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.annotation.RememberInComposition
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavEntry
@@ -21,18 +22,14 @@ import androidx.navigation3.scene.SceneDecoratorStrategyScope
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import com.kroegerama.kmp.kaiteki.compose.modifier.cacheSize
 
-internal data object TopAppBarKey : NavMetadataKey<@Composable () -> Unit>
-
-internal const val TOP_APP_BAR_SHARED_CONTENT_KEY = "kaiteki.top.app.bar"
-
 /**
  * [SceneDecoratorStrategy] that wraps every Navigation 3 scene in a Material 3 [Scaffold] and shares
  * a single top app bar across destinations through a shared-element transition. Supply the top app
- * bar per entry via [topAppBar] metadata; entries without it render no app bar.
+ * bar per entry via [ScaffoldSceneDecorator.topAppBar] metadata; entries without it render no app bar.
  *
  * Obtain an instance with [rememberScaffoldSceneDecorator].
  */
-public class ScaffoldSceneDecorator<T : Any>(
+public class ScaffoldSceneDecorator<T : Any> @RememberInComposition constructor(
     private val sharedTransitionScope: SharedTransitionScope,
 ) : SceneDecoratorStrategy<T> {
     override fun SceneDecoratorStrategyScope<T>.decorateScene(scene: Scene<T>): Scene<T> {
@@ -41,6 +38,8 @@ public class ScaffoldSceneDecorator<T : Any>(
             sharedTransitionScope = sharedTransitionScope,
         )
     }
+
+    public data object TopAppBarKey : NavMetadataKey<@Composable () -> Unit>
 
     public companion object {
         /**
@@ -62,7 +61,7 @@ internal class ScaffoldSceneDecoratorScene<T : Any>(
     override val previousEntries: List<NavEntry<T>> = scene.previousEntries
     override val metadata: Map<String, Any> = scene.metadata
 
-    private val lastTopAppBarEntry = entries.findLast { it.metadata[TopAppBarKey] != null }
+    private val lastTopAppBarEntry = entries.findLast { it.metadata[ScaffoldSceneDecorator.TopAppBarKey] != null }
 
     override val content: @Composable (() -> Unit) = {
         val animatedContentScope = LocalNavAnimatedContentScope.current
@@ -80,7 +79,7 @@ internal class ScaffoldSceneDecoratorScene<T : Any>(
                             )
                     ) {
                         if (isMovableContentCaller) {
-                            lastTopAppBarEntry?.metadata[TopAppBarKey]?.let { topAppBarContent ->
+                            lastTopAppBarEntry?.metadata[ScaffoldSceneDecorator.TopAppBarKey]?.let { topAppBarContent ->
                                 topAppBarContent()
                             }
                         }
@@ -97,6 +96,10 @@ internal class ScaffoldSceneDecoratorScene<T : Any>(
                 }
             }
         }
+    }
+
+    companion object {
+        internal const val TOP_APP_BAR_SHARED_CONTENT_KEY = "kaiteki.top.app.bar"
     }
 }
 
