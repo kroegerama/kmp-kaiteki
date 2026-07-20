@@ -3,12 +3,10 @@ package com.kroegerama.kmp.kaiteki.camera.delegate
 import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
 import com.kroegerama.kmp.kaiteki.camera.model.OCRResult
 import com.kroegerama.kmp.kaiteki.camera.model.OCRResultBlock
-import com.kroegerama.kmp.kaiteki.camera.withConfiguration
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.IntVar
 import kotlinx.cinterop.ObjCSignatureOverride
-import kotlinx.cinterop.StableRef
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.autoreleasepool
 import kotlinx.cinterop.convert
@@ -17,20 +15,13 @@ import kotlinx.cinterop.ptr
 import kotlinx.cinterop.useContents
 import kotlinx.cinterop.value
 import kotlinx.coroutines.channels.ProducerScope
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
 import platform.AVFoundation.AVCaptureConnection
 import platform.AVFoundation.AVCaptureOutput
-import platform.AVFoundation.AVCaptureSession
-import platform.AVFoundation.AVCaptureVideoDataOutput
 import platform.AVFoundation.AVCaptureVideoDataOutputSampleBufferDelegateProtocol
 import platform.AVFoundation.AVCaptureVideoOrientationLandscapeLeft
 import platform.AVFoundation.AVCaptureVideoOrientationLandscapeRight
 import platform.AVFoundation.AVCaptureVideoOrientationPortrait
 import platform.AVFoundation.AVCaptureVideoOrientationPortraitUpsideDown
-import platform.AVFoundation.AVCaptureVideoStabilizationModeStandard
-import platform.AVFoundation.AVMediaTypeVideo
 import platform.CoreFoundation.CFDictionaryCreateMutable
 import platform.CoreFoundation.CFDictionarySetValue
 import platform.CoreFoundation.CFNumberCreate
@@ -80,60 +71,16 @@ import platform.Vision.VNRequestTextRecognitionLevelAccurate
 import platform.darwin.NSObject
 import platform.darwin.dispatch_async
 import platform.darwin.dispatch_queue_create
-import platform.darwin.dispatch_queue_t
 import platform.posix.memcpy
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 @ExperimentalKaitekiCameraApi
-@Suppress("MISSING_DEPENDENCY_CLASS_IN_EXPRESSION_TYPE")
-@OptIn(ExperimentalForeignApi::class)
-public fun AVCaptureSession.bindTextDelegateFlow(
-    sessionQueue: dispatch_queue_t,
-): Flow<OCRResult> = callbackFlow {
-    val delegate = TextDelegate(this)
-    val stableRef = StableRef.create(delegate)
-
-    val sessionQueue = dispatch_queue_create(label = "camera.session.queue", null)
-    val videoDataOutput = AVCaptureVideoDataOutput()
-
-    videoDataOutput.apply {
-        alwaysDiscardsLateVideoFrames = true
-        videoSettings = mapOf(
-            kCVPixelBufferPixelFormatTypeKey to kCVPixelFormatType_32BGRA
-        )
-        setSampleBufferDelegate(delegate, sessionQueue)
-    }
-
-    dispatch_async(sessionQueue) {
-        withConfiguration {
-            if (canAddOutput(videoDataOutput)) {
-                addOutput(videoDataOutput)
-
-                videoDataOutput.connectionWithMediaType(AVMediaTypeVideo)?.let { connection ->
-                    connection.preferredVideoStabilizationMode = AVCaptureVideoStabilizationModeStandard
-                    connection.enabled = true
-                }
-            }
-        }
-    }
-
-    awaitClose {
-        dispatch_async(sessionQueue) {
-            withConfiguration {
-                videoDataOutput.setSampleBufferDelegate(null, null)
-                removeOutput(videoDataOutput)
-            }
-            stableRef.dispose()
-        }
-    }
-}
-
-@ExperimentalKaitekiCameraApi
 @Suppress("MISSING_DEPENDENCY_CLASS_IN_EXPRESSION_TYPE", "UPPER_BOUND_VIOLATED_IN_TYPEALIAS_EXPANSION_DEPRECATION_WARNING")
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class, ExperimentalAtomicApi::class)
-private class TextDelegate(
-    private val producer: ProducerScope<OCRResult>
+internal class TextDelegate(
+    private val producer: ProducerScope<OCRResult>,
+    private val minConfidence: Float
 ) : NSObject(), AVCaptureVideoDataOutputSampleBufferDelegateProtocol {
 
     private val visionQueue = dispatch_queue_create("text.recognition.vision.queue", null)
@@ -192,14 +139,18 @@ private class TextDelegate(
         val observations = request?.results?.filterIsInstance<VNRecognizedTextObservation>() ?: return
         val blocks = observations.mapNotNull { observation ->
             val candidate = observation.topCandidates(1u).firstOrNull() as? VNRecognizedText ?: return@mapNotNull null
-            val (x, y) = observation.boundingBox.useContents {
-                origin.x.toFloat() to 1f - origin.y.toFloat()
+            if (candidate.confidence < minConfidence) return@mapNotNull null
+            // Vision uses a normalized, bottom-left-origin coordinate space; convert to top-left origin.
+            observation.boundingBox.useContents {
+                OCRResultBlock(
+                    text = candidate.string,
+                    confidence = candidate.confidence,
+                    relativeX = origin.x.toFloat(),
+                    relativeY = (1.0 - origin.y - size.height).toFloat(),
+                    relativeWidth = size.width.toFloat(),
+                    relativeHeight = size.height.toFloat(),
+                )
             }
-            OCRResultBlock(
-                text = candidate.string,
-                relativeX = x,
-                relativeY = y
-            )
         }
         producer.trySend(OCRResult(blocks))
     }

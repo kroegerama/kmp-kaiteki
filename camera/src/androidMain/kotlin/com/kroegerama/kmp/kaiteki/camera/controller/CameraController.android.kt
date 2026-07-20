@@ -1,6 +1,7 @@
 package com.kroegerama.kmp.kaiteki.camera.controller
 
 import android.content.Context
+import android.util.Size
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.FocusMeteringAction
@@ -10,55 +11,82 @@ import androidx.camera.core.SurfaceOrientedMeteringPointFactory
 import androidx.camera.core.SurfaceRequest
 import androidx.camera.core.TorchState
 import androidx.camera.core.UseCaseGroup
+import androidx.camera.core.resolutionselector.AspectRatioStrategy
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.lifecycle.awaitInstance
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.LifecycleOwner
 import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
-import com.kroegerama.kmp.kaiteki.camera.analyzer.bindBarcodeAnalyzerFlow
-import com.kroegerama.kmp.kaiteki.camera.analyzer.bindTextAnalyzerFlow
-import com.kroegerama.kmp.kaiteki.camera.extensions.CameraControllerExtension
+import com.kroegerama.kmp.kaiteki.camera.analyzer.BarcodeAnalyzer
+import com.kroegerama.kmp.kaiteki.camera.analyzer.TextAnalyzer
 import com.kroegerama.kmp.kaiteki.camera.model.BarcodeFormat
+import com.kroegerama.kmp.kaiteki.camera.model.BarcodeResult
+import com.kroegerama.kmp.kaiteki.camera.model.OCRResult
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.callbackFlow
 import java.util.concurrent.Executors
 
 @ExperimentalKaitekiCameraApi
-@Immutable
-public actual class CameraController internal constructor(
+internal actual class PlatformCameraController(
     private val context: Context,
-) {
-    internal val executor = Executors.newSingleThreadExecutor()
+) : CameraController {
 
     private var cameraProvider: ProcessCameraProvider? = null
+
     private val _surfaceRequests = MutableStateFlow<SurfaceRequest?>(null)
     internal val surfaceRequests = _surfaceRequests.asStateFlow()
+
     private var surfaceMeteringPointFactory: SurfaceOrientedMeteringPointFactory? = null
     private var camera: Camera? = null
 
+    // Preview and analysis share the same aspect ratio, so analysis frames cover
+    // the same field of view as the preview and relative coordinates line up.
     private val previewUseCase = Preview.Builder()
+        .setResolutionSelector(
+            ResolutionSelector.Builder()
+                .setAspectRatioStrategy(AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY)
+                .build()
+        )
         .build()
 
     internal val analysisUseCase = ImageAnalysis.Builder()
         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
         .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
+        .setResolutionSelector(
+            ResolutionSelector.Builder()
+                .setAspectRatioStrategy(AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY)
+                .setResolutionStrategy(
+                    // Sizes are expressed in the sensor coordinate frame (landscape).
+                    ResolutionStrategy(
+                        Size(1920, 1080),
+                        ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
+                    )
+                )
+                .build()
+        )
         .build()
 
-    public actual var zoomRatio: Float
+    actual override val zoomRatio: Float
         get() = camera?.cameraInfo?.zoomState?.value?.zoomRatio ?: 1f
-        set(value) {
-            val range = camera?.cameraInfo?.zoomState?.value?.run {
-                minZoomRatio..maxZoomRatio
-            }
-            if (range != null && value !in range) return
-            camera?.cameraControl?.setZoomRatio(value)
-        }
 
-    public actual var torchEnabled: Boolean
+    actual override fun setZoomRatio(value: Float): Boolean {
+        val range = camera?.cameraInfo?.zoomState?.value?.run {
+            minZoomRatio..maxZoomRatio
+        }
+        if (range != null && value !in range) return false
+        camera?.cameraControl?.setZoomRatio(value)
+        return true
+    }
+
+    actual override var torchEnabled: Boolean
         get() = camera?.cameraInfo?.torchState?.value?.let {
             it == TorchState.ON
         } ?: false
@@ -66,7 +94,7 @@ public actual class CameraController internal constructor(
             camera?.cameraControl?.enableTorch(value)
         }
 
-    public actual val torchAvailable: Boolean
+    actual override val torchAvailable: Boolean
         get() = camera?.cameraInfo?.hasFlashUnit() == true
 
     init {
@@ -79,7 +107,12 @@ public actual class CameraController internal constructor(
         }
     }
 
-    internal suspend fun bindCamera(
+    fun updateTargetRotation(rotation: Int) {
+        previewUseCase.targetRotation = rotation
+        analysisUseCase.targetRotation = rotation
+    }
+
+    actual override suspend fun bindCamera(
         lifecycleOwner: LifecycleOwner
     ) {
         val processCameraProvider = ProcessCameraProvider.awaitInstance(context)
@@ -98,59 +131,58 @@ public actual class CameraController internal constructor(
         )
     }
 
-    public actual fun toggleTorch() {
+    actual override fun toggleTorch() {
         torchEnabled = !torchEnabled
     }
 
-    public actual fun focus(coords: Offset) {
+    actual override fun focus(coords: Offset) {
         val point = surfaceMeteringPointFactory?.createPoint(coords.x, coords.y) ?: return
         val meteringAction = FocusMeteringAction.Builder(point).build()
         camera?.cameraControl?.startFocusAndMetering(meteringAction)
     }
 
-    internal actual fun clear() {
+    actual override fun clear() {
         cameraProvider?.unbindAll()
-        executor.shutdown()
+        cameraProvider = null
+        camera = null
+        _surfaceRequests.value = null
+    }
+
+    actual override fun bindBarcodeAnalyzerFlow(vararg formats: BarcodeFormat): Flow<BarcodeResult> = callbackFlow {
+        val executor = Executors.newSingleThreadExecutor()
+        val analyzer = BarcodeAnalyzer(
+            producer = this,
+            zoomCallback = ::setZoomRatio,
+            formats = formats
+        )
+        analysisUseCase.setAnalyzer(executor, analyzer)
+        awaitClose {
+            analysisUseCase.clearAnalyzer()
+            analyzer.close()
+            executor.shutdown()
+        }
+    }
+
+    actual override fun bindTextAnalyzerFlow(minConfidence: Float): Flow<OCRResult> = callbackFlow {
+        val executor = Executors.newSingleThreadExecutor()
+        val analyzer = TextAnalyzer(
+            producer = this,
+            minConfidence = minConfidence
+        )
+        analysisUseCase.setAnalyzer(executor, analyzer)
+        awaitClose {
+            analysisUseCase.clearAnalyzer()
+            analyzer.close()
+            executor.shutdown()
+        }
     }
 }
 
 @ExperimentalKaitekiCameraApi
 @Composable
-public actual fun rememberCameraController(): CameraController {
+internal actual fun rememberPlatformCameraController(): PlatformCameraController {
     val context = LocalContext.current
     return remember(context) {
-        CameraController(context)
-    }
-}
-
-@ExperimentalKaitekiCameraApi
-@Composable
-public actual fun rememberBarcodeExtension(
-    cameraController: CameraController,
-    barcodeFormats: List<BarcodeFormat>
-): CameraControllerExtension.BarcodeExtension {
-    return remember(cameraController, barcodeFormats) {
-        CameraControllerExtension.BarcodeExtension(
-            formats = barcodeFormats,
-            barcodeResults = cameraController.analysisUseCase.bindBarcodeAnalyzerFlow(
-                zoomCallback = { cameraController.zoomRatio = it; true },
-                formats = barcodeFormats,
-                executor = cameraController.executor
-            )
-        )
-    }
-}
-
-@ExperimentalKaitekiCameraApi
-@Composable
-public actual fun rememberOcrExtension(
-    cameraController: CameraController
-): CameraControllerExtension.OcrExtension {
-    return remember(cameraController) {
-        CameraControllerExtension.OcrExtension(
-            ocrResults = cameraController.analysisUseCase.bindTextAnalyzerFlow(
-                executor = cameraController.executor
-            )
-        )
+        PlatformCameraController(context)
     }
 }

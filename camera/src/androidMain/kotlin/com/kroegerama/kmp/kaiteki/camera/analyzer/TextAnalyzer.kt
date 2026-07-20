@@ -11,24 +11,19 @@ import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
 import com.kroegerama.kmp.kaiteki.camera.model.OCRResult
 import com.kroegerama.kmp.kaiteki.camera.model.OCRResultBlock
 import kotlinx.coroutines.channels.ProducerScope
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import java.util.concurrent.Executor
+
+private const val MAX_LINE_ANGLE_DEGREES = 45f
+
+/** Smallest absolute difference between two angles in degrees, in `0..180`. */
+private fun angularDifference(a: Float, b: Float): Float {
+    val difference = (a - b).mod(360f)
+    return if (difference > 180f) 360f - difference else difference
+}
 
 @ExperimentalKaitekiCameraApi
-public fun ImageAnalysis.bindTextAnalyzerFlow(
-    executor: Executor
-): Flow<OCRResult> = callbackFlow {
-    val analyzer = TextAnalyzer(this)
-    setAnalyzer(executor, analyzer)
-    awaitClose { clearAnalyzer() }
-}.distinctUntilChanged()
-
-@ExperimentalKaitekiCameraApi
-private class TextAnalyzer(
-    private val producer: ProducerScope<OCRResult>
+internal class TextAnalyzer(
+    private val producer: ProducerScope<OCRResult>,
+    private val minConfidence: Float
 ) : ImageAnalysis.Analyzer {
     private val recognizer = TextRecognition.getClient(
         TextRecognizerOptions.DEFAULT_OPTIONS
@@ -43,22 +38,29 @@ private class TextAnalyzer(
         }
         val rotation = imageProxy.imageInfo.rotationDegrees
         val image = InputImage.fromMediaImage(mediaImage, rotation)
+        // ML Kit returns bounding boxes in the upright coordinate space, while
+        // InputImage reports the sensor-oriented buffer size.
+        val uprightWidth = if (rotation % 180 == 0) image.width else image.height
+        val uprightHeight = if (rotation % 180 == 0) image.height else image.width
 
         recognizer.process(image).addOnSuccessListener { text ->
-            val blocks = text.textBlocks.map { textBlock ->
-                val x = textBlock.boundingBox?.top?.toFloat() ?: 0f
-                val y = textBlock.boundingBox?.left?.toFloat() ?: 0f
+            val blocks = text.textBlocks.asSequence().flatMap { it.lines }.mapNotNull { line ->
+                if (line.confidence < minConfidence) return@mapNotNull null
+                // Line.getAngle is relative to the sensor buffer, so upright text reads
+                // ≈ -rotationDegrees (undocumented, verified on-device for display
+                // rotations 0/90/180); rejects tilted and 180°-flipped lines.
+                if (angularDifference(line.angle, -rotation.toFloat()) > MAX_LINE_ANGLE_DEGREES) return@mapNotNull null
+                val box = line.boundingBox ?: return@mapNotNull null
                 OCRResultBlock(
-                    text = textBlock.text,
-                    relativeX = x / image.width,
-                    relativeY = y / image.height
+                    text = line.text,
+                    confidence = line.confidence,
+                    relativeX = box.left / uprightWidth.toFloat(),
+                    relativeY = box.top / uprightHeight.toFloat(),
+                    relativeWidth = box.width() / uprightWidth.toFloat(),
+                    relativeHeight = box.height() / uprightHeight.toFloat(),
                 )
-            }
-            producer.trySend(
-                OCRResult(
-                    blocks = blocks
-                )
-            )
+            }.toList()
+            producer.trySend(OCRResult(blocks = blocks))
         }.addOnCompleteListener {
             imageProxy.close()
         }

@@ -1,17 +1,21 @@
 package com.kroegerama.kmp.kaiteki.camera.compose
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
 import com.kroegerama.kmp.kaiteki.camera.controller.CameraController
+import com.kroegerama.kmp.kaiteki.camera.controller.PlatformCameraController
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.ObjCAction
 import kotlinx.cinterop.readValue
 import kotlinx.cinterop.useContents
+import kotlinx.coroutines.launch
 import platform.AVFoundation.AVCaptureVideoPreviewLayer
 import platform.AVFoundation.AVCaptureVideoStabilizationModeCinematicExtended
 import platform.AVFoundation.AVLayerVideoGravityResizeAspectFill
@@ -31,10 +35,12 @@ import platform.darwin.sel_registerName
 
 @ExperimentalKaitekiCameraApi
 @Composable
-public actual fun CameraView(
-    controller: CameraController,
+internal actual fun PlatformCameraView(
+    controller: PlatformCameraController,
     modifier: Modifier
 ) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val scope = rememberCoroutineScope()
     UIKitView(
         factory = {
             val previewLayer = AVCaptureVideoPreviewLayer(
@@ -50,7 +56,7 @@ public actual fun CameraView(
 
             val container = CameraPreviewUIView(controller, previewLayer)
             container.layer.addSublayer(previewLayer)
-            controller.bindCamera()
+            scope.launch { controller.bindCamera(lifecycleOwner) }
             container
         },
         onRelease = {
@@ -121,8 +127,7 @@ private class CameraPreviewUIView(
 
     @ObjCAction
     fun handleDoubleTap() {
-        val current = controller.zoomRatio
-        controller.zoomRatio = if (current <= 1.5f) 2f else 1f
+        controller.setZoomRatio(if (controller.zoomRatio <= 1.5f) 2f else 1f)
     }
 
     @ObjCAction
@@ -149,7 +154,8 @@ private class CameraPreviewUIView(
             }
 
             UIGestureRecognizerStateChanged -> {
-                controller.zoomRatio = (lastPinchZoom * recognizer.scale).toFloat()
+                val ratio = (lastPinchZoom * recognizer.scale).toFloat()
+                controller.setZoomRatio(ratio)
             }
         }
     }

@@ -11,33 +11,16 @@ import com.google.mlkit.vision.common.InputImage
 import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
 import com.kroegerama.kmp.kaiteki.camera.model.BarcodeFormat
 import com.kroegerama.kmp.kaiteki.camera.model.BarcodeResult
-import com.kroegerama.kmp.kaiteki.camera.model.PlatformBarcodeFormat
 import kotlinx.coroutines.channels.ProducerScope
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import java.util.concurrent.Executor
 
 @ExperimentalKaitekiCameraApi
-public fun ImageAnalysis.bindBarcodeAnalyzerFlow(
+internal class BarcodeAnalyzer(
+    private val producer: ProducerScope<BarcodeResult>,
     zoomCallback: (Float) -> Boolean,
-    formats: List<BarcodeFormat>,
-    executor: Executor,
-): Flow<BarcodeResult> = callbackFlow {
-    val platformFormats = formats.map { it.platformBarcodeFormat }
-    val analyzer = BarcodeAnalyzer(zoomCallback, platformFormats, this)
-    setAnalyzer(executor, analyzer)
-    awaitClose { clearAnalyzer() }
-}.distinctUntilChanged()
-
-@ExperimentalKaitekiCameraApi
-private class BarcodeAnalyzer(
-    zoomCallback: (Float) -> Boolean,
-    formats: List<PlatformBarcodeFormat>,
-    private val producer: ProducerScope<BarcodeResult>
+    vararg formats: BarcodeFormat
 ) : ImageAnalysis.Analyzer {
     private val barcodeScannerOptions = BarcodeScannerOptions.Builder().run {
+        val formats = formats.map(BarcodeFormat::platformBarcodeFormat)
         when (formats.size) {
             0 -> error("formats must not be empty")
             1 -> setBarcodeFormats(formats.first())

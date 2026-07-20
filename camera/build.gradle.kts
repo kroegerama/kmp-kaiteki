@@ -51,10 +51,11 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.androidx.lifecycle.viewmodel)
-            implementation(libs.androidx.lifecycle.viewmodel.compose)
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
+            implementation(libs.compose.material3)
+
+            implementation(projects.compose)
         }
         androidMain.dependencies {
             implementation(libs.androidx.camera.camera2)
@@ -64,6 +65,10 @@ kotlin {
 
             implementation(libs.mlkit.barcode.scanning)
             implementation(libs.mlkit.text.recognition)
+        }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
         }
     }
 }
