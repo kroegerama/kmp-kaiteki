@@ -11,10 +11,43 @@ plugins {
     alias(libs.plugins.versions)
 }
 
+val projectVersion = providers.gradleProperty("kaiteki.version").get()
+logger.lifecycle("kaiteki.version $projectVersion")
+
+val projectGroup = "com.kroegerama.kmp.kaiteki"
+val projectDescription = "A set of helper classes for modern Kotlin multiplatform projects."
+val projectUrl = "https://github.com/kroegerama/kmp-kaiteki"
+
+val pomAction = Action<MavenPom> {
+    name = "KMP Kaiteki"
+    description = projectDescription
+    inceptionYear = "2025"
+    url = projectUrl
+
+    licenses {
+        license {
+            name.set("The Apache License, Version 2.0")
+            url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+        }
+    }
+    developers {
+        developer {
+            id.set("kroegerama")
+            name.set("Chris")
+            email.set("1519044+kroegerama@users.noreply.github.com")
+        }
+    }
+    scm {
+        url.set(projectUrl)
+        connection.set("scm:git:https://github.com/kroegerama/kmp-kaiteki")
+        developerConnection.set("scm:git:https://www.github.com/kroegerama")
+    }
+}
+
 allprojects {
-    version = C.PROJECT_VERSION
-    group = C.PROJECT_GROUP_ID
-    description = C.PROJECT_DESCRIPTION
+    version = projectVersion
+    group = projectGroup
+    description = projectDescription
 
     plugins.withId("com.vanniktech.maven.publish") {
         configure<MavenPublishBaseExtension> {
