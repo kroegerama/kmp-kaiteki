@@ -48,10 +48,11 @@ public class BottomSheetSceneStrategy<T : Any> @RememberInComposition constructo
             "A NavEntry displayed as a bottom sheet must not be the only entry in the back stack. " +
                     "Add a non-sheet entry below it so there is content to display behind the sheet."
         }
+        val previousEntries = entries.dropLast(1)
         return BottomSheetScene(
             key = lastEntry.contentKey,
-            previousEntries = entries.dropLast(1),
-            overlaidEntries = entries.dropLast(1),
+            previousEntries = previousEntries,
+            overlaidEntries = previousEntries,
             entry = lastEntry,
             config = config,
             onBack = onBack
