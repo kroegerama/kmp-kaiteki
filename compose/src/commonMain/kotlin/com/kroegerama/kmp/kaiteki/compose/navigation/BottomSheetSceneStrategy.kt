@@ -13,8 +13,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.annotation.RememberInComposition
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -59,11 +61,7 @@ public class BottomSheetSceneStrategy<T : Any> @RememberInComposition constructo
         )
     }
 
-    /** [NavEntry.metadata] key marking an entry to be displayed within a [ModalBottomSheet]. */
-    public data object BottomSheetKey : NavMetadataKey<BottomSheetConfig>
-
-    /** Configuration for the hosting [ModalBottomSheet]. Created via [BottomSheetSceneStrategy.bottomSheet]. */
-    public data class BottomSheetConfig(
+    internal data class BottomSheetConfig(
         val modifier: @Composable () -> Modifier,
         val skipPartiallyExpanded: Boolean,
         val sheetMaxWidth: Dp,
@@ -79,6 +77,9 @@ public class BottomSheetSceneStrategy<T : Any> @RememberInComposition constructo
     )
 
     public companion object {
+        /** [NavEntry.metadata] key marking an entry to be displayed within a [ModalBottomSheet]. */
+        internal object BottomSheetKey : NavMetadataKey<BottomSheetConfig>
+
         /**
          * Creates [NavEntry.metadata] marking an entry to be displayed within a [ModalBottomSheet].
          *
@@ -144,6 +145,16 @@ internal data class BottomSheetScene<T : Any>(
             skipPartiallyExpanded = config.skipPartiallyExpanded
         )
         val scope = rememberCoroutineScope()
+        val currentOnBack by rememberUpdatedState(onBack)
+        val popOnce: () -> Unit = remember {
+            var popped = false
+            {
+                if (!popped) {
+                    popped = true
+                    currentOnBack()
+                }
+            }
+        }
         val sceneState = remember(sheetState) {
             BottomSheetSceneState(
                 sheetState = sheetState,
@@ -152,14 +163,14 @@ internal data class BottomSheetScene<T : Any>(
                         sheetState.hide()
                     }.invokeOnCompletion {
                         if (!sheetState.isVisible) {
-                            onBack()
+                            popOnce()
                         }
                     }
                 }
             )
         }
         ModalBottomSheet(
-            onDismissRequest = onBack,
+            onDismissRequest = popOnce,
             modifier = config.modifier(),
             sheetState = sheetState,
             sheetMaxWidth = config.sheetMaxWidth,
@@ -206,7 +217,7 @@ public class BottomSheetSceneState internal constructor(
     public fun dismiss(): Unit = onDismiss()
 }
 
-/** The [BottomSheetSceneState] of the hosting sheet, or `null` if not inside a bottom sheet. */
+/** The [BottomSheetSceneState] of the hosting sheet. Throws if read outside an entry hosted by [BottomSheetSceneStrategy]. */
 public val LocalBottomSheetSceneState: ProvidableCompositionLocal<BottomSheetSceneState> = compositionLocalOf {
     error("CompositionLocal LocalBottomSheetSceneState not present")
 }

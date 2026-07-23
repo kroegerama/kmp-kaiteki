@@ -52,11 +52,7 @@ public class AlertDialogSceneStrategy<T : Any> @RememberInComposition constructo
         )
     }
 
-    /** [NavEntry.metadata] key marking an entry to be displayed within a [BasicAlertDialog]. */
-    public data object AlertDialogKey : NavMetadataKey<AlertDialogConfig>
-
-    /** Configuration for the hosting [BasicAlertDialog]. Created via [AlertDialogSceneStrategy.alertDialog]. */
-    public data class AlertDialogConfig(
+    internal data class AlertDialogConfig(
         val modifier: @Composable () -> Modifier,
         val shape: @Composable () -> Shape,
         val containerColor: @Composable () -> Color,
@@ -66,6 +62,9 @@ public class AlertDialogSceneStrategy<T : Any> @RememberInComposition constructo
     )
 
     public companion object {
+        /** [NavEntry.metadata] key marking an entry to be displayed within a [BasicAlertDialog]. */
+        internal object AlertDialogKey : NavMetadataKey<AlertDialogConfig>
+
         /**
          * Creates [NavEntry.metadata] marking an entry to be displayed within a [BasicAlertDialog] + [Surface].
          *
