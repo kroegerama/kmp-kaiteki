@@ -1,20 +1,22 @@
 package com.kroegerama.kmp.kaiteki.camera.delegate
 
 import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
+import com.kroegerama.kmp.kaiteki.camera.analyzer.OCRProcessor
 import com.kroegerama.kmp.kaiteki.camera.model.OCRResult
-import com.kroegerama.kmp.kaiteki.camera.model.OCRResultBlock
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.IntVar
 import kotlinx.cinterop.ObjCSignatureOverride
 import kotlinx.cinterop.alloc
-import kotlinx.cinterop.autoreleasepool
 import kotlinx.cinterop.convert
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
-import kotlinx.cinterop.useContents
 import kotlinx.cinterop.value
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.channels.ProducerScope
+import kotlinx.coroutines.launch
 import platform.AVFoundation.AVCaptureConnection
 import platform.AVFoundation.AVCaptureOutput
 import platform.AVFoundation.AVCaptureVideoDataOutputSampleBufferDelegateProtocol
@@ -51,7 +53,6 @@ import platform.CoreVideo.kCVPixelBufferPixelFormatTypeKey
 import platform.CoreVideo.kCVPixelBufferWidthKey
 import platform.CoreVideo.kCVPixelFormatType_32BGRA
 import platform.CoreVideo.kCVReturnSuccess
-import platform.Foundation.NSError
 import platform.Foundation.NSLog
 import platform.ImageIO.CGImagePropertyOrientation
 import platform.ImageIO.kCGImagePropertyOrientationDown
@@ -63,38 +64,27 @@ import platform.ImageIO.kCGImagePropertyOrientationRightMirrored
 import platform.ImageIO.kCGImagePropertyOrientationUp
 import platform.ImageIO.kCGImagePropertyOrientationUpMirrored
 import platform.Vision.VNImageRequestHandler
-import platform.Vision.VNRecognizeTextRequest
-import platform.Vision.VNRecognizedText
-import platform.Vision.VNRecognizedTextObservation
-import platform.Vision.VNRequest
-import platform.Vision.VNRequestTextRecognitionLevelAccurate
 import platform.darwin.NSObject
-import platform.darwin.dispatch_async
-import platform.darwin.dispatch_queue_create
 import platform.posix.memcpy
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 @ExperimentalKaitekiCameraApi
 @Suppress("MISSING_DEPENDENCY_CLASS_IN_EXPRESSION_TYPE", "UPPER_BOUND_VIOLATED_IN_TYPEALIAS_EXPANSION_DEPRECATION_WARNING")
-@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class, ExperimentalAtomicApi::class)
+@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class, ExperimentalAtomicApi::class, DelicateCoroutinesApi::class)
 internal class TextDelegate(
     private val producer: ProducerScope<OCRResult>,
-    private val minConfidence: Float
+    minConfidence: Float
 ) : NSObject(), AVCaptureVideoDataOutputSampleBufferDelegateProtocol {
 
-    private val visionQueue = dispatch_queue_create("text.recognition.vision.queue", null)
     private val isProcessing = AtomicBoolean(false)
     private var bufferPool: CVPixelBufferPoolRef? = null
 
-    private val request = VNRecognizeTextRequest { request, error ->
-        handleResult(request, error)
-    }.apply {
-        recognitionLevel = VNRequestTextRecognitionLevelAccurate
-        usesLanguageCorrection = true
-        minimumTextHeight = .03f
+    private val processor = OCRProcessor(
+        minConfidence = minConfidence,
+        minimumTextHeight = 0.03f,
         regionOfInterest = CGRectMake(0.1, 0.1, 0.8, 0.8)
-    }
+    )
 
     @ObjCSignatureOverride
     override fun captureOutput(
@@ -116,43 +106,25 @@ internal class TextDelegate(
 
         val orientation = mapOrientation(fromConnection)
 
-        dispatch_async(visionQueue) {
-            autoreleasepool {
-                try {
-                    val handler = VNImageRequestHandler(
-                        cVPixelBuffer = copiedBuffer,
-                        orientation = orientation,
-                        options = emptyMap<Any?, Any?>()
-                    )
-                    handler.performRequests(listOf(request), null)
-                } finally {
-                    CVPixelBufferRelease(copiedBuffer)
-                    isProcessing.store(false)
-                }
-            }
-        }
-    }
-
-    private fun handleResult(request: VNRequest?, error: NSError?) {
-        if (error != null) return
-
-        val observations = request?.results?.filterIsInstance<VNRecognizedTextObservation>() ?: return
-        val blocks = observations.mapNotNull { observation ->
-            val candidate = observation.topCandidates(1u).firstOrNull() as? VNRecognizedText ?: return@mapNotNull null
-            if (candidate.confidence < minConfidence) return@mapNotNull null
-            // Vision uses a normalized, bottom-left-origin coordinate space; convert to top-left origin.
-            observation.boundingBox.useContents {
-                OCRResultBlock(
-                    text = candidate.string,
-                    confidence = candidate.confidence,
-                    relativeX = origin.x.toFloat(),
-                    relativeY = (1.0 - origin.y - size.height).toFloat(),
-                    relativeWidth = size.width.toFloat(),
-                    relativeHeight = size.height.toFloat(),
+        // ATOMIC keeps the cleanup in `finally` running even if the flow was
+        // just cancelled; the pool buffer must be released either way.
+        producer.launch(start = CoroutineStart.ATOMIC) {
+            try {
+                val handler = VNImageRequestHandler(
+                    cVPixelBuffer = copiedBuffer,
+                    orientation = orientation,
+                    options = emptyMap<Any?, Any?>()
                 )
+                producer.trySend(processor.recognize(handler))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // recognition failed; drop the frame
+            } finally {
+                CVPixelBufferRelease(copiedBuffer)
+                isProcessing.store(false)
             }
         }
-        producer.trySend(OCRResult(blocks))
     }
 
     private fun mapOrientation(
