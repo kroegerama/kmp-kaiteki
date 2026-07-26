@@ -35,7 +35,6 @@ include(
     ":core",
     ":camera",
     ":compose",
-    ":ink",
     ":paging",
     ":permissions",
 )
