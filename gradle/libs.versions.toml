@@ -22,7 +22,6 @@ compose-material3 = "1.11.0-alpha07"
 maven-publish = "0.37.0"
 robolectric = "4.16.1"
 turbine = "1.2.1"
-versions = "0.54.0"
 hilt = "1.4.0"
 kotlinx-coroutines = "1.11.0"
 kotlinx-datetime = "0.8.0"
@@ -84,4 +83,3 @@ kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref 
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 vanniktech-maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }
-versions = { id = "com.github.ben-manes.versions", version.ref = "versions" }
