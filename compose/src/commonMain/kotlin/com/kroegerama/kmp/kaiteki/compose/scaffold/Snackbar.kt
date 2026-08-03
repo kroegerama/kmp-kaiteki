@@ -60,7 +60,7 @@ public data class SnackbarColors(
             containerColor = { MaterialTheme.colorScheme.errorContainer },
             contentColor = { MaterialTheme.colorScheme.onErrorContainer },
             actionColor = { MaterialTheme.colorScheme.error },
-            actionContentColor = { MaterialTheme.colorScheme.onError },
+            actionContentColor = { MaterialTheme.colorScheme.error },
             dismissActionContentColor = { MaterialTheme.colorScheme.onErrorContainer },
         )
     }
