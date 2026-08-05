@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonElevation
+import androidx.compose.material3.ButtonShapes
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +47,7 @@ public fun BaseElevatedButton(
     startIcon: ImageVector? = null,
     endIcon: ImageVector? = null,
     enabled: Boolean = true,
+    shapes: ButtonShapes = ButtonDefaults.shapesFor(containerHeight),
     colors: ButtonColors = ButtonDefaults.elevatedButtonColors(),
     elevation: ButtonElevation? = ButtonDefaults.elevatedButtonElevation(),
 ) {
@@ -53,7 +55,7 @@ public fun BaseElevatedButton(
         onClick = onClick,
         enabled = enabled,
         modifier = modifier.heightIn(containerHeight),
-        shapes = ButtonDefaults.shapesFor(containerHeight),
+        shapes = shapes,
         contentPadding = ButtonDefaults.contentPaddingFor(
             buttonHeight = containerHeight,
             hasStartIcon = startIcon != null,
