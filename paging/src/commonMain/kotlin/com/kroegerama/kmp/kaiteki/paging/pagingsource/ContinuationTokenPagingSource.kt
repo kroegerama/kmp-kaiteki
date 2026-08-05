@@ -13,6 +13,10 @@ public abstract class ContinuationTokenPagingSource<A, B, Token : Any, T : Any> 
 
     protected abstract suspend fun B.data(): List<T>
 
+    /**
+     * token for the next page, or `null` when the end is reached; a token equal to the
+     * requested one is also treated as end-of-list (some backends echo the cursor there)
+     */
     protected abstract suspend fun B.continuationToken(): Token?
 
     /**
@@ -69,7 +73,9 @@ public abstract class ContinuationTokenPagingSource<A, B, Token : Any, T : Any> 
         return LoadResult.Page(
             data = data,
             prevKey = null,
-            nextKey = continuationToken
+            // a nextKey equal to the key that loaded this page would trip paging's
+            // key-reuse check (IllegalStateException, keyReuseSupported is false)
+            nextKey = continuationToken.takeUnless { it == token }
         )
     }
 }

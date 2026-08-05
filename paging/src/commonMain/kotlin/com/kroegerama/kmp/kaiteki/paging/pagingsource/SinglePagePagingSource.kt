@@ -12,7 +12,7 @@ public abstract class SinglePagePagingSource<A, B, T : Any> : PagingSource<Nothi
 
     protected abstract suspend fun B.data(): List<T>
 
-    protected open suspend fun A.throwable(): Throwable = RuntimeException(toString())
+    protected open suspend fun A.throwable(): Throwable = this as? Throwable ?: RuntimeException(toString())
 
     override fun getRefreshKey(state: PagingState<Nothing, T>): Nothing? = null
 

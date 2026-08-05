@@ -29,7 +29,7 @@ class ItemKeyedPagingSourceTest {
     ) : ItemKeyedPagingSource<String, List<Int>, Int>() {
         var failCalls = false
 
-        override suspend fun makeNextCall(item: Int?, size: Int): Either<String, List<Int>>? {
+        override suspend fun makeNextCall(item: Int?, size: Int): Either<String, List<Int>> {
             if (failCalls) return "next failed".left()
             val fromIndex = when {
                 item != null -> backend.indexOf(item) + 1
@@ -39,7 +39,7 @@ class ItemKeyedPagingSourceTest {
             return backend.drop(fromIndex).take(size).right()
         }
 
-        override suspend fun makePreviousCall(item: Int?, size: Int): Either<String, List<Int>>? {
+        override suspend fun makePreviousCall(item: Int?, size: Int): Either<String, List<Int>> {
             if (failCalls) return "previous failed".left()
             val toIndex = if (item != null) backend.indexOf(item) else backend.size
             return backend.take(toIndex).takeLast(size).right()
@@ -77,6 +77,21 @@ class ItemKeyedPagingSourceTest {
 
         val append = assertIs<LoadResult.Page<DirectedItemKey<Int>, Int>>(pager.append())
         assertEquals((60..69).toList(), append.data)
+    }
+
+    @Test
+    fun middleStartWithShortInitialPageStillAllowsPrepend() = runTest {
+        // the initial page hits the end of the list immediately; that must not suppress
+        // the previous key, items before the start position still exist
+        val pager = TestPager(config, TestSource((0..99).toList(), startAt = 95))
+
+        val refresh = assertIs<LoadResult.Page<DirectedItemKey<Int>, Int>>(pager.refresh())
+        assertEquals((95..99).toList(), refresh.data)
+        assertNull(refresh.nextKey)
+        assertEquals(DirectedItemKey.Previous(95), refresh.prevKey)
+
+        val prepend = assertIs<LoadResult.Page<DirectedItemKey<Int>, Int>>(pager.prepend())
+        assertEquals((85..94).toList(), prepend.data)
     }
 
     @Test
@@ -228,6 +243,31 @@ class ItemKeyedPagingSourceTest {
         val empty = assertIs<LoadResult.Page<DirectedItemKey<Int>, Int>>(pager.append())
         assertEquals(emptyList(), empty.data)
         assertNull(empty.nextKey)
+    }
+
+    @Test
+    fun boundaryInclusivePageEndsListInsteadOfReusingKey() = runTest {
+        // sloppy backend returns items from the key item inclusive; at the end of the list
+        // the derived Next key would equal the load key
+        val source = object : ItemKeyedPagingSource<String, List<Int>, Int>() {
+            val backend = (0..2).toList()
+
+            override suspend fun makeNextCall(item: Int?, size: Int): Either<String, List<Int>> {
+                val fromIndex = if (item != null) backend.indexOf(item) else 0
+                return backend.drop(fromIndex).take(size).right()
+            }
+
+            override suspend fun makePreviousCall(item: Int?, size: Int): Either<String, List<Int>>? = null
+            override suspend fun List<Int>.data(): List<Int> = this
+            override suspend fun List<Int>.endReached(data: List<Int>, requestedSize: Int): Boolean = data.isEmpty()
+        }
+        val pager = TestPager(config, source)
+
+        assertIs<LoadResult.Page<DirectedItemKey<Int>, Int>>(pager.refresh())
+        val lastPage = assertIs<LoadResult.Page<DirectedItemKey<Int>, Int>>(pager.append())
+        assertEquals(listOf(2), lastPage.data)
+        assertNull(lastPage.nextKey)
+        assertNull(pager.append())
     }
 
     @Test

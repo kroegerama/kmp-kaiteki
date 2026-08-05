@@ -5,6 +5,8 @@ import androidx.paging.PagingState
 import arrow.core.Either
 import arrow.core.getOrElse
 import com.kroegerama.kmp.kaiteki.paging.DEFAULT_PAGING_CONFIG
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 public abstract class PageSizePagingSource<A, B, T : Any>(
     private val pageSize: Int = DEFAULT_PAGING_CONFIG.pageSize,
@@ -12,6 +14,7 @@ public abstract class PageSizePagingSource<A, B, T : Any>(
 ) : PagingSource<Int, T>() {
 
     private val pageIds = mutableMapOf<Int, Set<Any>>()
+    private val pageIdsMutex = Mutex()
 
     protected abstract suspend fun makeCall(page: Int, size: Int): Either<A, B>
 
@@ -54,13 +57,19 @@ public abstract class PageSizePagingSource<A, B, T : Any>(
 
         val ids = data.mapNotNull { it.id() }
         val idSet = ids.toSet()
-        val isDuplicate = idSet.size < ids.size || pageIds.any { (otherPage, otherIds) ->
-            otherPage != page && otherIds.any(idSet::contains)
+        // prepend and append loads may run concurrently, so check-and-store must be atomic
+        val isDuplicate = pageIdsMutex.withLock {
+            val duplicate = idSet.size < ids.size || pageIds.any { (otherPage, otherIds) ->
+                otherPage != page && otherIds.any(idSet::contains)
+            }
+            if (!duplicate) {
+                pageIds[page] = idSet
+            }
+            duplicate
         }
         if (isDuplicate) {
             return LoadResult.Invalid()
         }
-        pageIds[page] = idSet
 
         val endReached = response.endReached(data, pageSize)
 

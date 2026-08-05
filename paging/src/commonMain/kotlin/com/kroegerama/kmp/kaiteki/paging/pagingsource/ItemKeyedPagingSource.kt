@@ -4,6 +4,8 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import arrow.core.Either
 import arrow.core.getOrElse
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * [PagingSource] base class for backends that page relative to an item
@@ -21,6 +23,7 @@ import arrow.core.getOrElse
 public abstract class ItemKeyedPagingSource<A, B, T : Any> : PagingSource<ItemKeyedPagingSource.DirectedItemKey<T>, T>() {
 
     private val pageIds = mutableMapOf<DirectedItemKey<T>?, Set<Any>>()
+    private val pageIdsMutex = Mutex()
 
     /**
      * load the [size] items strictly before [item], in ascending list order;
@@ -94,27 +97,41 @@ public abstract class ItemKeyedPagingSource<A, B, T : Any> : PagingSource<ItemKe
 
         val ids = data.mapNotNull { it.id() }
         val idSet = ids.toSet()
-        val isDuplicate = idSet.size < ids.size || pageIds.any { (otherKey, otherIds) ->
-            otherKey != key && otherIds.any(idSet::contains)
+        // prepend and append loads may run concurrently, so check-and-store must be atomic
+        val isDuplicate = pageIdsMutex.withLock {
+            val duplicate = idSet.size < ids.size || pageIds.any { (otherKey, otherIds) ->
+                otherKey != key && otherIds.any(idSet::contains)
+            }
+            if (!duplicate) {
+                pageIds[key] = idSet
+            }
+            duplicate
         }
         if (isDuplicate) {
             return LoadResult.Invalid()
         }
-        pageIds[key] = idSet
 
         val endReached = response?.endReached(data, size) ?: true
 
+        // a derived key equal to the load key (backend returned a boundary-inclusive page)
+        // would trip paging's key-reuse check (IllegalStateException, keyReuseSupported is
+        // false); treat it as end-of-list in that direction instead
         return LoadResult.Page(
             data = data,
             prevKey = when (key) {
-                null,
-                is DirectedItemKey.Previous -> data.takeUnless {
-                    endReached
-                }?.firstOrNull()?.let {
+                is DirectedItemKey.Next -> null
+
+                // on an initial load via makeNextCall, endReached describes the next
+                // direction and says nothing about items before a middle-start page
+                null if !initialFromPreviousOnly -> data.firstOrNull()?.let {
                     DirectedItemKey.Previous(it)
                 }
 
-                is DirectedItemKey.Next -> null
+                else -> data.takeUnless {
+                    endReached
+                }?.firstOrNull()?.let {
+                    DirectedItemKey.Previous(it)
+                }?.takeUnless { it == key }
             },
             nextKey = when {
                 initialFromPreviousOnly -> null
@@ -123,7 +140,7 @@ public abstract class ItemKeyedPagingSource<A, B, T : Any> : PagingSource<ItemKe
                     endReached
                 }?.lastOrNull()?.let {
                     DirectedItemKey.Next(it)
-                }
+                }?.takeUnless { it == key }
 
                 else -> null
             }

@@ -10,6 +10,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class SinglePagePagingSourceTest {
@@ -48,5 +49,18 @@ class SinglePagePagingSourceTest {
         val error = assertIs<LoadResult.Error<Nothing, String>>(pager.refresh())
         assertIs<RuntimeException>(error.throwable)
         assertEquals("call failed", error.throwable.message)
+    }
+
+    @Test
+    fun throwableErrorsArePassedThroughUnchanged() = runTest {
+        val cause = IllegalStateException("boom")
+        val source = object : SinglePagePagingSource<Throwable, List<String>, String>() {
+            override suspend fun makeCall(): Either<Throwable, List<String>> = cause.left()
+            override suspend fun List<String>.data(): List<String> = this
+        }
+        val pager = TestPager(config, source)
+
+        val error = assertIs<LoadResult.Error<Nothing, String>>(pager.refresh())
+        assertSame(cause, error.throwable)
     }
 }

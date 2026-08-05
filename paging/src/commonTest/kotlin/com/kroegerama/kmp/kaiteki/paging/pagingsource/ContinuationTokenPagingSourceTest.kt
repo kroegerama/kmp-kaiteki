@@ -24,12 +24,13 @@ class ContinuationTokenPagingSourceTest {
 
         var failCalls = false
         var staleToken = false
+        var echoTokenAtEnd = false
 
         override suspend fun makeCall(token: Int?, size: Int): Either<String, Response> {
             if (failCalls) return "call failed".left()
             val offset = token ?: 0
             val items = backend.drop(offset).take(size)
-            val next = (offset + size).takeIf { it < backend.size }
+            val next = (offset + size).takeIf { it < backend.size } ?: if (echoTokenAtEnd) token else null
             return Response(items, next).right()
         }
 
@@ -112,6 +113,19 @@ class ContinuationTokenPagingSourceTest {
 
         val error = assertIs<LoadResult.Error<Int, Int>>(source.load(LoadParams.Refresh(null, 10, false)))
         assertSame(cause, error.throwable)
+    }
+
+    @Test
+    fun echoedTokenIsTreatedAsEndOfList() = runTest {
+        // backend echoes the requested cursor on the last page instead of returning null
+        val source = TestSource(items(0..14)).apply { echoTokenAtEnd = true }
+        val pager = TestPager(config, source)
+
+        assertIs<LoadResult.Page<Int, String>>(pager.refresh())
+        val lastPage = assertIs<LoadResult.Page<Int, String>>(pager.append())
+        assertEquals(items(10..14), lastPage.data)
+        assertNull(lastPage.nextKey)
+        assertNull(pager.append())
     }
 
     @Test
