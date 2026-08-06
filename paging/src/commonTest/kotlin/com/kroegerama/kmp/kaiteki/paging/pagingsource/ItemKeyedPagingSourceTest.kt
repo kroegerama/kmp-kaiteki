@@ -25,8 +25,10 @@ class ItemKeyedPagingSourceTest {
     private class TestSource(
         private val backend: List<Int>,
         private val startAt: Int? = null,
-        private val useIds: Boolean = false
+        private val useIds: Boolean = false,
+        strategy: DuplicateStrategy = DuplicateStrategy.INVALIDATE
     ) : ItemKeyedPagingSource<String, List<Int>, Int>() {
+        override val duplicateStrategy = strategy
         var failCalls = false
 
         override suspend fun makeNextCall(item: Int?, size: Int): Either<String, List<Int>> {
@@ -192,6 +194,34 @@ class ItemKeyedPagingSourceTest {
     }
 
     @Test
+    fun filterStrategyDropsDuplicatesInsteadOfInvalidating() = runTest {
+        val source = TestSource((0..99).toList(), useIds = true, strategy = DuplicateStrategy.FILTER)
+
+        assertIs<LoadResult.Page<DirectedItemKey<Int>, Int>>(source.load(LoadParams.Refresh(null, 10, false)))
+        // simulates shifted backend data: the append page re-delivers 5..9 from the refresh page
+        val append = assertIs<LoadResult.Page<DirectedItemKey<Int>, Int>>(
+            source.load(LoadParams.Append(DirectedItemKey.Next(4), 10, false))
+        )
+        assertEquals((10..14).toList(), append.data)
+        assertEquals(DirectedItemKey.Next(14), append.nextKey)
+    }
+
+    @Test
+    fun filterStrategyDerivesKeysFromRawPageWhenFullyDuplicate() = runTest {
+        val source = TestSource((0..99).toList(), useIds = true, strategy = DuplicateStrategy.FILTER)
+
+        assertIs<LoadResult.Page<DirectedItemKey<Int>, Int>>(source.load(LoadParams.Refresh(null, 10, false)))
+        // a key unknown to the backend makes it re-deliver 0..9, which are all already seen
+        val page = assertIs<LoadResult.Page<DirectedItemKey<Int>, Int>>(
+            source.load(LoadParams.Append(DirectedItemKey.Next(-1), 10, false))
+        )
+        assertEquals(emptyList(), page.data)
+        // the key advances via the raw items; a key derived from the filtered (empty) page
+        // would end the list here
+        assertEquals(DirectedItemKey.Next(9), page.nextKey)
+    }
+
+    @Test
     fun maxSizeDropsEarliestPageWhileAppending() = runTest {
         val maxSizeConfig = PagingConfig(pageSize = 10, initialLoadSize = 10, maxSize = 30)
         val pager = TestPager(maxSizeConfig, TestSource((0..99).toList(), useIds = true))
@@ -266,6 +296,54 @@ class ItemKeyedPagingSourceTest {
         assertIs<LoadResult.Page<DirectedItemKey<Int>, Int>>(pager.refresh())
         val lastPage = assertIs<LoadResult.Page<DirectedItemKey<Int>, Int>>(pager.append())
         assertEquals(listOf(2), lastPage.data)
+        assertNull(lastPage.nextKey)
+        assertNull(pager.append())
+    }
+
+    @Test
+    fun intraPageDuplicateIdsSurfaceAsRetryableError() = runTest {
+        // a duplicate id within a single page cannot come from data shifting between
+        // loads; invalidating would reproduce it every generation in an endless loop
+        val source = TestSource(listOf(1, 2, 1, 3), useIds = true)
+
+        val error = assertIs<LoadResult.Error<DirectedItemKey<Int>, Int>>(
+            source.load(LoadParams.Refresh(null, 10, false))
+        )
+        val exception = assertIs<DuplicateIdException>(error.throwable)
+        assertEquals(1, exception.id)
+    }
+
+    @Test
+    fun boundaryInclusivePageWithIdsDropsEchoedKeyItem() = runTest {
+        // sloppy backend returns items from the key item inclusive; with id tracking the
+        // echoed key item must be dropped instead of counting as a cross-page duplicate,
+        // which would invalidate on every append
+        val source = object : ItemKeyedPagingSource<String, List<Int>, Int>() {
+            val backend = (0..12).toList()
+
+            override suspend fun makeNextCall(item: Int?, size: Int): Either<String, List<Int>> {
+                val fromIndex = if (item != null) backend.indexOf(item) else 0
+                return backend.drop(fromIndex).take(size).right()
+            }
+
+            override suspend fun makePreviousCall(item: Int?, size: Int): Either<String, List<Int>>? = null
+            override suspend fun List<Int>.data(): List<Int> = this
+            override suspend fun Int.id(): Any = this
+            override suspend fun List<Int>.endReached(data: List<Int>, requestedSize: Int): Boolean = data.isEmpty()
+        }
+        val pager = TestPager(config, source)
+
+        assertIs<LoadResult.Page<DirectedItemKey<Int>, Int>>(pager.refresh())
+
+        // the raw page is 9..12, but the echoed key item 9 is dropped
+        val append = assertIs<LoadResult.Page<DirectedItemKey<Int>, Int>>(pager.append())
+        assertEquals((10..12).toList(), append.data)
+        assertEquals(DirectedItemKey.Next(12), append.nextKey)
+
+        // at the end of the list the page filters down to nothing and the derived key
+        // equals the load key, ending the list
+        val lastPage = assertIs<LoadResult.Page<DirectedItemKey<Int>, Int>>(pager.append())
+        assertEquals(emptyList(), lastPage.data)
         assertNull(lastPage.nextKey)
         assertNull(pager.append())
     }

@@ -5,35 +5,42 @@ import androidx.paging.PagingState
 import arrow.core.Either
 import arrow.core.getOrElse
 import com.kroegerama.kmp.kaiteki.paging.DEFAULT_PAGING_CONFIG
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
+/**
+ * [PagingSource] base class for page-number based backends. Every request asks for exactly
+ * [pageSize] items, ignoring `LoadParams.loadSize` — page-number key math needs a constant size.
+ *
+ * @param A error type of the calls
+ * @param B response type of the calls
+ * @param T item type
+ */
 public abstract class PageSizePagingSource<A, B, T : Any>(
     private val pageSize: Int = DEFAULT_PAGING_CONFIG.pageSize,
     private val firstPage: Int = 0
 ) : PagingSource<Int, T>() {
 
-    private val pageIds = mutableMapOf<Int, Set<Any>>()
-    private val pageIdsMutex = Mutex()
+    private val pageIdTracker = PageIdTracker<Int>()
 
     protected abstract suspend fun makeCall(page: Int, size: Int): Either<A, B>
 
     protected abstract suspend fun B.data(): List<T>
 
     /**
-     * optional stable id per item, used to detect shifted backend data: the source is
-     * invalidated when an id reappears on a different page than the one that first
-     * delivered it. re-delivering the same page (e.g. after paging dropped it due to
-     * `PagingConfig.maxSize`) does not invalidate
+     * optional stable id per item for duplicate detection (see [duplicateStrategy]);
+     * re-delivering the same page does not count as a duplicate
      */
     protected open suspend fun T.id(): Any? = null
+
+    /**
+     * reaction when [id] reveals an item that a different page already delivered
+     */
+    protected open val duplicateStrategy: DuplicateStrategy = DuplicateStrategy.INVALIDATE
 
     protected open suspend fun A.throwable(): Throwable = this as? Throwable ?: RuntimeException(toString())
 
     /**
-     * end-of-list detection, called on the response so implementations can use payload
-     * fields like `hasMore` or `totalCount`; the default assumes a backend that always
-     * fills the requested size on non-final pages
+     * end-of-list detection based on the response (e.g. `hasMore`, `totalCount`);
+     * the default assumes non-final pages always fill the requested size
      */
     protected open suspend fun B.endReached(data: List<T>, requestedSize: Int): Boolean = data.size < requestedSize
 
@@ -55,26 +62,24 @@ public abstract class PageSizePagingSource<A, B, T : Any>(
 
         val data = response.data()
 
-        val ids = data.mapNotNull { it.id() }
-        val idSet = ids.toSet()
-        // prepend and append loads may run concurrently, so check-and-store must be atomic
-        val isDuplicate = pageIdsMutex.withLock {
-            val duplicate = idSet.size < ids.size || pageIds.any { (otherPage, otherIds) ->
-                otherPage != page && otherIds.any(idSet::contains)
-            }
-            if (!duplicate) {
-                pageIds[page] = idSet
-            }
-            duplicate
-        }
-        if (isDuplicate) {
-            return LoadResult.Invalid()
+        val result = pageIdTracker.process(
+            key = page,
+            data = data,
+            strategy = duplicateStrategy
+        ) { it.id() }
+
+        val items = when (result) {
+            is PageIdTracker.Result.Keep -> result.items
+            PageIdTracker.Result.Invalidate -> return LoadResult.Invalid()
+            is PageIdTracker.Result.Error -> return LoadResult.Error(result.throwable)
         }
 
+        // endReached uses the raw response data: a page whose items were all filtered as
+        // duplicates must still advance to the next page instead of ending the list
         val endReached = response.endReached(data, pageSize)
 
         return LoadResult.Page(
-            data = data,
+            data = items,
             prevKey = page.minus(1).takeUnless { it < firstPage },
             nextKey = page.plus(1).takeUnless { endReached }
         )

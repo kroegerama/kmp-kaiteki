@@ -4,17 +4,11 @@ import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import arrow.core.Either
 import arrow.core.getOrElse
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 /**
- * [PagingSource] base class for backends that page relative to an item
- * ("load the `size` items before/after `item`").
- *
- * Ordering contract: [makePreviousCall] and [makeNextCall] must both return their items in
- * ascending list order — the prepend key is derived from the first item of a page and the
- * append key from the last item. A backend that returns "previous" items newest-first
- * (typical for chat APIs) must reverse them before returning.
+ * [PagingSource] base class for backends that page relative to an item ("load `size` items
+ * before/after `item`"). [makePreviousCall] and [makeNextCall] must both return their items in
+ * ascending list order — a backend returning "previous" items newest-first must reverse them.
  *
  * @param A error type of the calls
  * @param B response type of the calls
@@ -22,53 +16,49 @@ import kotlinx.coroutines.sync.withLock
  */
 public abstract class ItemKeyedPagingSource<A, B, T : Any> : PagingSource<ItemKeyedPagingSource.DirectedItemKey<T>, T>() {
 
-    private val pageIds = mutableMapOf<DirectedItemKey<T>?, Set<Any>>()
-    private val pageIdsMutex = Mutex()
+    private val pageIdTracker = PageIdTracker<DirectedItemKey<T>?>()
 
     /**
-     * load the [size] items strictly before [item], in ascending list order;
-     * [item] is `null` on the initial load (only reached when [makeNextCall] returned `null`).
-     * return `null` if loading in this direction is not supported
+     * load the [size] items strictly before [item] (`null` on the initial load, only reached
+     * when [makeNextCall] returned `null`); return `null` if this direction is not supported
      */
     protected abstract suspend fun makePreviousCall(item: T?, size: Int): Either<A, B>?
 
     /**
-     * load the [size] items strictly after [item], in ascending list order;
-     * [item] is `null` on the initial load.
-     * return `null` if loading in this direction is not supported
+     * load the [size] items strictly after [item] (`null` on the initial load);
+     * return `null` if this direction is not supported
      */
     protected abstract suspend fun makeNextCall(item: T?, size: Int): Either<A, B>?
 
     protected abstract suspend fun B.data(): List<T>
 
     /**
-     * optional stable id per item, used to detect shifted backend data: the source is
-     * invalidated when an id reappears on a different page than the one that first
-     * delivered it. re-delivering the same page under the same key (e.g. after paging
-     * dropped it due to `PagingConfig.maxSize`) does not invalidate
+     * optional stable id per item for duplicate detection (see [duplicateStrategy]); neither
+     * same-key re-delivery nor the key item echoed by the backend counts as a duplicate
      */
     protected open suspend fun T.id(): Any? = null
+
+    /**
+     * reaction when [id] reveals an item that a different page already delivered
+     */
+    protected open val duplicateStrategy: DuplicateStrategy = DuplicateStrategy.INVALIDATE
 
     protected open suspend fun A.throwable(): Throwable = this as? Throwable ?: RuntimeException(toString())
 
     /**
-     * return `true` when this error means the requested key is stale and the whole list
-     * must reload from scratch via [LoadResult.Invalid]; by default every error is treated
-     * as transient and surfaced as [LoadResult.Error], which keeps the loaded pages and
-     * scroll position and allows `retry()`
+     * return `true` when this error means the requested key is stale and the whole list must
+     * reload via [LoadResult.Invalid]; by default every error is a retryable [LoadResult.Error]
      */
     protected open suspend fun A.invalidatesKey(): Boolean = false
 
     /**
-     * end-of-list detection, called on the response so implementations can use payload
-     * fields like `hasMore` or `totalCount`; the default assumes a backend that always
-     * fills the requested size on non-final pages
+     * end-of-list detection based on the response (e.g. `hasMore`, `totalCount`);
+     * the default assumes non-final pages always fill the requested size
      */
     protected open suspend fun B.endReached(data: List<T>, requestedSize: Int): Boolean = data.size < requestedSize
 
     /**
-     * always restart from the initial call: an item key from the invalidated generation may
-     * no longer exist in the backend, and a non-null key here would combine with
+     * always restart from the initial call: a stale item key here would combine with
      * [invalidatesKey] into an invalidation loop
      */
     override fun getRefreshKey(state: PagingState<DirectedItemKey<T>, T>): DirectedItemKey<T>? = null
@@ -95,29 +85,33 @@ public abstract class ItemKeyedPagingSource<A, B, T : Any> : PagingSource<ItemKe
 
         val data = response?.data().orEmpty()
 
-        val ids = data.mapNotNull { it.id() }
-        val idSet = ids.toSet()
-        // prepend and append loads may run concurrently, so check-and-store must be atomic
-        val isDuplicate = pageIdsMutex.withLock {
-            val duplicate = idSet.size < ids.size || pageIds.any { (otherKey, otherIds) ->
-                otherKey != key && otherIds.any(idSet::contains)
-            }
-            if (!duplicate) {
-                pageIds[key] = idSet
-            }
-            duplicate
-        }
-        if (isDuplicate) {
-            return LoadResult.Invalid()
+        // a boundary-inclusive backend re-delivers the key item; it is dropped instead of
+        // counting as a cross-page duplicate, which would invalidate on every append
+        val boundaryId = key?.key?.id()
+
+        val result = pageIdTracker.process(
+            key = key,
+            data = data,
+            strategy = duplicateStrategy,
+            boundaryId = boundaryId
+        ) { it.id() }
+
+        val items = when (result) {
+            is PageIdTracker.Result.Keep -> result.items
+            PageIdTracker.Result.Invalidate -> return LoadResult.Invalid()
+            is PageIdTracker.Result.Error -> return LoadResult.Error(result.throwable)
         }
 
         val endReached = response?.endReached(data, size) ?: true
 
         // a derived key equal to the load key (backend returned a boundary-inclusive page)
         // would trip paging's key-reuse check (IllegalStateException, keyReuseSupported is
-        // false); treat it as end-of-list in that direction instead
+        // false); treat it as end-of-list in that direction instead.
+        // keys derive from the raw response data, not the filtered items: a boundary item
+        // dropped as duplicate is still the correct backend cursor, and a fully filtered
+        // page must keep advancing instead of ending the list
         return LoadResult.Page(
-            data = data,
+            data = items,
             prevKey = when (key) {
                 is DirectedItemKey.Next -> null
 

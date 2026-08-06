@@ -18,8 +18,11 @@ class ContinuationTokenPagingSourceTest {
 
     private class TestSource(
         private val backend: List<String>,
-        private val useIds: Boolean = false
+        private val useIds: Boolean = false,
+        strategy: DuplicateStrategy = DuplicateStrategy.INVALIDATE
     ) : ContinuationTokenPagingSource<String, TestSource.Response, Int, String>() {
+        override val duplicateStrategy = strategy
+
         data class Response(val items: List<String>, val next: Int?)
 
         var failCalls = false
@@ -103,6 +106,20 @@ class ContinuationTokenPagingSourceTest {
     }
 
     @Test
+    fun staleTokenErrorOnRefreshIsSurfacedAsError() = runTest {
+        // a refresh has no token to invalidate; the error must stay retryable instead of
+        // triggering a refresh loop via LoadResult.Invalid
+        val source = TestSource(items(0..24)).apply {
+            staleToken = true
+            failCalls = true
+        }
+        val pager = TestPager(config, source)
+
+        val error = assertIs<LoadResult.Error<Int, String>>(pager.refresh())
+        assertEquals("call failed", error.throwable.message)
+    }
+
+    @Test
     fun throwableErrorsArePassedThroughUnchanged() = runTest {
         val cause = IllegalStateException("boom")
         val source = object : ContinuationTokenPagingSource<Throwable, List<Int>, Int, Int>() {
@@ -135,6 +152,34 @@ class ContinuationTokenPagingSourceTest {
 
         assertIs<LoadResult.Page<Int, String>>(pager.refresh())
         assertIs<LoadResult.Invalid<Int, String>>(pager.append())
+    }
+
+    @Test
+    fun intraPageDuplicateIdsSurfaceAsRetryableError() = runTest {
+        // the refresh page itself contains a duplicate id; invalidating would reproduce
+        // it every generation in an endless loop
+        val pager = TestPager(config, TestSource(List(10) { "item ${it % 5}" }, useIds = true))
+
+        val error = assertIs<LoadResult.Error<Int, String>>(pager.refresh())
+        assertIs<DuplicateIdException>(error.throwable)
+    }
+
+    @Test
+    fun filterStrategyDropsDuplicatesInsteadOfInvalidating() = runTest {
+        // the second page repeats the ids of the first page, the third page has new items
+        val backend = List(20) { "item ${it % 10}" } + items(20..24)
+        val pager = TestPager(config, TestSource(backend, useIds = true, strategy = DuplicateStrategy.FILTER))
+
+        assertEquals(items(0..9), assertIs<LoadResult.Page<Int, String>>(pager.refresh()).data)
+
+        // the page filters down to nothing, but the token still advances
+        val filtered = assertIs<LoadResult.Page<Int, String>>(pager.append())
+        assertEquals(emptyList(), filtered.data)
+        assertEquals(20, filtered.nextKey)
+
+        val lastPage = assertIs<LoadResult.Page<Int, String>>(pager.append())
+        assertEquals(items(20..24), lastPage.data)
+        assertNull(lastPage.nextKey)
     }
 
     @Test

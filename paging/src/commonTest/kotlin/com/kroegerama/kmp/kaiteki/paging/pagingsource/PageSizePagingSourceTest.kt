@@ -20,8 +20,10 @@ class PageSizePagingSourceTest {
         pageSize: Int = 10,
         firstPage: Int = 0,
         private val useIds: Boolean = false,
+        strategy: DuplicateStrategy = DuplicateStrategy.INVALIDATE,
         private val call: (page: Int, size: Int) -> Either<String, List<String>>
     ) : PageSizePagingSource<String, List<String>, String>(pageSize, firstPage) {
+        override val duplicateStrategy = strategy
         val requestedSizes = mutableListOf<Int>()
 
         override suspend fun makeCall(page: Int, size: Int): Either<String, List<String>> {
@@ -119,6 +121,87 @@ class PageSizePagingSourceTest {
 
         assertIs<LoadResult.Page<Int, String>>(pager.refresh())
         assertIs<LoadResult.Invalid<Int, String>>(pager.append())
+    }
+
+    @Test
+    fun intraPageDuplicateIdsSurfaceAsRetryableError() = runTest {
+        // a duplicate id within a single page cannot come from data shifting between
+        // loads; invalidating would reproduce it every generation in an endless loop
+        val source = TestSource(pageSize = 3, useIds = true) { _, _ ->
+            listOf("a", "b", "a").right()
+        }
+        val pager = TestPager(PagingConfig(pageSize = 3), source)
+
+        val error = assertIs<LoadResult.Error<Int, String>>(pager.refresh())
+        val exception = assertIs<DuplicateIdException>(error.throwable)
+        assertEquals("a", exception.id)
+    }
+
+    @Test
+    fun filterStrategyDropsDuplicatesInsteadOfInvalidating() = runTest {
+        // random-order backend: page 1 re-delivers an id from page 0
+        val source = TestSource(pageSize = 3, useIds = true, strategy = DuplicateStrategy.FILTER) { page, _ ->
+            when (page) {
+                0 -> listOf("a", "b", "c")
+                1 -> listOf("b", "d", "e")
+                else -> listOf("f")
+            }.right()
+        }
+        val pager = TestPager(PagingConfig(pageSize = 3), source)
+
+        assertEquals(listOf("a", "b", "c"), assertIs<LoadResult.Page<Int, String>>(pager.refresh()).data)
+
+        val append = assertIs<LoadResult.Page<Int, String>>(pager.append())
+        assertEquals(listOf("d", "e"), append.data)
+        assertEquals(2, append.nextKey)
+
+        val lastPage = assertIs<LoadResult.Page<Int, String>>(pager.append())
+        assertEquals(listOf("f"), lastPage.data)
+        assertNull(lastPage.nextKey)
+    }
+
+    @Test
+    fun filterStrategyKeepsPagingWhenPageIsFullyDuplicate() = runTest {
+        val source = TestSource(pageSize = 3, useIds = true, strategy = DuplicateStrategy.FILTER) { page, _ ->
+            when (page) {
+                0 -> listOf("a", "b", "c")
+                1 -> listOf("c", "a", "b")
+                else -> listOf("d")
+            }.right()
+        }
+        val pager = TestPager(PagingConfig(pageSize = 3), source)
+
+        pager.refresh()
+        // the page filters down to nothing, but the backend filled the requested size,
+        // so the list must not end here
+        val filtered = assertIs<LoadResult.Page<Int, String>>(pager.append())
+        assertEquals(emptyList(), filtered.data)
+        assertEquals(2, filtered.nextKey)
+
+        assertEquals(listOf("d"), assertIs<LoadResult.Page<Int, String>>(pager.append()).data)
+    }
+
+    @Test
+    fun filterStrategyDropsWithinPageDuplicates() = runTest {
+        val source = TestSource(pageSize = 4, useIds = true, strategy = DuplicateStrategy.FILTER) { _, _ ->
+            listOf("a", "b", "a", "c").right()
+        }
+        val pager = TestPager(PagingConfig(pageSize = 4), source)
+
+        val refresh = assertIs<LoadResult.Page<Int, String>>(pager.refresh())
+        assertEquals(listOf("a", "b", "c"), refresh.data)
+    }
+
+    @Test
+    fun filterStrategyReloadingTheSamePageKeepsItems() = runTest {
+        val source = TestSource(pageSize = 10, useIds = true, strategy = DuplicateStrategy.FILTER, call = backend(100))
+
+        assertIs<LoadResult.Page<Int, String>>(source.load(LoadParams.Refresh(null, 10, false)))
+        assertIs<LoadResult.Page<Int, String>>(source.load(LoadParams.Append(1, 10, false)))
+        // paging re-loads a dropped page (PagingConfig.maxSize) with the same key on the
+        // same instance; its items must not be filtered against its own earlier delivery
+        val reloaded = assertIs<LoadResult.Page<Int, String>>(source.load(LoadParams.Append(1, 10, false)))
+        assertEquals((10..19).map { "item $it" }, reloaded.data)
     }
 
     @Test

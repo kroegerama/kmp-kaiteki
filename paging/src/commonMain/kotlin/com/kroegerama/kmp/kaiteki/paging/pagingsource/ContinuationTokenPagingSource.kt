@@ -7,7 +7,7 @@ import arrow.core.getOrElse
 
 public abstract class ContinuationTokenPagingSource<A, B, Token : Any, T : Any> : PagingSource<Token, T>() {
 
-    private val pageIds = mutableMapOf<Token?, Set<Any>>()
+    private val pageIdTracker = PageIdTracker<Token?>()
 
     protected abstract suspend fun makeCall(token: Token?, size: Int): Either<A, B>
 
@@ -15,32 +15,32 @@ public abstract class ContinuationTokenPagingSource<A, B, Token : Any, T : Any> 
 
     /**
      * token for the next page, or `null` when the end is reached; a token equal to the
-     * requested one is also treated as end-of-list (some backends echo the cursor there)
+     * requested one is also treated as end-of-list
      */
     protected abstract suspend fun B.continuationToken(): Token?
 
     /**
-     * optional stable id per item, used to detect shifted backend data: the source is
-     * invalidated when an id reappears on a different page than the one that first
-     * delivered it. re-delivering the same page under the same token (e.g. after paging
-     * dropped it due to `PagingConfig.maxSize`) does not invalidate
+     * optional stable id per item for duplicate detection (see [duplicateStrategy]);
+     * re-delivering the same page under the same token does not count as a duplicate
      */
     protected open suspend fun T.id(): Any? = null
+
+    /**
+     * reaction when [id] reveals an item that a different page already delivered
+     */
+    protected open val duplicateStrategy: DuplicateStrategy = DuplicateStrategy.INVALIDATE
 
     protected open suspend fun A.throwable(): Throwable = this as? Throwable ?: RuntimeException(toString())
 
     /**
-     * return `true` when this error means the requested token is stale/expired and the
-     * whole list must reload from scratch via [LoadResult.Invalid]; by default every error
-     * is treated as transient and surfaced as [LoadResult.Error], which keeps the loaded
-     * pages and scroll position and allows `retry()`
+     * return `true` when this error means the requested token is stale and the whole list must
+     * reload via [LoadResult.Invalid]; by default every error is a retryable [LoadResult.Error]
      */
     protected open suspend fun A.invalidatesKey(): Boolean = false
 
     /**
-     * always restart without a token: a token from the invalidated generation may be
-     * expired, and a non-null key here would combine with [invalidatesKey] into an
-     * invalidation loop
+     * always restart without a token: a stale token here would combine with [invalidatesKey]
+     * into an invalidation loop
      */
     override fun getRefreshKey(state: PagingState<Token, T>): Token? = null
 
@@ -60,18 +60,20 @@ public abstract class ContinuationTokenPagingSource<A, B, Token : Any, T : Any> 
         val data = response.data()
         val continuationToken = response.continuationToken()
 
-        val ids = data.mapNotNull { it.id() }
-        val idSet = ids.toSet()
-        val isDuplicate = idSet.size < ids.size || pageIds.any { (otherToken, otherIds) ->
-            otherToken != token && otherIds.any(idSet::contains)
+        val result = pageIdTracker.process(
+            key = token,
+            data = data,
+            strategy = duplicateStrategy
+        ) { it.id() }
+
+        val items = when (result) {
+            is PageIdTracker.Result.Keep -> result.items
+            PageIdTracker.Result.Invalidate -> return LoadResult.Invalid()
+            is PageIdTracker.Result.Error -> return LoadResult.Error(result.throwable)
         }
-        if (isDuplicate) {
-            return LoadResult.Invalid()
-        }
-        pageIds[token] = idSet
 
         return LoadResult.Page(
-            data = data,
+            data = items,
             prevKey = null,
             // a nextKey equal to the key that loaded this page would trip paging's
             // key-reuse check (IllegalStateException, keyReuseSupported is false)
