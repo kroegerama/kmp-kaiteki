@@ -1,6 +1,8 @@
 package com.kroegerama.kmp.kaiteki.camera.controller
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.LifecycleOwner
@@ -41,8 +43,9 @@ import platform.AVFoundation.isExposureModeSupported
 import platform.AVFoundation.isExposurePointOfInterestSupported
 import platform.AVFoundation.isFocusModeSupported
 import platform.AVFoundation.isFocusPointOfInterestSupported
+import platform.AVFoundation.maxAvailableVideoZoomFactor
+import platform.AVFoundation.minAvailableVideoZoomFactor
 import platform.AVFoundation.torchMode
-import platform.AVFoundation.videoMinZoomFactorForCinematicVideo
 import platform.AVFoundation.videoZoomFactor
 import platform.CoreGraphics.CGPointMake
 import platform.CoreVideo.kCVPixelBufferPixelFormatTypeKey
@@ -65,22 +68,29 @@ internal actual class PlatformCameraController : CameraController {
         dispatch_queue_attr_make_with_qos_class(null, QOS_CLASS_USER_INITIATED, 0)
     )
 
+    // All zoom/torch mutations go through the controller and mirror the device state
+    // into snapshot state. Device-initiated changes (e.g. thermal torch shutdown)
+    // would require KVO to observe and are not reflected.
+    private val zoomRatioState = mutableFloatStateOf(1f)
+    private val torchEnabledState = mutableStateOf(false)
+    private val torchAvailableState = mutableStateOf(false)
+
     actual override val zoomRatio: Float
-        get() = captureDevice?.videoZoomFactor?.toFloat() ?: 1f
+        get() = zoomRatioState.floatValue
 
     actual override fun setZoomRatio(value: Float): Boolean {
-        captureDevice?.withConfiguration {
-            activeFormat.videoMinZoomFactorForCinematicVideo
-            val newZoom = value.toDouble().coerceIn(
-                1.0, activeFormat.videoMaxZoomFactor
-            )
-            videoZoomFactor = newZoom
+        val device = captureDevice ?: return true
+        val range = device.minAvailableVideoZoomFactor..device.maxAvailableVideoZoomFactor
+        if (value.toDouble() !in range) return false
+        device.withConfiguration {
+            videoZoomFactor = value.toDouble()
+            zoomRatioState.floatValue = value
         }
         return true
     }
 
     actual override var torchEnabled: Boolean
-        get() = captureDevice?.torchMode == AVCaptureTorchModeOn
+        get() = torchEnabledState.value
         set(value) {
             captureDevice?.withConfiguration {
                 if (hasTorch) {
@@ -89,12 +99,13 @@ internal actual class PlatformCameraController : CameraController {
                     } else {
                         AVCaptureTorchModeOff
                     }
+                    torchEnabledState.value = value
                 }
             }
         }
 
     actual override val torchAvailable: Boolean
-        get() = captureDevice?.hasTorch == true
+        get() = torchAvailableState.value
 
     actual override suspend fun bindCamera(
         lifecycleOwner: LifecycleOwner
@@ -111,6 +122,9 @@ internal actual class PlatformCameraController : CameraController {
                     exposureMode = AVCaptureExposureModeContinuousAutoExposure
                 }
             }
+            zoomRatioState.floatValue = captureDevice.videoZoomFactor.toFloat()
+            torchEnabledState.value = captureDevice.torchMode == AVCaptureTorchModeOn
+            torchAvailableState.value = captureDevice.hasTorch
 
             val input = AVCaptureDeviceInput.deviceInputWithDevice(captureDevice, null) ?: return@dispatch_async
             session.withConfiguration {
@@ -150,8 +164,14 @@ internal actual class PlatformCameraController : CameraController {
     }
 
     actual override fun clear() {
+        // Runs on the session queue so it serializes after a still-pending bindCamera:
+        // otherwise that block could re-populate the state after it was reset here.
         dispatch_async(sessionQueue) {
             session.stopRunning()
+            captureDevice = null
+            zoomRatioState.floatValue = 1f
+            torchEnabledState.value = false
+            torchAvailableState.value = false
         }
     }
 

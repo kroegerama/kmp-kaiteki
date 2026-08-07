@@ -1,6 +1,10 @@
 package com.kroegerama.kmp.kaiteki.camera.controller
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.lifecycle.LifecycleOwner
@@ -17,7 +21,11 @@ internal const val DEFAULT_MIN_OCR_CONFIDENCE: Float = 0.5f
  * Controls the camera shown by [CameraView][com.kroegerama.kmp.kaiteki.camera.compose.CameraView].
  *
  * Obtain instances via [rememberCameraController]. Not intended to be implemented by library consumers.
+ *
+ * [zoomRatio], [torchEnabled] and [torchAvailable] are backed by snapshot state —
+ * reading them in composition triggers recomposition when they change.
  */
+@Stable
 @ExperimentalKaitekiCameraApi
 public interface CameraController {
     public suspend fun bindCamera(lifecycleOwner: LifecycleOwner)
@@ -43,11 +51,13 @@ internal object DummyCameraController : CameraController {
     override fun clear() {}
 
     override val zoomRatio: Float = 1f
-    override var torchEnabled: Boolean = false
+    override var torchEnabled: Boolean by mutableStateOf(false)
     override val torchAvailable: Boolean = false
 
     override fun setZoomRatio(value: Float): Boolean = false
-    override fun toggleTorch() {}
+    override fun toggleTorch() {
+        torchEnabled = !torchEnabled
+    }
     override fun focus(coords: Offset) {}
 
     override fun bindBarcodeAnalyzerFlow(vararg formats: BarcodeFormat): Flow<BarcodeResult> = emptyFlow()

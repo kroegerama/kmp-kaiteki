@@ -11,16 +11,20 @@ import androidx.camera.core.SurfaceOrientedMeteringPointFactory
 import androidx.camera.core.SurfaceRequest
 import androidx.camera.core.TorchState
 import androidx.camera.core.UseCaseGroup
+import androidx.camera.core.ZoomState
 import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.lifecycle.awaitInstance
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.Observer
 import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
 import com.kroegerama.kmp.kaiteki.camera.analyzer.BarcodeAnalyzer
 import com.kroegerama.kmp.kaiteki.camera.analyzer.TextAnalyzer
@@ -74,8 +78,17 @@ internal actual class PlatformCameraController(
         )
         .build()
 
+    private val zoomRatioState = mutableFloatStateOf(1f)
+    private val torchEnabledState = mutableStateOf(false)
+    private val torchAvailableState = mutableStateOf(false)
+
+    // The camera stays the source of truth: setters only forward to CameraControl,
+    // these observers mirror the actual camera state into snapshot state.
+    private val zoomObserver = Observer<ZoomState> { zoomRatioState.floatValue = it.zoomRatio }
+    private val torchObserver = Observer<Int> { torchEnabledState.value = it == TorchState.ON }
+
     actual override val zoomRatio: Float
-        get() = camera?.cameraInfo?.zoomState?.value?.zoomRatio ?: 1f
+        get() = zoomRatioState.floatValue
 
     actual override fun setZoomRatio(value: Float): Boolean {
         val range = camera?.cameraInfo?.zoomState?.value?.run {
@@ -87,15 +100,13 @@ internal actual class PlatformCameraController(
     }
 
     actual override var torchEnabled: Boolean
-        get() = camera?.cameraInfo?.torchState?.value?.let {
-            it == TorchState.ON
-        } ?: false
+        get() = torchEnabledState.value
         set(value) {
             camera?.cameraControl?.enableTorch(value)
         }
 
     actual override val torchAvailable: Boolean
-        get() = camera?.cameraInfo?.hasFlashUnit() == true
+        get() = torchAvailableState.value
 
     init {
         previewUseCase.setSurfaceProvider { newSurfaceRequest ->
@@ -124,11 +135,23 @@ internal actual class PlatformCameraController(
             .addUseCase(analysisUseCase)
             .build()
 
+        detachCameraObservers()
         camera = processCameraProvider.bindToLifecycle(
             lifecycleOwner,
             CameraSelector.DEFAULT_BACK_CAMERA,
             useCaseGroup
-        )
+        ).also { camera ->
+            torchAvailableState.value = camera.cameraInfo.hasFlashUnit()
+            camera.cameraInfo.zoomState.observe(lifecycleOwner, zoomObserver)
+            camera.cameraInfo.torchState.observe(lifecycleOwner, torchObserver)
+        }
+    }
+
+    private fun detachCameraObservers() {
+        camera?.cameraInfo?.run {
+            zoomState.removeObserver(zoomObserver)
+            torchState.removeObserver(torchObserver)
+        }
     }
 
     actual override fun toggleTorch() {
@@ -142,10 +165,14 @@ internal actual class PlatformCameraController(
     }
 
     actual override fun clear() {
+        detachCameraObservers()
         cameraProvider?.unbindAll()
         cameraProvider = null
         camera = null
         _surfaceRequests.value = null
+        zoomRatioState.floatValue = 1f
+        torchEnabledState.value = false
+        torchAvailableState.value = false
     }
 
     actual override fun bindBarcodeAnalyzerFlow(vararg formats: BarcodeFormat): Flow<BarcodeResult> = callbackFlow {
