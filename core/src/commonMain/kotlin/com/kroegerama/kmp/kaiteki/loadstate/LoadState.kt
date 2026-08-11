@@ -221,6 +221,72 @@ public fun <T> LoadState<T, T>.merge(): LoadState<Nothing, T> {
 }
 
 /**
+ * Chains a dependent load: [LoadState.Success] becomes `f(data)`, other states are kept.
+ * Stale data is passed through [f], retaining whatever current or stale value the result carries.
+ */
+public inline fun <E, T, C> LoadState<E, T>.flatMap(f: (success: T) -> LoadState<E, C>): LoadState<E, C> {
+    contract {
+        callsInPlace(f, InvocationKind.AT_MOST_ONCE)
+    }
+    return when (this) {
+        LoadState.Idle -> LoadState.Idle
+        is LoadState.Loading -> LoadState.Loading(
+            refreshCount = refreshCount,
+            staleData = staleData.flatMap { f(it).dataOrStale }
+        )
+
+        is LoadState.Success -> f(data)
+        is LoadState.Error -> LoadState.Error(
+            error = error,
+            staleData = staleData.flatMap { f(it).dataOrStale }
+        )
+    }
+}
+
+/**
+ * Combines two load states into one: an [LoadState.Error] takes precedence (this side first), then
+ * [LoadState.Loading] (with the larger `refreshCount`), then [LoadState.Idle]; two successes yield
+ * `transform(a, b)`. Stale data is present when both sides carry a current or stale value.
+ */
+public inline fun <E, A, B, C> LoadState<E, A>.combine(
+    other: LoadState<E, B>,
+    transform: (a: A, b: B) -> C
+): LoadState<E, C> {
+    contract {
+        callsInPlace(transform, InvocationKind.AT_MOST_ONCE)
+    }
+    if (this is LoadState.Success && other is LoadState.Success) {
+        return LoadState.Success(transform(data, other.data))
+    }
+    val staleData = dataOrStale.flatMap { a -> other.dataOrStale.map { b -> transform(a, b) } }
+    return when {
+        this is LoadState.Error -> LoadState.Error(error, staleData)
+        other is LoadState.Error -> LoadState.Error(other.error, staleData)
+        this is LoadState.Loading || other is LoadState.Loading -> LoadState.Loading(
+            refreshCount = maxOf(
+                (this as? LoadState.Loading)?.refreshCount ?: 0,
+                (other as? LoadState.Loading)?.refreshCount ?: 0
+            ),
+            staleData = staleData
+        )
+
+        else -> LoadState.Idle
+    }
+}
+
+/** Combines three load states, following the same precedence rules as the two-state [combine]. */
+public inline fun <E, A, B, C, D> LoadState<E, A>.combine(
+    second: LoadState<E, B>,
+    third: LoadState<E, C>,
+    transform: (a: A, b: B, c: C) -> D
+): LoadState<E, D> {
+    contract {
+        callsInPlace(transform, InvocationKind.AT_MOST_ONCE)
+    }
+    return combine(second, ::Pair).combine(third) { (a, b), c -> transform(a, b, c) }
+}
+
+/**
  * Converts this [Either] into a [LoadState]: [Either.Right] becomes [LoadState.Success],
  * [Either.Left] becomes [LoadState.Error] carrying [stale].
  */
