@@ -26,7 +26,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v7
       - name: Validate Gradle Wrapper
-        uses: gradle/actions/wrapper-validation@v4
+        uses: gradle/actions/wrapper-validation@v6
       - uses: actions/cache@v4
         with:
           path: |
@@ -38,8 +38,8 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
       - name: Generate and submit dependency graph
-        uses: gradle/actions/dependency-submission@v4
+        uses: gradle/actions/dependency-submission@v6
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
       - name: Build with Gradle
         run: ./gradlew ${{ matrix.target }}
