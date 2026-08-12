@@ -1,6 +1,7 @@
 package com.kroegerama.kmp.kaiteki.compose.components
 
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.LoadingIndicator
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.Dp
  * @param threshold Pull distance past which [onRefresh] is triggered on release.
  * @param content Scrollable content shown inside the box.
  */
+@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun ExpressivePullToRefreshBox(
     isRefreshing: Boolean,
