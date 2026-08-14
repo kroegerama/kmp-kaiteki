@@ -20,7 +20,8 @@ public actual class DefaultDecimalFormatter @RememberInComposition actual constr
         this.isGroupingUsed = isGroupingUsed
     } as DecimalFormat
 
-    actual override fun format(value: Number): String = decimalFormat.format(value)
+    // java.text.DecimalFormat is not thread-safe, so concurrent format calls must be serialized
+    actual override fun format(value: Number): String = synchronized(decimalFormat) { decimalFormat.format(value) }
 
     actual override val decimalSeparator: Char = decimalFormat.decimalFormatSymbols.decimalSeparator
 
