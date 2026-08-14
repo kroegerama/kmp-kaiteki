@@ -66,7 +66,8 @@ public interface LocalizedDateTimeFormatter {
     /**
      * Localized relative phrase for a whole unit, e.g. "yesterday", "next month".
      *
-     * @return the phrase, or `null` if the locale has no dedicated wording for this combination.
+     * @param direction [AbsoluteUnit.NOW] requires [Direction.PLAIN].
+     * @return the phrase, or `null` for unsupported combinations or missing locale wording.
      */
     @Stable
     public fun formatRelative(direction: Direction, unit: AbsoluteUnit): String?
@@ -75,7 +76,9 @@ public interface LocalizedDateTimeFormatter {
      * Localized relative phrase with a quantity, e.g. "3 minutes ago", "in 2 days".
      *
      * @param quantity magnitude of the offset in [unit].
-     * @return the phrase, or `null` if the locale has no dedicated wording for this combination.
+     * @param direction [Direction.LAST_2] behaves like [Direction.LAST], [Direction.NEXT_2] like
+     *   [Direction.NEXT]; [Direction.THIS] and [Direction.PLAIN] yield `null`.
+     * @return the phrase, or `null` for unsupported combinations or missing locale wording.
      */
     @Stable
     public fun formatRelative(quantity: Double, direction: Direction, unit: RelativeUnit): String?

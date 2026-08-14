@@ -192,6 +192,29 @@ class LocalizedDateTimeFormatterTest : RobolectricTest() {
         expect("in 45 Sekunden") { formatterDE.formatRelative(45.0, Direction.NEXT, RelativeUnit.SECONDS) }
     }
 
+    @Test
+    fun testRelativeNowRequiresPlainDirection() {
+        expect(null) { formatterUS.formatRelative(Direction.LAST, AbsoluteUnit.NOW) }
+        expect(null) { formatterUS.formatRelative(Direction.THIS, AbsoluteUnit.NOW) }
+        expect(null) { formatterUS.formatRelative(Direction.NEXT, AbsoluteUnit.NOW) }
+        expect(null) { formatterDE.formatRelative(Direction.LAST_2, AbsoluteUnit.NOW) }
+    }
+
+    @Test
+    fun testRelativeQuantityDirections() {
+        // quantified phrases only exist for past and future directions
+        expect(null) { formatterUS.formatRelative(5.0, Direction.THIS, RelativeUnit.SECONDS) }
+        expect(null) { formatterUS.formatRelative(5.0, Direction.PLAIN, RelativeUnit.MINUTES) }
+        expect(null) { formatterDE.formatRelative(5.0, Direction.THIS, RelativeUnit.HOURS) }
+        expect(null) { formatterDE.formatRelative(5.0, Direction.PLAIN, RelativeUnit.DAYS) }
+
+        // LAST_2 and NEXT_2 use the plain past/future phrasing
+        expect("4 hours ago") { formatterUS.formatRelative(4.0, Direction.LAST_2, RelativeUnit.HOURS) }
+        expect("in 4 hours") { formatterUS.formatRelative(4.0, Direction.NEXT_2, RelativeUnit.HOURS) }
+        expect("vor 30 Minuten") { formatterDE.formatRelative(30.0, Direction.LAST_2, RelativeUnit.MINUTES) }
+        expect("in 30 Minuten") { formatterDE.formatRelative(30.0, Direction.NEXT_2, RelativeUnit.MINUTES) }
+    }
+
     @OptIn(InternalKaitekiApi::class)
     @Test
     fun formatFancyUsesFormatterZone() {

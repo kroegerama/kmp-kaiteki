@@ -97,7 +97,11 @@ internal class DefaultLocalizedDateTimeFormatter(
     override fun formatRelative(direction: Direction, unit: AbsoluteUnit): String? {
         val components = NSDateComponents().apply {
             when (unit) {
-                AbsoluteUnit.NOW -> second = 0
+                AbsoluteUnit.NOW -> if (direction == Direction.PLAIN) {
+                    second = 0
+                } else {
+                    return null
+                }
 
                 AbsoluteUnit.DAY -> day = when (direction) {
                     Direction.LAST -> -1
@@ -125,11 +129,11 @@ internal class DefaultLocalizedDateTimeFormatter(
         return relativeDateTimeFormatter.localizedStringFromDateComponents(components)
     }
 
-    override fun formatRelative(quantity: Double, direction: Direction, unit: RelativeUnit): String {
+    override fun formatRelative(quantity: Double, direction: Direction, unit: RelativeUnit): String? {
         val signed = when (direction) {
             Direction.LAST, Direction.LAST_2 -> -quantity
             Direction.NEXT, Direction.NEXT_2 -> quantity
-            Direction.THIS, Direction.PLAIN -> 0.0
+            Direction.THIS, Direction.PLAIN -> return null
         }.toLong()
 
         val components = NSDateComponents().apply {

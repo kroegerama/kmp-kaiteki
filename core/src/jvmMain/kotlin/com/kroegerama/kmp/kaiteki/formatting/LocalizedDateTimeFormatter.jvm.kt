@@ -77,11 +77,21 @@ internal class DefaultLocalizedDateTimeFormatter(
     override fun formatDateTime(instant: Instant): String = dateTimeFormatter.format(instant.toJavaInstant())
     override fun formatDateTime(localDateTime: LocalDateTime): String = dateTimeFormatter.format(localDateTime.toJavaLocalDateTime())
 
-    override fun formatRelative(direction: Direction, unit: AbsoluteUnit): String? =
-        relativeDateTimeFormatter.format(direction.jvmDirection(), unit.jvmAbsoluteUnit())
+    override fun formatRelative(direction: Direction, unit: AbsoluteUnit): String? {
+        // ICU throws for NOW with any direction other than PLAIN
+        if (unit == AbsoluteUnit.NOW && direction != Direction.PLAIN) return null
+        return relativeDateTimeFormatter.format(direction.jvmDirection(), unit.jvmAbsoluteUnit())
+    }
 
-    override fun formatRelative(quantity: Double, direction: Direction, unit: RelativeUnit): String? =
-        relativeDateTimeFormatter.format(quantity, direction.jvmDirection(), unit.jvmAbsoluteUnit())
+    override fun formatRelative(quantity: Double, direction: Direction, unit: RelativeUnit): String? {
+        // ICU only accepts LAST and NEXT for quantified phrases and throws for anything else
+        val jvmDirection = when (direction) {
+            Direction.LAST, Direction.LAST_2 -> RelativeDateTimeFormatter.Direction.LAST
+            Direction.NEXT, Direction.NEXT_2 -> RelativeDateTimeFormatter.Direction.NEXT
+            Direction.THIS, Direction.PLAIN -> return null
+        }
+        return relativeDateTimeFormatter.format(quantity, jvmDirection, unit.jvmAbsoluteUnit())
+    }
 
     private fun FormatStyle.jvmFormatStyle() = when (this) {
         FormatStyle.SHORT -> JvmFormatStyle.SHORT
