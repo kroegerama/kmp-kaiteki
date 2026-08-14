@@ -113,7 +113,10 @@ public abstract class LoadStateFlow<E, T> {
             block: suspend () -> Either<E, T>
         ): LoadStateFlow<E, T> = object : LoadStateFlow<E, T>() {
             private val stateFlow = MutableStateFlow(LoadStateFlowState<T, Nothing>())
-            private var staleData: Option<T> = None
+
+            // MutableStateFlow used as an atomic holder: written from the loader coroutine and
+            // from override() on arbitrary caller threads
+            private val staleData = MutableStateFlow<Option<T>>(None)
 
             override val flow: StateFlow<LoadState<E, T>> = stateFlow.transformLatest { state ->
                 state.override.onSome {
@@ -124,16 +127,16 @@ public abstract class LoadStateFlow<E, T> {
                     emit(
                         LoadState.Loading(
                             refreshCount = state.refreshCount,
-                            staleData = staleData
+                            staleData = staleData.value
                         )
                     )
                 }
                 val response = block().onLeft {
                     onError?.invoke(it) { refresh() }
                 }.onRight {
-                    staleData = it.some()
+                    staleData.value = it.some()
                 }
-                emit(response.asLoadState(staleData))
+                emit(response.asLoadState(staleData.value))
             }.stateIn(scope, sharingStarted, LoadState.Idle)
 
             override val dataOrStale: StateFlow<Option<T>> = flow.map { state ->
@@ -149,7 +152,7 @@ public abstract class LoadStateFlow<E, T> {
             }
 
             override fun override(newData: T) {
-                staleData = newData.some()
+                staleData.value = newData.some()
                 stateFlow.update { it.override(newData) }
             }
         }
@@ -172,7 +175,10 @@ public abstract class LoadStateFlow<E, T> {
             block: suspend (Param) -> Either<E, T>
         ): LoadStateFlow<E, T> = object : LoadStateFlow<E, T>() {
             private val stateFlow = MutableStateFlow(LoadStateFlowState<T, Param>())
-            private var staleData: Option<T> = None
+
+            // MutableStateFlow used as an atomic holder: written from the loader coroutine and
+            // from override() on arbitrary caller threads
+            private val staleData = MutableStateFlow<Option<T>>(None)
 
             override val flow: StateFlow<LoadState<E, T>> = channelFlow {
                 parameterFlow.onEach { param ->
@@ -185,14 +191,14 @@ public abstract class LoadStateFlow<E, T> {
                     }
                     state.parameter.onSome { parameter ->
                         if (state.withLoading) {
-                            send(LoadState.Loading(state.refreshCount, staleData))
+                            send(LoadState.Loading(state.refreshCount, staleData.value))
                         }
                         val response = block(parameter).onLeft {
                             onError?.invoke(it) { refresh() }
                         }.onRight {
-                            staleData = it.some()
+                            staleData.value = it.some()
                         }
-                        send(response.asLoadState(staleData))
+                        send(response.asLoadState(staleData.value))
                     }
                 }
             }.stateIn(scope, sharingStarted, LoadState.Idle)
@@ -210,7 +216,7 @@ public abstract class LoadStateFlow<E, T> {
             }
 
             override fun override(newData: T) {
-                staleData = newData.some()
+                staleData.value = newData.some()
                 stateFlow.update { it.override(newData) }
             }
         }
