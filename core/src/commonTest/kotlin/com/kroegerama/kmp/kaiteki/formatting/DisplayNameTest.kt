@@ -193,6 +193,17 @@ class DisplayNameTest : RobolectricTest() {
     }
 
     @Test
+    fun cachedFormattersDistinguishLocaleExtensions() {
+        val yearMonth = YearMonth(2026, Month.MARCH)
+        // Seed the cache with the plain locale first; a key that drops locale extensions would
+        // then serve the plain formatter for the extension variant.
+        val plain = yearMonth.displayName(TextStyle.FULL, en)
+        val arabicDigits = yearMonth.displayName(TextStyle.FULL, createPlatformLocale("en-US-u-nu-arab"))
+        assertNotEquals(plain, arabicDigits)
+        assertContains(arabicDigits, "٢٠٢٦")
+    }
+
+    @Test
     fun defaultParametersProduceOutput() {
         assertTrue(Month.JANUARY.displayName().isNotBlank())
         assertTrue(DayOfWeek.MONDAY.displayName().isNotBlank())

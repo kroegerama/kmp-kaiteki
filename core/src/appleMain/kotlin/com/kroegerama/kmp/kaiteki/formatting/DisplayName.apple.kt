@@ -2,7 +2,6 @@ package com.kroegerama.kmp.kaiteki.formatting
 
 import androidx.compose.runtime.Stable
 import com.kroegerama.kmp.kaiteki.locale.PlatformLocale
-import com.kroegerama.kmp.kaiteki.locale.languageTag
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.Month
 import kotlinx.datetime.YearMonth
@@ -11,6 +10,7 @@ import platform.Foundation.NSCalendarIdentifierGregorian
 import platform.Foundation.NSDateComponents
 import platform.Foundation.NSDateFormatter
 import platform.Foundation.NSTimeZone
+import platform.Foundation.localeIdentifier
 import platform.Foundation.timeZoneWithName
 import kotlin.native.concurrent.ThreadLocal
 
@@ -78,7 +78,9 @@ private object DisplayNameUtils {
 
     private val formatters = HashMap<String, NSDateFormatter>()
 
-    fun formatter(locale: PlatformLocale) = formatters.getOrPut(locale.languageTag) {
+    // keyed by the full identifier: languageTag strips @-modifiers (calendar, numbers, ...),
+    // which would let differently configured locales share a formatter
+    fun formatter(locale: PlatformLocale) = formatters.getOrPut(locale.localeIdentifier) {
         NSDateFormatter().apply {
             this.locale = locale
             this.calendar = this@DisplayNameUtils.calendar
@@ -87,7 +89,7 @@ private object DisplayNameUtils {
 
     private val yearMonthFormatters = HashMap<String, NSDateFormatter>()
 
-    private fun key(locale: PlatformLocale, style: TextStyle) = "${locale.languageTag}|${style.name}"
+    private fun key(locale: PlatformLocale, style: TextStyle) = "${locale.localeIdentifier}|${style.name}"
 
     fun yearMonthFormatter(locale: PlatformLocale, style: TextStyle): NSDateFormatter = yearMonthFormatters.getOrPut(key(locale, style)) {
         val skeleton = style.toYearMonthSkeleton()
