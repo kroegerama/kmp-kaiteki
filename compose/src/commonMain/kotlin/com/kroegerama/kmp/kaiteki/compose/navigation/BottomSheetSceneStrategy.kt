@@ -6,7 +6,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.contentColorFor
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -141,8 +143,13 @@ internal data class BottomSheetScene<T : Any>(
 
     override val content: @Composable (() -> Unit) = {
         val lifecycleOwner = rememberLifecycleOwner()
-        val sheetState = rememberModalBottomSheetState(
-            skipPartiallyExpanded = config.skipPartiallyExpanded
+        val sheetState = rememberBottomSheetState(
+            initialValue = SheetValue.Hidden,
+            enabledValues = if (config.skipPartiallyExpanded) {
+                setOf(SheetValue.Hidden, SheetValue.Expanded)
+            } else {
+                setOf(SheetValue.Hidden, SheetValue.PartiallyExpanded, SheetValue.Expanded)
+            }
         )
         val scope = rememberCoroutineScope()
         val currentOnBack by rememberUpdatedState(onBack)
