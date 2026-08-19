@@ -2,7 +2,11 @@ package com.kroegerama.kmp.kaiteki.camera.delegate
 
 import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
 import com.kroegerama.kmp.kaiteki.camera.analyzer.OCRProcessor
+import com.kroegerama.kmp.kaiteki.camera.controller.AnalysisGeometry
 import com.kroegerama.kmp.kaiteki.camera.model.OCRResult
+import com.kroegerama.kmp.kaiteki.camera.model.containsRect
+import com.kroegerama.kmp.kaiteki.camera.model.relativeRect
+import com.kroegerama.kmp.kaiteki.camera.model.rotateNormalized
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.IntVar
@@ -20,16 +24,11 @@ import kotlinx.coroutines.launch
 import platform.AVFoundation.AVCaptureConnection
 import platform.AVFoundation.AVCaptureOutput
 import platform.AVFoundation.AVCaptureVideoDataOutputSampleBufferDelegateProtocol
-import platform.AVFoundation.AVCaptureVideoOrientationLandscapeLeft
-import platform.AVFoundation.AVCaptureVideoOrientationLandscapeRight
-import platform.AVFoundation.AVCaptureVideoOrientationPortrait
-import platform.AVFoundation.AVCaptureVideoOrientationPortraitUpsideDown
 import platform.CoreFoundation.CFDictionaryCreateMutable
 import platform.CoreFoundation.CFDictionarySetValue
 import platform.CoreFoundation.CFNumberCreate
 import platform.CoreFoundation.CFRelease
 import platform.CoreFoundation.kCFNumberSInt32Type
-import platform.CoreGraphics.CGRectMake
 import platform.CoreMedia.CMGetAttachment
 import platform.CoreMedia.CMSampleBufferGetImageBuffer
 import platform.CoreMedia.CMSampleBufferRef
@@ -56,13 +55,9 @@ import platform.CoreVideo.kCVReturnSuccess
 import platform.Foundation.NSLog
 import platform.ImageIO.CGImagePropertyOrientation
 import platform.ImageIO.kCGImagePropertyOrientationDown
-import platform.ImageIO.kCGImagePropertyOrientationDownMirrored
 import platform.ImageIO.kCGImagePropertyOrientationLeft
-import platform.ImageIO.kCGImagePropertyOrientationLeftMirrored
 import platform.ImageIO.kCGImagePropertyOrientationRight
-import platform.ImageIO.kCGImagePropertyOrientationRightMirrored
 import platform.ImageIO.kCGImagePropertyOrientationUp
-import platform.ImageIO.kCGImagePropertyOrientationUpMirrored
 import platform.Vision.VNImageRequestHandler
 import platform.darwin.NSObject
 import platform.posix.memcpy
@@ -74,7 +69,8 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class, ExperimentalAtomicApi::class, DelicateCoroutinesApi::class)
 internal class TextDelegate(
     private val producer: ProducerScope<OCRResult>,
-    minConfidence: Float
+    minConfidence: Float,
+    private val geometryProvider: () -> AnalysisGeometry,
 ) : NSObject(), AVCaptureVideoDataOutputSampleBufferDelegateProtocol {
 
     private val isProcessing = AtomicBoolean(false)
@@ -83,7 +79,6 @@ internal class TextDelegate(
     private val processor = OCRProcessor(
         minConfidence = minConfidence,
         minimumTextHeight = 0.03f,
-        regionOfInterest = CGRectMake(0.1, 0.1, 0.8, 0.8)
     )
 
     @ObjCSignatureOverride
@@ -104,7 +99,11 @@ internal class TextDelegate(
             return
         }
 
-        val orientation = mapOrientation(fromConnection)
+        // Deriving the Vision orientation from the same rotation as the ROI keeps
+        // observation boxes and the region in one upright coordinate space.
+        val geometry = geometryProvider()
+        val orientation = visionOrientation(geometry.uprightRotationDegrees)
+        val roi = geometry.roi?.rotateNormalized(geometry.uprightRotationDegrees)
 
         // ATOMIC keeps the cleanup in `finally` running even if the flow was
         // just cancelled; the pool buffer must be released either way.
@@ -115,7 +114,13 @@ internal class TextDelegate(
                     orientation = orientation,
                     options = emptyMap<Any?, Any?>()
                 )
-                producer.trySend(processor.recognize(handler))
+                val result = processor.recognize(handler)
+                val filtered = if (roi == null) {
+                    result
+                } else {
+                    result.copy(blocks = result.blocks.filter { roi.containsRect(it.relativeRect) })
+                }
+                producer.trySend(filtered)
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
@@ -127,31 +132,14 @@ internal class TextDelegate(
         }
     }
 
-    private fun mapOrientation(
-        connection: AVCaptureConnection
-    ): CGImagePropertyOrientation {
-        val videoOrientation = connection.videoOrientation
-        val isVideoMirrored = connection.isVideoMirrored()
-        return when (videoOrientation) {
-            AVCaptureVideoOrientationPortrait ->
-                if (isVideoMirrored) kCGImagePropertyOrientationLeftMirrored
-                else kCGImagePropertyOrientationRight
-
-            AVCaptureVideoOrientationPortraitUpsideDown ->
-                if (isVideoMirrored) kCGImagePropertyOrientationRightMirrored
-                else kCGImagePropertyOrientationLeft
-
-            AVCaptureVideoOrientationLandscapeLeft ->
-                if (isVideoMirrored) kCGImagePropertyOrientationDownMirrored
-                else kCGImagePropertyOrientationUp
-
-            AVCaptureVideoOrientationLandscapeRight ->
-                if (isVideoMirrored) kCGImagePropertyOrientationUpMirrored
-                else kCGImagePropertyOrientationDown
-
+    // Maps the clockwise upright rotation to the orientation Vision applies before recognizing.
+    private fun visionOrientation(uprightRotationDegrees: Int): CGImagePropertyOrientation =
+        when (uprightRotationDegrees) {
+            0 -> kCGImagePropertyOrientationUp
+            180 -> kCGImagePropertyOrientationDown
+            270 -> kCGImagePropertyOrientationLeft
             else -> kCGImagePropertyOrientationRight
         }
-    }
 
     @ObjCSignatureOverride
     override fun captureOutput(

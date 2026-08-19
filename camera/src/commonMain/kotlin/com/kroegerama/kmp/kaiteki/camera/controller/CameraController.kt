@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.lifecycle.LifecycleOwner
 import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
@@ -40,6 +41,14 @@ public interface CameraController {
     public fun toggleTorch()
     public fun focus(coords: Offset)
 
+    /**
+     * The active analysis region, normalized to the `CameraView` bounds (`0..1`, top-left origin);
+     * `null` while no region is requested. While the viewfinder geometry is unknown or unusable
+     * the requested rect is already reported (so overlays can render) even though the full frame
+     * is scanned. Backed by snapshot state.
+     */
+    public val analysisRegionRect: Rect?
+
     public fun bindBarcodeAnalyzerFlow(vararg formats: BarcodeFormat): Flow<BarcodeResult>
     public fun bindTextAnalyzerFlow(minConfidence: Float = DEFAULT_MIN_OCR_CONFIDENCE): Flow<OCRResult>
 }
@@ -60,6 +69,8 @@ internal object DummyCameraController : CameraController {
     }
     override fun focus(coords: Offset) {}
 
+    override val analysisRegionRect: Rect? = null
+
     override fun bindBarcodeAnalyzerFlow(vararg formats: BarcodeFormat): Flow<BarcodeResult> = emptyFlow()
     override fun bindTextAnalyzerFlow(minConfidence: Float): Flow<OCRResult> = emptyFlow()
 }
@@ -76,6 +87,8 @@ internal expect class PlatformCameraController : CameraController {
     override fun setZoomRatio(value: Float): Boolean
     override fun toggleTorch()
     override fun focus(coords: Offset)
+
+    override val analysisRegionRect: Rect?
 
     override fun bindBarcodeAnalyzerFlow(vararg formats: BarcodeFormat): Flow<BarcodeResult>
     override fun bindTextAnalyzerFlow(minConfidence: Float): Flow<OCRResult>

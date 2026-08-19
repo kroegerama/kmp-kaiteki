@@ -5,7 +5,6 @@ import com.kroegerama.kmp.kaiteki.camera.controller.DEFAULT_MIN_OCR_CONFIDENCE
 import com.kroegerama.kmp.kaiteki.camera.model.OCRResult
 import com.kroegerama.kmp.kaiteki.camera.model.OCRResultBlock
 import kotlinx.cinterop.BetaInteropApi
-import kotlinx.cinterop.CValue
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.ObjCObjectVar
 import kotlinx.cinterop.alloc
@@ -16,7 +15,6 @@ import kotlinx.cinterop.useContents
 import kotlinx.cinterop.value
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import platform.CoreGraphics.CGRect
 import platform.Foundation.NSError
 import platform.Vision.VNImageRequestHandler
 import platform.Vision.VNRecognizeTextRequest
@@ -29,14 +27,12 @@ import platform.Vision.VNRequestTextRecognitionLevelAccurate
  *
  * @param minConfidence lines below this recognition confidence (`0..1`) are discarded.
  * @param minimumTextHeight minimum text height relative to the image height; `null` keeps the Vision default.
- * @param regionOfInterest normalized, bottom-left-origin region to recognize text in; `null` uses the full image.
  */
 @ExperimentalKaitekiCameraApi
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 public class OCRProcessor(
     private val minConfidence: Float = DEFAULT_MIN_OCR_CONFIDENCE,
     private val minimumTextHeight: Float? = null,
-    private val regionOfInterest: CValue<CGRect>? = null,
 ) {
     /**
      * Recognizes text in the image of [handler].
@@ -47,7 +43,6 @@ public class OCRProcessor(
                 recognitionLevel = VNRequestTextRecognitionLevelAccurate
                 usesLanguageCorrection = true
                 this@OCRProcessor.minimumTextHeight?.let { minimumTextHeight = it }
-                this@OCRProcessor.regionOfInterest?.let { regionOfInterest = it }
             }
             memScoped {
                 val nsError = alloc<ObjCObjectVar<NSError?>>()

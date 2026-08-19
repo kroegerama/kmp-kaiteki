@@ -17,23 +17,34 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.IntSize
 import androidx.core.content.getSystemService
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
 import com.kroegerama.kmp.kaiteki.camera.controller.PlatformCameraController
+import com.kroegerama.kmp.kaiteki.camera.model.AnalysisRegion
+import kotlin.math.abs
 
 @ExperimentalKaitekiCameraApi
 @Composable
 internal actual fun PlatformCameraView(
     controller: PlatformCameraController,
-    modifier: Modifier
+    modifier: Modifier,
+    analysisRegion: AnalysisRegion
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val surfaceRequest by controller.surfaceRequests.collectAsStateWithLifecycle()
@@ -54,6 +65,28 @@ internal actual fun PlatformCameraView(
         request ?: return@Crossfade
 
         val coordinateTransformer = remember { MutableCoordinateTransformer() }
+        // CameraXViewfinder replaces the matrix instance on every placement pass, so the
+        // initial instance identifies "no transform published yet" even if a published
+        // transform happens to be the identity.
+        val initialTransformMatrix = remember { coordinateTransformer.transformMatrix }
+        val density = LocalDensity.current
+        var viewSize by remember { mutableStateOf(IntSize.Zero) }
+
+        LaunchedEffect(request, analysisRegion, density) {
+            if (analysisRegion !is AnalysisRegion.VisibleArea) {
+                controller.updateAnalysisRoi(null, null)
+                return@LaunchedEffect
+            }
+            val insetPx = with(density) { analysisRegion.inset.toPx() }
+            snapshotFlow {
+                val transformMatrix = coordinateTransformer.transformMatrix
+                    .takeUnless { it.values === initialTransformMatrix.values }
+                computeAnalysisRoi(insetPx, viewSize, transformMatrix, request.resolution)
+            }.collect { (viewportRect, viewfinderRect) ->
+                controller.updateAnalysisRoi(viewportRect, viewfinderRect)
+            }
+        }
+
         CameraXViewfinder(
             surfaceRequest = request,
             // EMBEDDED (TextureView) is rendered inside the view hierarchy, so Compose
@@ -63,6 +96,7 @@ internal actual fun PlatformCameraView(
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxSize()
+                .onSizeChanged { viewSize = it }
                 .pointerInput(Unit) {
                     awaitEachGesture {
                         awaitFirstDown(requireUnconsumed = false)
@@ -95,6 +129,51 @@ internal actual fun PlatformCameraView(
                 }
         )
     }
+}
+
+// Sensor-space aspect ratio of the ViewPort set in PlatformCameraController.bindCamera.
+private const val VIEW_PORT_SENSOR_ASPECT = 16f / 9f
+private const val ASPECT_TOLERANCE = 0.01f
+
+/**
+ * Computes the viewport-normalized rect used for result filtering and the viewfinder-normalized
+ * rect reported via `CameraController.analysisRegionRect`. Normalizing against the full preview
+ * buffer equals viewport-normalized coordinates only while the preview buffer matches the
+ * `ViewPort` aspect ratio; otherwise the full frame is scanned.
+ */
+private fun computeAnalysisRoi(
+    insetPx: Float,
+    size: IntSize,
+    transformMatrix: Matrix?,
+    resolution: android.util.Size,
+): Pair<Rect?, Rect?> {
+    if (size.width <= 0 || size.height <= 0) return null to null
+    val view = Rect(insetPx, insetPx, size.width - insetPx, size.height - insetPx)
+    if (view.isEmpty) return null to null
+    val viewfinderRect = Rect(
+        view.left / size.width,
+        view.top / size.height,
+        view.right / size.width,
+        view.bottom / size.height,
+    )
+    // A null matrix means CameraXViewfinder has not published a transform yet;
+    // fall back to scanning the full frame instead of filtering with wrong geometry.
+    if (transformMatrix == null) return null to viewfinderRect
+    // If the preview resolved to a buffer with a different aspect ratio, its ViewPort crop
+    // rect is a sub-rect of the buffer and buffer-normalized coordinates are no longer
+    // viewport-normalized; fall back to scanning the full frame.
+    if (resolution.height <= 0) return null to viewfinderRect
+    val bufferAspect = resolution.width.toFloat() / resolution.height
+    if (abs(bufferAspect - VIEW_PORT_SENSOR_ASPECT) > ASPECT_TOLERANCE) return null to viewfinderRect
+    val mapped = transformMatrix.map(view)
+    val viewportRect = Rect(
+        (mapped.left / resolution.width).coerceIn(0f, 1f),
+        (mapped.top / resolution.height).coerceIn(0f, 1f),
+        (mapped.right / resolution.width).coerceIn(0f, 1f),
+        (mapped.bottom / resolution.height).coerceIn(0f, 1f),
+    )
+    if (viewportRect.isEmpty) return null to viewfinderRect
+    return viewportRect to viewfinderRect
 }
 
 @OptIn(ExperimentalKaitekiCameraApi::class)

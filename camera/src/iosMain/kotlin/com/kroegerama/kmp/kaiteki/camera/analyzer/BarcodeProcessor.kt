@@ -10,6 +10,7 @@ import kotlinx.cinterop.alloc
 import kotlinx.cinterop.autoreleasepool
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
+import kotlinx.cinterop.useContents
 import kotlinx.cinterop.value
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -108,10 +109,17 @@ public class BarcodeProcessor(
             observations.mapNotNull { observation ->
                 val content = observation.payloadStringValue ?: return@mapNotNull null
                 val format = barcodeFormat(observation.symbology, content) ?: return@mapNotNull null
-                BarcodeResult(
-                    format = format,
-                    content = content
-                )
+                // Vision uses a normalized, bottom-left-origin coordinate space; convert to top-left origin.
+                observation.boundingBox.useContents {
+                    BarcodeResult(
+                        format = format,
+                        content = content,
+                        relativeX = origin.x.toFloat(),
+                        relativeY = (1.0 - origin.y - size.height).toFloat(),
+                        relativeWidth = size.width.toFloat(),
+                        relativeHeight = size.height.toFloat(),
+                    )
+                }
             }
         }
     }

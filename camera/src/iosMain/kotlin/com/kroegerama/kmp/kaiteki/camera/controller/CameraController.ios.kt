@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.lifecycle.LifecycleOwner
 import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
 import com.kroegerama.kmp.kaiteki.camera.delegate.BarcodeDelegate
@@ -51,9 +52,21 @@ import platform.CoreGraphics.CGPointMake
 import platform.CoreVideo.kCVPixelBufferPixelFormatTypeKey
 import platform.CoreVideo.kCVPixelFormatType_32BGRA
 import platform.darwin.dispatch_async
+import platform.darwin.dispatch_get_main_queue
 import platform.darwin.dispatch_queue_attr_make_with_qos_class
 import platform.darwin.dispatch_queue_create
 import platform.posix.QOS_CLASS_USER_INITIATED
+import kotlin.concurrent.Volatile
+
+/**
+ * Analysis geometry consumed as one unit per frame: [roi] is normalized (0..1, top-left origin)
+ * in the unrotated output space of `AVMetadataObject.bounds` (`null` scans the full frame),
+ * [uprightRotationDegrees] is the clockwise rotation that makes the output buffers upright.
+ */
+internal class AnalysisGeometry(
+    val roi: Rect?,
+    val uprightRotationDegrees: Int,
+)
 
 @ExperimentalKaitekiCameraApi
 @OptIn(ExperimentalForeignApi::class)
@@ -74,6 +87,25 @@ internal actual class PlatformCameraController : CameraController {
     private val zoomRatioState = mutableFloatStateOf(1f)
     private val torchEnabledState = mutableStateOf(false)
     private val torchAvailableState = mutableStateOf(false)
+    private val analysisRegionRectState = mutableStateOf<Rect?>(null)
+
+    // Single holder so a frame never pairs the ROI of one layout pass with the
+    // rotation of another; read once per frame on the delegate queues.
+    @Volatile
+    private var analysisGeometry = AnalysisGeometry(roi = null, uprightRotationDegrees = 90)
+
+    // Invoked on the main queue once the session runs, when the analysis region becomes computable.
+    // Written on the main thread, read on the session queue.
+    @Volatile
+    internal var onSessionStarted: (() -> Unit)? = null
+
+    actual override val analysisRegionRect: Rect?
+        get() = analysisRegionRectState.value
+
+    internal fun updateAnalysisGeometry(outputRect: Rect?, viewfinderRect: Rect?, uprightRotationDegrees: Int) {
+        analysisGeometry = AnalysisGeometry(outputRect, uprightRotationDegrees)
+        analysisRegionRectState.value = viewfinderRect
+    }
 
     actual override val zoomRatio: Float
         get() = zoomRatioState.floatValue
@@ -138,6 +170,9 @@ internal actual class PlatformCameraController : CameraController {
                 }
             }
             session.startRunning()
+            onSessionStarted?.let { callback ->
+                dispatch_async(dispatch_get_main_queue()) { callback() }
+            }
         }
     }
 
@@ -172,12 +207,16 @@ internal actual class PlatformCameraController : CameraController {
             zoomRatioState.floatValue = 1f
             torchEnabledState.value = false
             torchAvailableState.value = false
+            updateAnalysisGeometry(null, null, analysisGeometry.uprightRotationDegrees)
         }
     }
 
     actual override fun bindBarcodeAnalyzerFlow(vararg formats: BarcodeFormat): Flow<BarcodeResult> = callbackFlow {
         val metadataOutput = AVCaptureMetadataOutput()
-        val delegate = BarcodeDelegate(this)
+        val delegate = BarcodeDelegate(
+            producer = this,
+            geometryProvider = { analysisGeometry }
+        )
         val stableRef = StableRef.create(delegate)
 
         dispatch_async(sessionQueue) {
@@ -212,7 +251,8 @@ internal actual class PlatformCameraController : CameraController {
     actual override fun bindTextAnalyzerFlow(minConfidence: Float): Flow<OCRResult> = callbackFlow<OCRResult> {
         val delegate = TextDelegate(
             producer = this,
-            minConfidence = minConfidence
+            minConfidence = minConfidence,
+            geometryProvider = { analysisGeometry }
         )
         val stableRef = StableRef.create(delegate)
 

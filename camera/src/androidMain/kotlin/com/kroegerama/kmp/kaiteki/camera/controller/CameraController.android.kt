@@ -1,6 +1,7 @@
 package com.kroegerama.kmp.kaiteki.camera.controller
 
 import android.content.Context
+import android.util.Rational
 import android.util.Size
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
@@ -11,6 +12,7 @@ import androidx.camera.core.SurfaceOrientedMeteringPointFactory
 import androidx.camera.core.SurfaceRequest
 import androidx.camera.core.TorchState
 import androidx.camera.core.UseCaseGroup
+import androidx.camera.core.ViewPort
 import androidx.camera.core.ZoomState
 import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
@@ -22,6 +24,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
@@ -81,6 +84,20 @@ internal actual class PlatformCameraController(
     private val zoomRatioState = mutableFloatStateOf(1f)
     private val torchEnabledState = mutableStateOf(false)
     private val torchAvailableState = mutableStateOf(false)
+    private val analysisRegionRectState = mutableStateOf<Rect?>(null)
+
+    // Normalized (0..1, top-left origin) region in the sensor-oriented analysis viewport,
+    // read per frame on the analyzer executor; null scans the full frame.
+    @Volatile
+    private var analysisRoi: Rect? = null
+
+    actual override val analysisRegionRect: Rect?
+        get() = analysisRegionRectState.value
+
+    internal fun updateAnalysisRoi(viewportRect: Rect?, viewfinderRect: Rect?) {
+        analysisRoi = viewportRect
+        analysisRegionRectState.value = viewfinderRect
+    }
 
     // The camera stays the source of truth: setters only forward to CameraControl,
     // these observers mirror the actual camera state into snapshot state.
@@ -130,7 +147,21 @@ internal actual class PlatformCameraController(
         processCameraProvider.unbindAll()
         cameraProvider = processCameraProvider
 
+        // The ViewPort crops both use cases to a common sensor region even when they
+        // resolve to different aspect ratios. Its aspect ratio is relative to the rotated
+        // output, so derive portrait vs. landscape from the sensor-relative rotation
+        // instead of assuming portrait-natural hardware.
+        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+        val rotation = previewUseCase.targetRotation
+        val sensorRotationDegrees = processCameraProvider
+            .getCameraInfo(cameraSelector)
+            .getSensorRotationDegrees(rotation)
+        val viewPortAspectRatio = when (sensorRotationDegrees) {
+            90, 270 -> Rational(9, 16)
+            else -> Rational(16, 9)
+        }
         val useCaseGroup = UseCaseGroup.Builder()
+            .setViewPort(ViewPort.Builder(viewPortAspectRatio, rotation).build())
             .addUseCase(previewUseCase)
             .addUseCase(analysisUseCase)
             .build()
@@ -138,7 +169,7 @@ internal actual class PlatformCameraController(
         detachCameraObservers()
         camera = processCameraProvider.bindToLifecycle(
             lifecycleOwner,
-            CameraSelector.DEFAULT_BACK_CAMERA,
+            cameraSelector,
             useCaseGroup
         ).also { camera ->
             torchAvailableState.value = camera.cameraInfo.hasFlashUnit()
@@ -173,6 +204,7 @@ internal actual class PlatformCameraController(
         zoomRatioState.floatValue = 1f
         torchEnabledState.value = false
         torchAvailableState.value = false
+        updateAnalysisRoi(null, null)
     }
 
     actual override fun bindBarcodeAnalyzerFlow(vararg formats: BarcodeFormat): Flow<BarcodeResult> = callbackFlow {
@@ -180,6 +212,7 @@ internal actual class PlatformCameraController(
         val analyzer = BarcodeAnalyzer(
             producer = this,
             zoomCallback = ::setZoomRatio,
+            roiProvider = { analysisRoi },
             formats = formats
         )
         analysisUseCase.setAnalyzer(executor, analyzer)
@@ -194,7 +227,8 @@ internal actual class PlatformCameraController(
         val executor = Executors.newSingleThreadExecutor()
         val analyzer = TextAnalyzer(
             producer = this,
-            minConfidence = minConfidence
+            minConfidence = minConfidence,
+            roiProvider = { analysisRoi }
         )
         analysisUseCase.setAnalyzer(executor, analyzer)
         awaitClose {

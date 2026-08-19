@@ -48,13 +48,38 @@ public class BarcodeProcessor(
     /**
      * Scans [image] and returns all detected barcodes with a supported format and raw value.
      */
-    public suspend fun scan(image: InputImage): List<BarcodeResult> = scanner.process(image).await().mapNotNull { barcode ->
-        val format = BarcodeFormat.fromPlatformBarcodeFormat(barcode.format) ?: return@mapNotNull null
-        val content = barcode.rawValue ?: return@mapNotNull null
-        BarcodeResult(
-            format = format,
-            content = content
-        )
+    public suspend fun scan(image: InputImage): List<BarcodeResult> {
+        val rotation = image.rotationDegrees
+        // ML Kit returns bounding boxes in the upright coordinate space, while
+        // InputImage reports the sensor-oriented buffer size.
+        val uprightWidth = if (rotation % 180 == 0) image.width else image.height
+        val uprightHeight = if (rotation % 180 == 0) image.height else image.width
+
+        return scanner.process(image).await().mapNotNull { barcode ->
+            val format = BarcodeFormat.fromPlatformBarcodeFormat(barcode.format) ?: return@mapNotNull null
+            val content = barcode.rawValue ?: return@mapNotNull null
+            val box = barcode.boundingBox
+            if (box == null) {
+                // No bounding box available; report the full frame.
+                BarcodeResult(
+                    format = format,
+                    content = content,
+                    relativeX = 0f,
+                    relativeY = 0f,
+                    relativeWidth = 1f,
+                    relativeHeight = 1f,
+                )
+            } else {
+                BarcodeResult(
+                    format = format,
+                    content = content,
+                    relativeX = box.left / uprightWidth.toFloat(),
+                    relativeY = box.top / uprightHeight.toFloat(),
+                    relativeWidth = box.width() / uprightWidth.toFloat(),
+                    relativeHeight = box.height() / uprightHeight.toFloat(),
+                )
+            }
+        }
     }
 
     override fun close() {

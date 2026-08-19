@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.sp
 import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
 import com.kroegerama.kmp.kaiteki.camera.controller.CameraController
 import com.kroegerama.kmp.kaiteki.camera.controller.PlatformCameraController
+import com.kroegerama.kmp.kaiteki.camera.model.AnalysisRegion
 import com.kroegerama.kmp.kaiteki.compose.modifier.checkerboard
 
 /**
@@ -18,12 +19,16 @@ import com.kroegerama.kmp.kaiteki.compose.modifier.checkerboard
  *
  * In [inspection mode][LocalInspectionMode] (e.g. IDE previews) a plain placeholder
  * is rendered instead of the camera preview.
+ *
+ * @param analysisRegion restricts the analyzer flows of [controller] to a part of the frame,
+ * see [AnalysisRegion].
  */
 @ExperimentalKaitekiCameraApi
 @Composable
 public fun CameraView(
     controller: CameraController,
     modifier: Modifier = Modifier,
+    analysisRegion: AnalysisRegion = AnalysisRegion.FullFrame,
 ) {
     if (LocalInspectionMode.current) {
         Box(
@@ -39,7 +44,8 @@ public fun CameraView(
     }
     PlatformCameraView(
         controller = controller as PlatformCameraController,
-        modifier = modifier
+        modifier = modifier,
+        analysisRegion = analysisRegion
     )
 }
 
@@ -48,4 +54,5 @@ public fun CameraView(
 internal expect fun PlatformCameraView(
     controller: PlatformCameraController,
     modifier: Modifier,
+    analysisRegion: AnalysisRegion,
 )
