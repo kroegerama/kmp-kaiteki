@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
+import com.kroegerama.kmp.kaiteki.KAITEKI_VERSION
 import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
 import kotlin.annotation.AnnotationRetention.BINARY
 import kotlin.annotation.AnnotationTarget.CLASS
@@ -44,6 +45,7 @@ import kotlin.annotation.AnnotationTarget.TYPE
  * position in the column. Items are declared through [SegmentedListItemColumnScope] and composed with a
  * [SegmentedListItemColumnItemScope] receiver that carries the [ListItemShapes] for that position.
  *
+ * @param modifier [Modifier] applied to the column.
  * @param verticalArrangement Arrangement of the items along the main axis.
  * @param horizontalAlignment Alignment of the items along the cross axis.
  * @param segmentedShapes Shapes used for the item at `index` out of `count` items.
@@ -73,7 +75,7 @@ public fun SegmentedListItemColumn(
         entries.fastForEachIndexed { index, entry ->
             key(entry.key ?: DefaultSegmentedListItemColumnKey(index)) {
                 val itemShapes = segmentedShapes(index, count)
-                val itemScope = remember(itemShapes) {
+                val itemScope = remember(itemShapes, index, count) {
                     SegmentedListItemColumnItemScopeImpl(itemShapes, index, count)
                 }
                 entry.content(itemScope)
@@ -133,7 +135,11 @@ public interface SegmentedListItemColumnScope {
 public interface SegmentedListItemColumnItemScope {
     /** Shapes of this item's position within the column. */
     public val shapes: ListItemShapes
+
+    /** Position of this item within the column. */
     public val index: Int
+
+    /** Total number of items in the column. */
     public val count: Int
 }
 
@@ -147,6 +153,7 @@ public annotation class SegmentedListDsl
  * Clickable [androidx.compose.material3.SegmentedListItem] shaped for its position within the enclosing [SegmentedListItemColumn].
  *
  * @param onClick Called when the item is clicked.
+ * @param modifier [Modifier] applied to the item.
  * @param enabled Whether the item responds to input.
  * @param leadingContent Optional content shown before [content].
  * @param trailingContent Optional content shown after [content].
@@ -205,6 +212,7 @@ public fun SegmentedListItemColumnItemScope.SegmentedListItem(
  *
  * @param checked Whether the item is checked.
  * @param onCheckedChange Called with the new checked state when the item is clicked.
+ * @param modifier [Modifier] applied to the item.
  * @param enabled Whether the item responds to input.
  * @param leadingContent Optional content shown before [content].
  * @param trailingContent Optional content shown after [content].
@@ -265,6 +273,7 @@ public fun SegmentedListItemColumnItemScope.SegmentedListItem(
  *
  * @param selected Whether the item is selected.
  * @param onClick Called when the item is clicked.
+ * @param modifier [Modifier] applied to the item.
  * @param enabled Whether the item responds to input.
  * @param leadingContent Optional content shown before [content].
  * @param trailingContent Optional content shown after [content].
@@ -393,7 +402,7 @@ private fun SegmentedListItemColumnPreview() {
                         SegmentedListItem(
                             onClick = {},
                             leadingContent = { Icon(imageVector = KaitekiIcon, contentDescription = null) },
-                            supportingContent = { Text("Version 1.9.5") }
+                            supportingContent = { Text("Version $KAITEKI_VERSION") }
                         ) {
                             Text("About")
                         }
