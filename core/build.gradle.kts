@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
@@ -6,6 +7,33 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.vanniktech.maven.publish)
+}
+
+val generateKaitekiVersion = tasks.register("generateKaitekiVersion") {
+    group = "build"
+    description = "Generates KaitekiVersion.kt from the kaiteki.version Gradle property."
+
+    val kaitekiVersion = providers.gradleProperty("kaiteki.version")
+    val packageName = "com.kroegerama.kmp.kaiteki"
+    val outputDirectory = layout.buildDirectory.dir("generated/kaitekiVersion/kotlin")
+    inputs.property("kaitekiVersion", kaitekiVersion)
+    outputs.dir(outputDirectory)
+    doLast {
+        val file = outputDirectory.get()
+            .dir(packageName.replace('.', '/'))
+            .file("KaitekiVersion.kt")
+            .asFile
+        file.parentFile.mkdirs()
+        file.writeText(
+            """
+            |// Generated file. Do not edit.
+            |package $packageName
+            |
+            |/** Version of the Kaiteki library. */
+            |public const val KAITEKI_VERSION: String = "${kaitekiVersion.get()}"
+            |""".trimMargin()
+        )
+    }
 }
 
 kotlin {
@@ -64,6 +92,10 @@ kotlin {
     iosSimulatorArm64()
 
     sourceSets {
+        commonMain {
+            @OptIn(ExperimentalKotlinGradlePluginApi::class)
+            generatedKotlin.srcDir(generateKaitekiVersion)
+        }
         commonMain.dependencies {
             implementation(libs.kotlinx.datetime)
             implementation(libs.kotlinx.coroutines.core)
