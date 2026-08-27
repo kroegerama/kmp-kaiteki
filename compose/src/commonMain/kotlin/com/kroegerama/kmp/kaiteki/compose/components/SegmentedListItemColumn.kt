@@ -1,12 +1,19 @@
 package com.kroegerama.kmp.kaiteki.compose.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.LayoutScopeMarker
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardColors
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CardElevation
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItemColors
@@ -36,6 +43,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
 import com.kroegerama.kmp.kaiteki.KAITEKI_VERSION
 import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
+import com.kroegerama.kmp.kaiteki.compose.graphics.rememberAnimatedShape
+import com.kroegerama.kmp.kaiteki.compose.graphics.rememberShapeForInteraction
 import kotlin.annotation.AnnotationRetention.BINARY
 import kotlin.annotation.AnnotationTarget.CLASS
 import kotlin.annotation.AnnotationTarget.TYPE
@@ -330,6 +339,75 @@ public fun SegmentedListItemColumnItemScope.SegmentedListItem(
 }
 
 /**
+ * [androidx.compose.material3.Card] shaped for its position within the enclosing [SegmentedListItemColumn].
+ * Morphs its corners when that position changes.
+ *
+ * @param modifier [Modifier] applied to the card.
+ * @param colors [CardColors] used for the container and content.
+ * @param elevation [CardElevation] used across the card's states.
+ * @param border Optional border drawn around the card.
+ * @param content Content of the card.
+ */
+@ExperimentalMaterial3ExpressiveApi
+@Composable
+public fun SegmentedListItemColumnItemScope.Card(
+    modifier: Modifier = Modifier,
+    colors: CardColors = CardDefaults.cardColors(),
+    elevation: CardElevation = CardDefaults.cardElevation(),
+    border: BorderStroke? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Card(
+        modifier = modifier,
+        shape = rememberAnimatedShape(shapes.shape),
+        colors = colors,
+        elevation = elevation,
+        border = border,
+        content = content,
+    )
+}
+
+/**
+ * Clickable [androidx.compose.material3.Card] shaped for its position within the enclosing [SegmentedListItemColumn].
+ * Morphs between its interaction shapes (pressed, dragged, focused, hovered) like [SegmentedListItem].
+ *
+ * @param onClick Called when the card is clicked.
+ * @param modifier [Modifier] applied to the card.
+ * @param enabled Whether the card responds to input.
+ * @param colors [CardColors] used for the container and content.
+ * @param elevation [CardElevation] used across the card's states.
+ * @param border Optional border drawn around the card.
+ * @param interactionSource [MutableInteractionSource] observing the card's interactions.
+ * @param content Content of the card.
+ */
+@ExperimentalMaterial3ExpressiveApi
+@Composable
+public fun SegmentedListItemColumnItemScope.Card(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    colors: CardColors = CardDefaults.cardColors(),
+    elevation: CardElevation = CardDefaults.cardElevation(),
+    border: BorderStroke? = null,
+    interactionSource: MutableInteractionSource? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    @Suppress("NAME_SHADOWING")
+    val interactionSource = interactionSource ?: remember { MutableInteractionSource() }
+    Card(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        shape = shapes.rememberShapeForInteraction(interactionSource),
+        colors = colors,
+        elevation = elevation,
+        border = border,
+        interactionSource = interactionSource,
+        content = content,
+    )
+}
+
+/**
  * Rebuilds the entries only when [content] itself changes or when a state value read while
  * building them changes, so that unrelated recompositions keep the previous item lambdas and let
  * the items skip.
@@ -479,6 +557,51 @@ private fun SegmentedListItemColumnSingleItemPreview() {
                             trailingContent = { Text("On") }
                         ) {
                             Text("Single item")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Preview
+@Composable
+private fun SegmentedListItemColumnCardPreview() {
+    MaterialTheme {
+        Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
+            Column(
+                modifier = Modifier
+                    .safeDrawingPadding()
+                    .padding(16.dp)
+            ) {
+                SegmentedListItemColumn {
+                    item(key = "banner") {
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                text = "Static card",
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
+                    }
+                    item(key = "action") {
+                        Card(
+                            onClick = {},
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Clickable card",
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
+                    }
+                    item(key = "item") {
+                        SegmentedListItem(
+                            onClick = {},
+                            trailingContent = { Text("On") }
+                        ) {
+                            Text("List item")
                         }
                     }
                 }
