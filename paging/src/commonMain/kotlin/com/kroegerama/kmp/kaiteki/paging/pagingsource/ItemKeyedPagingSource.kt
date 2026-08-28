@@ -63,7 +63,7 @@ public abstract class ItemKeyedPagingSource<A, B, T : Any> : PagingSource<ItemKe
      */
     override fun getRefreshKey(state: PagingState<DirectedItemKey<T>, T>): DirectedItemKey<T>? = null
 
-    override suspend fun load(params: LoadParams<DirectedItemKey<T>>): LoadResult<DirectedItemKey<T>, T> {
+    override suspend fun load(params: LoadParams<DirectedItemKey<T>>): LoadResult<DirectedItemKey<T>, T> = runCatchingLoad {
         val key = params.key
         val size = params.loadSize
 

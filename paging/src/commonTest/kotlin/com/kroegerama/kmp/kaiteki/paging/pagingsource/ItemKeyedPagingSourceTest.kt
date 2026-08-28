@@ -373,4 +373,20 @@ class ItemKeyedPagingSourceTest {
         val prepend = assertIs<LoadResult.Page<DirectedItemKey<Int>, Int>>(pager.prepend())
         assertEquals((80..89).toList(), prepend.data)
     }
+
+    @Test
+    fun thrownCallbackExceptionsSurfaceAsLoadError() = runTest {
+        // paging does not catch exceptions from load; a throwing mapper must become a
+        // retryable error instead of killing the PagingData stream
+        val cause = IllegalArgumentException("mapping failed")
+        val source = object : ItemKeyedPagingSource<String, List<Int>, Int>() {
+            override suspend fun makeNextCall(item: Int?, size: Int): Either<String, List<Int>> = List(size) { it }.right()
+            override suspend fun makePreviousCall(item: Int?, size: Int): Either<String, List<Int>>? = null
+            override suspend fun List<Int>.data(): List<Int> = throw cause
+        }
+        val pager = TestPager(config, source)
+
+        val error = assertIs<LoadResult.Error<DirectedItemKey<Int>, Int>>(pager.refresh())
+        assertSame(cause, error.throwable)
+    }
 }

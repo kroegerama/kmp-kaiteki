@@ -18,6 +18,10 @@ public abstract class OffsetLimitPagingSource<A, B, T : Any> : PagingSource<Int,
 
     private val pageIdTracker = PageIdTracker<Int>()
 
+    /**
+     * skip [offset] items and load at most [limit]; a response with more than [limit] items
+     * would break the offset key math and fails the load as [LoadResult.Error]
+     */
     protected abstract suspend fun makeCall(offset: Int, limit: Int): Either<A, B>
 
     protected abstract suspend fun B.data(): List<T>
@@ -61,7 +65,7 @@ public abstract class OffsetLimitPagingSource<A, B, T : Any> : PagingSource<Int,
         return (anchorOffset - state.config.initialLoadSize / 2).coerceAtLeast(0)
     }
 
-    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, T> {
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, T> = runCatchingLoad {
         val key = params.key ?: 0
         // a prepend key is the offset of the page below; near the start the request is clamped
         // to the `key` items that actually exist before it, so it never overlaps that page
@@ -79,6 +83,11 @@ public abstract class OffsetLimitPagingSource<A, B, T : Any> : PagingSource<Int,
         }
 
         val data = response.data()
+        if (data.size > limit) {
+            return LoadResult.Error(
+                IllegalStateException("call with offset $offset delivered ${data.size} items, requested $limit")
+            )
+        }
 
         val result = pageIdTracker.process(
             key = offset,

@@ -212,4 +212,20 @@ class ContinuationTokenPagingSourceTest {
         // paging re-loads a dropped page (PagingConfig.maxSize) with the same token on the same instance
         assertIs<LoadResult.Page<Int, String>>(source.load(LoadParams.Append(10, 10, false)))
     }
+
+    @Test
+    fun thrownCallbackExceptionsSurfaceAsLoadError() = runTest {
+        // paging does not catch exceptions from load; a throwing mapper must become a
+        // retryable error instead of killing the PagingData stream
+        val cause = IllegalArgumentException("mapping failed")
+        val source = object : ContinuationTokenPagingSource<String, List<Int>, Int, Int>() {
+            override suspend fun makeCall(token: Int?, size: Int): Either<String, List<Int>> = List(size) { it }.right()
+            override suspend fun List<Int>.data(): List<Int> = throw cause
+            override suspend fun List<Int>.continuationToken(): Int? = null
+        }
+        val pager = TestPager(config, source)
+
+        val error = assertIs<LoadResult.Error<Int, Int>>(pager.refresh())
+        assertSame(cause, error.throwable)
+    }
 }

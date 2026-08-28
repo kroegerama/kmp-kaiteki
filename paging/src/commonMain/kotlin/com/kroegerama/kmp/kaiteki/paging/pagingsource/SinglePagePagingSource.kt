@@ -6,6 +6,14 @@ import arrow.core.Either
 import arrow.core.getOrElse
 import arrow.core.right
 
+/**
+ * [PagingSource] base class for backends that deliver the whole list in one call. The single page
+ * is complete by definition, so it reports exact placeholder counts (zero on both sides).
+ *
+ * @param A error type of the call
+ * @param B response type of the call
+ * @param T item type
+ */
 public abstract class SinglePagePagingSource<A, B, T : Any> : PagingSource<Nothing, T>() {
 
     protected abstract suspend fun makeCall(): Either<A, B>
@@ -16,7 +24,7 @@ public abstract class SinglePagePagingSource<A, B, T : Any> : PagingSource<Nothi
 
     override fun getRefreshKey(state: PagingState<Nothing, T>): Nothing? = null
 
-    override suspend fun load(params: LoadParams<Nothing>): LoadResult<Nothing, T> {
+    override suspend fun load(params: LoadParams<Nothing>): LoadResult<Nothing, T> = runCatchingLoad {
         val response = makeCall().getOrElse {
             return LoadResult.Error(it.throwable())
         }
@@ -26,7 +34,9 @@ public abstract class SinglePagePagingSource<A, B, T : Any> : PagingSource<Nothi
         return LoadResult.Page(
             data = data,
             prevKey = null,
-            nextKey = null
+            nextKey = null,
+            itemsBefore = 0,
+            itemsAfter = 0
         )
     }
 }

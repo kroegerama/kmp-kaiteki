@@ -11,6 +11,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 
 class OffsetLimitPagingSourceTest {
 
@@ -217,5 +218,30 @@ class OffsetLimitPagingSourceTest {
         val error = assertIs<LoadResult.Error<Int, String>>(pager.refresh())
         assertIs<RuntimeException>(error.throwable)
         assertEquals("backend down", error.throwable.message)
+    }
+
+    @Test
+    fun oversizedResponseSurfacesAsLoadError() = runTest {
+        // more items than requested overlap the neighboring offset range
+        val source = TestSource { _, limit -> List(limit + 5) { "item $it" }.right() }
+        val pager = TestPager(PagingConfig(pageSize = 10, initialLoadSize = 10), source)
+
+        val error = assertIs<LoadResult.Error<Int, String>>(pager.refresh())
+        assertIs<IllegalStateException>(error.throwable)
+    }
+
+    @Test
+    fun thrownCallbackExceptionsSurfaceAsLoadError() = runTest {
+        // paging does not catch exceptions from load; a throwing mapper must become a
+        // retryable error instead of killing the PagingData stream
+        val cause = IllegalArgumentException("mapping failed")
+        val source = object : OffsetLimitPagingSource<String, List<Int>, Int>() {
+            override suspend fun makeCall(offset: Int, limit: Int): Either<String, List<Int>> = List(limit) { it }.right()
+            override suspend fun List<Int>.data(): List<Int> = throw cause
+        }
+        val pager = TestPager(PagingConfig(pageSize = 10), source)
+
+        val error = assertIs<LoadResult.Error<Int, Int>>(pager.refresh())
+        assertSame(cause, error.throwable)
     }
 }

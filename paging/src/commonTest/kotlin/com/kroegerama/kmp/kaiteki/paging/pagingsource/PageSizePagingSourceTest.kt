@@ -8,8 +8,10 @@ import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
 import kotlinx.coroutines.test.runTest
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertSame
@@ -21,6 +23,7 @@ class PageSizePagingSourceTest {
         firstPage: Int = 0,
         private val useIds: Boolean = false,
         strategy: DuplicateStrategy = DuplicateStrategy.INVALIDATE,
+        private val total: Int? = null,
         private val call: (page: Int, size: Int) -> Either<String, List<String>>
     ) : PageSizePagingSource<String, List<String>, String>(pageSize, firstPage) {
         override val duplicateStrategy = strategy
@@ -33,6 +36,7 @@ class PageSizePagingSourceTest {
 
         override suspend fun List<String>.data(): List<String> = this
         override suspend fun String.id(): Any? = if (useIds) this else null
+        override suspend fun List<String>.totalCount(): Int? = total
     }
 
     private fun backend(itemCount: Int): (Int, Int) -> Either<String, List<String>> = { page, size ->
@@ -41,9 +45,9 @@ class PageSizePagingSourceTest {
 
     /**
      * Regression test: `initialLoadSize` defaults to `3 * pageSize`, but the page-number key math
-     * only works if every request uses the same size. The source must ignore `params.loadSize`
-     * and always request its own `pageSize` — otherwise the first append re-fetches
-     * items already returned by the refresh.
+     * only works if every request uses the same size. The refresh must translate `loadSize` into
+     * whole pages of `pageSize` — otherwise the first append re-fetches items already returned
+     * by the refresh.
      */
     @Test
     fun refreshWithDefaultInitialLoadSizeDoesNotDuplicateItemsOnAppend() = runTest {
@@ -51,21 +55,69 @@ class PageSizePagingSourceTest {
         val pager = TestPager(PagingConfig(pageSize = 10), source)
 
         val refresh = assertIs<LoadResult.Page<Int, String>>(pager.refresh())
-        assertEquals((0..9).map { "item $it" }, refresh.data)
+        assertEquals((0..29).map { "item $it" }, refresh.data)
 
         val append = assertIs<LoadResult.Page<Int, String>>(pager.append())
-        assertEquals((10..19).map { "item $it" }, append.data)
+        assertEquals((30..39).map { "item $it" }, append.data)
 
-        assertEquals(listOf(10, 10), source.requestedSizes)
+        assertEquals(listOf(10, 10, 10, 10), source.requestedSizes)
 
         val loadedItems = pager.getPages().flatMap { it.data }
         assertEquals(loadedItems.distinct(), loadedItems)
     }
 
     @Test
+    fun refreshWindowIsCenteredOnRefreshKey() = runTest {
+        val source = TestSource(pageSize = 10, call = backend(100))
+        val pager = TestPager(PagingConfig(pageSize = 10), source)
+
+        // initialLoadSize defaults to 3 * pageSize -> pages 4, 5 and 6
+        val refresh = assertIs<LoadResult.Page<Int, String>>(pager.refresh(initialKey = 5))
+        assertEquals((40..69).map { "item $it" }, refresh.data)
+        assertEquals(3, refresh.prevKey)
+        assertEquals(7, refresh.nextKey)
+    }
+
+    @Test
+    fun refreshWindowRoundsLoadSizeDownToWholePages() = runTest {
+        val source = TestSource(pageSize = 10, call = backend(100))
+        // 25 is not a multiple of pageSize -> 2 whole pages, never a partial third
+        val pager = TestPager(PagingConfig(pageSize = 10, initialLoadSize = 25), source)
+
+        val refresh = assertIs<LoadResult.Page<Int, String>>(pager.refresh(initialKey = 5))
+        assertEquals((50..69).map { "item $it" }, refresh.data)
+        assertEquals(4, refresh.prevKey)
+        assertEquals(7, refresh.nextKey)
+        assertEquals(listOf(10, 10), source.requestedSizes)
+    }
+
+    @Test
+    fun refreshWindowIsClampedAtFirstPage() = runTest {
+        val source = TestSource(pageSize = 10, call = backend(100))
+        val pager = TestPager(PagingConfig(pageSize = 10), source)
+
+        val refresh = assertIs<LoadResult.Page<Int, String>>(pager.refresh(initialKey = 0))
+        assertEquals((0..29).map { "item $it" }, refresh.data)
+        assertNull(refresh.prevKey)
+        assertEquals(3, refresh.nextKey)
+    }
+
+    @Test
+    fun refreshWindowStopsAtEndOfList() = runTest {
+        val source = TestSource(pageSize = 10, call = backend(15))
+        val pager = TestPager(PagingConfig(pageSize = 10), source)
+
+        val refresh = assertIs<LoadResult.Page<Int, String>>(pager.refresh())
+        assertEquals((0..14).map { "item $it" }, refresh.data)
+        assertNull(refresh.nextKey)
+        // the second page is short, so the third page of the window must not be requested
+        assertEquals(listOf(10, 10), source.requestedSizes)
+    }
+
+    @Test
     fun shortPageEndsList() = runTest {
         val source = TestSource(pageSize = 10, call = backend(25))
-        val pager = TestPager(PagingConfig(pageSize = 10), source)
+        val pager = TestPager(PagingConfig(pageSize = 10, initialLoadSize = 10), source)
 
         pager.refresh()
         pager.append()
@@ -83,7 +135,7 @@ class PageSizePagingSourceTest {
 
         val refresh = assertIs<LoadResult.Page<Int, String>>(pager.refresh())
         assertNull(refresh.prevKey)
-        assertEquals(2, refresh.nextKey)
+        assertEquals(4, refresh.nextKey)
     }
 
     @Test
@@ -91,12 +143,14 @@ class PageSizePagingSourceTest {
         val source = TestSource(pageSize = 10, call = backend(100))
         val pager = TestPager(PagingConfig(pageSize = 10), source)
 
+        // window centered on page 2 -> pages 1, 2 and 3
         val refresh = assertIs<LoadResult.Page<Int, String>>(pager.refresh(initialKey = 2))
-        assertEquals((20..29).map { "item $it" }, refresh.data)
-        assertEquals(1, refresh.prevKey)
+        assertEquals((10..39).map { "item $it" }, refresh.data)
+        assertEquals(0, refresh.prevKey)
 
         val prepend = assertIs<LoadResult.Page<Int, String>>(pager.prepend())
-        assertEquals((10..19).map { "item $it" }, prepend.data)
+        assertEquals((0..9).map { "item $it" }, prepend.data)
+        assertNull(prepend.prevKey)
     }
 
     @Test
@@ -112,12 +166,157 @@ class PageSizePagingSourceTest {
     }
 
     @Test
+    fun getRefreshKeyAccountsForMultiPageRefreshWindow() = runTest {
+        val source = TestSource(pageSize = 10, call = backend(100))
+        val pager = TestPager(PagingConfig(pageSize = 10), source)
+
+        pager.refresh() // pages 0..2 merged into a single refresh page
+        pager.append()  // page 3
+
+        assertEquals(0, source.getRefreshKey(pager.getPagingState(anchorPosition = 5)))
+        assertEquals(2, source.getRefreshKey(pager.getPagingState(anchorPosition = 25)))
+        assertEquals(3, source.getRefreshKey(pager.getPagingState(anchorPosition = 35)))
+    }
+
+    @Test
+    fun getRefreshKeyIsCorrectWhenFilteringShrankTheRefreshPage() = runTest {
+        // page 1 re-delivers page 0's ids and filters down to nothing, so the merged refresh
+        // page spans keys 0..2 but holds only two pages worth of items
+        val source = TestSource(pageSize = 10, useIds = true, strategy = DuplicateStrategy.FILTER) { page, size ->
+            when (page) {
+                1 -> List(10) { "item $it" }
+                else -> List(10) { "item ${page * size + it}" }
+            }.right()
+        }
+        val pager = TestPager(PagingConfig(pageSize = 10), source)
+
+        val refresh = assertIs<LoadResult.Page<Int, String>>(pager.refresh())
+        assertEquals(20, refresh.data.size)
+
+        // an anchor on a page-0 item must map to key 0, not a key derived from the shrunken size
+        assertEquals(0, source.getRefreshKey(pager.getPagingState(anchorPosition = 3)))
+    }
+
+    @Test
+    fun getRefreshKeyUsesAbsoluteAnchorWithPlaceholders() = runTest {
+        val source = TestSource(total = 100, call = backend(100))
+        val pager = TestPager(PagingConfig(pageSize = 10, initialLoadSize = 10, enablePlaceholders = true), source)
+
+        pager.refresh(initialKey = 5)
+
+        // with placeholders and a known totalCount the anchor already is a backend item index
+        val state = pager.getPagingState(anchorPosition = 72)
+        assertEquals(7, source.getRefreshKey(state))
+    }
+
+    @Test
+    fun getRefreshKeyWithPlaceholdersAccountsForFirstPage() = runTest {
+        val source = TestSource(total = 100, firstPage = 1) { page, size ->
+            List(100) { "item $it" }.drop((page - 1) * size).take(size).right()
+        }
+        val pager = TestPager(PagingConfig(pageSize = 10, initialLoadSize = 10, enablePlaceholders = true), source)
+
+        pager.refresh(initialKey = 4)
+
+        // anchor at item 57 lives on the 1-based page 6
+        val state = pager.getPagingState(anchorPosition = 57)
+        assertEquals(6, source.getRefreshKey(state))
+    }
+
+    @Test
+    fun totalCountSetsPlaceholderCounts() = runTest {
+        val source = TestSource(total = 100, call = backend(100))
+        val pager = TestPager(PagingConfig(pageSize = 10, enablePlaceholders = true), source)
+
+        // initialLoadSize defaults to 3 * pageSize -> pages 4, 5 and 6 -> items 40..69
+        val refresh = assertIs<LoadResult.Page<Int, String>>(pager.refresh(initialKey = 5))
+        assertEquals((40..69).map { "item $it" }, refresh.data)
+        assertEquals(40, refresh.itemsBefore)
+        assertEquals(30, refresh.itemsAfter)
+
+        val append = assertIs<LoadResult.Page<Int, String>>(pager.append())
+        assertEquals(70, append.itemsBefore)
+        assertEquals(20, append.itemsAfter)
+
+        val prepend = assertIs<LoadResult.Page<Int, String>>(pager.prepend())
+        assertEquals(30, prepend.itemsBefore)
+        assertEquals(60, prepend.itemsAfter)
+    }
+
+    @Test
+    fun placeholderCountsAccountForFirstPage() = runTest {
+        val source = TestSource(total = 100, firstPage = 1) { page, size ->
+            List(100) { "item $it" }.drop((page - 1) * size).take(size).right()
+        }
+        val pager = TestPager(PagingConfig(pageSize = 10, enablePlaceholders = true), source)
+
+        // window centered on the 1-based page 4 -> pages 3, 4 and 5 -> items 20..49
+        val refresh = assertIs<LoadResult.Page<Int, String>>(pager.refresh(initialKey = 4))
+        assertEquals((20..49).map { "item $it" }, refresh.data)
+        assertEquals(20, refresh.itemsBefore)
+        assertEquals(50, refresh.itemsAfter)
+    }
+
+    @Test
+    fun noTotalCountLeavesPlaceholderCountsUndefined() = runTest {
+        val source = TestSource(call = backend(100))
+        val pager = TestPager(PagingConfig(pageSize = 10, enablePlaceholders = true), source)
+
+        val refresh = assertIs<LoadResult.Page<Int, String>>(pager.refresh())
+        assertEquals(LoadResult.Page.COUNT_UNDEFINED, refresh.itemsBefore)
+        assertEquals(LoadResult.Page.COUNT_UNDEFINED, refresh.itemsAfter)
+    }
+
+    @Test
+    fun totalCountEndsListWhenReached() = runTest {
+        // the last page is exactly pageSize items, so the size heuristic alone would keep paging
+        val source = TestSource(total = 20, call = backend(20))
+        val pager = TestPager(PagingConfig(pageSize = 10, initialLoadSize = 10), source)
+
+        pager.refresh()
+        val lastPage = assertIs<LoadResult.Page<Int, String>>(pager.append())
+        assertEquals((10..19).map { "item $it" }, lastPage.data)
+        assertNull(lastPage.nextKey)
+        assertNull(pager.append())
+    }
+
+    @Test
+    fun refreshWindowStopsWhenTotalCountReached() = runTest {
+        val source = TestSource(total = 20, call = backend(20))
+        val pager = TestPager(PagingConfig(pageSize = 10), source)
+
+        val refresh = assertIs<LoadResult.Page<Int, String>>(pager.refresh())
+        assertEquals((0..19).map { "item $it" }, refresh.data)
+        assertNull(refresh.nextKey)
+        // totalCount ends the window after two full pages; the third must not be requested
+        assertEquals(listOf(10, 10), source.requestedSizes)
+    }
+
+    @Test
+    fun itemsAfterIsCoercedWhenBackendOverDelivers() = runTest {
+        // the pages deliver more items than totalCount claims exist
+        val source = TestSource(total = 25, call = backend(40))
+        val pager = TestPager(PagingConfig(pageSize = 10, enablePlaceholders = true), source)
+
+        val refresh = assertIs<LoadResult.Page<Int, String>>(pager.refresh())
+        assertEquals(30, refresh.data.size)
+        assertEquals(0, refresh.itemsAfter)
+        assertNull(refresh.nextKey)
+    }
+
+    @Test
+    fun nonPositivePageSizeFailsFast() {
+        assertFailsWith<IllegalArgumentException> { TestSource(pageSize = 0, call = backend(10)) }
+        assertFailsWith<IllegalArgumentException> { TestSource(pageSize = -1, call = backend(10)) }
+    }
+
+    @Test
     fun duplicateIdsInvalidateSource() = runTest {
         // page 1 returns ids that were already seen on page 0 (backend data shifted)
         val source = TestSource(pageSize = 10, useIds = true) { page, size ->
             List(100) { "item ${it % 10}" }.drop(page * size).take(size).right()
         }
-        val pager = TestPager(PagingConfig(pageSize = 10), source)
+        val pager = TestPager(PagingConfig(pageSize = 10, initialLoadSize = 10), source)
 
         assertIs<LoadResult.Page<Int, String>>(pager.refresh())
         assertIs<LoadResult.Invalid<Int, String>>(pager.append())
@@ -138,6 +337,24 @@ class PageSizePagingSourceTest {
     }
 
     @Test
+    fun duplicateIdsWithinOneRefreshWindowSurfaceAsRetryableError() = runTest {
+        // "item 5" appears on both pages of the initial refresh window; the window merges into
+        // a single LoadResult.Page, so invalidating could never resolve the duplicate — a new
+        // generation would re-fetch the same window and invalidate again, looping forever
+        val source = TestSource(pageSize = 10, useIds = true) { page, size ->
+            when (page) {
+                1 -> (listOf("item 5") + List(9) { "item ${10 + it}" })
+                else -> List(10) { "item ${page * size + it}" }
+            }.right()
+        }
+        val pager = TestPager(PagingConfig(pageSize = 10), source)
+
+        val error = assertIs<LoadResult.Error<Int, String>>(pager.refresh())
+        val exception = assertIs<DuplicateIdException>(error.throwable)
+        assertEquals("item 5", exception.id)
+    }
+
+    @Test
     fun filterStrategyDropsDuplicatesInsteadOfInvalidating() = runTest {
         // random-order backend: page 1 re-delivers an id from page 0
         val source = TestSource(pageSize = 3, useIds = true, strategy = DuplicateStrategy.FILTER) { page, _ ->
@@ -147,7 +364,7 @@ class PageSizePagingSourceTest {
                 else -> listOf("f")
             }.right()
         }
-        val pager = TestPager(PagingConfig(pageSize = 3), source)
+        val pager = TestPager(PagingConfig(pageSize = 3, initialLoadSize = 3), source)
 
         assertEquals(listOf("a", "b", "c"), assertIs<LoadResult.Page<Int, String>>(pager.refresh()).data)
 
@@ -169,7 +386,7 @@ class PageSizePagingSourceTest {
                 else -> listOf("d")
             }.right()
         }
-        val pager = TestPager(PagingConfig(pageSize = 3), source)
+        val pager = TestPager(PagingConfig(pageSize = 3, initialLoadSize = 3), source)
 
         pager.refresh()
         // the page filters down to nothing, but the backend filled the requested size,
@@ -186,7 +403,7 @@ class PageSizePagingSourceTest {
         val source = TestSource(pageSize = 4, useIds = true, strategy = DuplicateStrategy.FILTER) { _, _ ->
             listOf("a", "b", "a", "c").right()
         }
-        val pager = TestPager(PagingConfig(pageSize = 4), source)
+        val pager = TestPager(PagingConfig(pageSize = 4, initialLoadSize = 4), source)
 
         val refresh = assertIs<LoadResult.Page<Int, String>>(pager.refresh())
         assertEquals(listOf("a", "b", "c"), refresh.data)
@@ -274,7 +491,7 @@ class PageSizePagingSourceTest {
             override suspend fun Pair<List<Int>, Boolean>.data(): List<Int> = first
             override suspend fun Pair<List<Int>, Boolean>.endReached(data: List<Int>, requestedSize: Int): Boolean = !second
         }
-        val pager = TestPager(PagingConfig(pageSize = 10), source)
+        val pager = TestPager(PagingConfig(pageSize = 10, initialLoadSize = 10), source)
 
         val refresh = assertIs<LoadResult.Page<Int, Int>>(pager.refresh())
         assertEquals(1, refresh.nextKey)
@@ -283,5 +500,43 @@ class PageSizePagingSourceTest {
         assertEquals((10..19).toList(), lastPage.data)
         assertNull(lastPage.nextKey)
         assertNull(pager.append())
+    }
+
+    @Test
+    fun oversizedResponseSurfacesAsLoadError() = runTest {
+        // more items than requested break the page-number key math; with ids the overlap with
+        // the neighboring page would otherwise loop through invalidations without ever
+        // surfacing an error
+        val source = TestSource(pageSize = 10) { _, _ -> List(15) { "item $it" }.right() }
+        val pager = TestPager(PagingConfig(pageSize = 10, initialLoadSize = 10), source)
+
+        val error = assertIs<LoadResult.Error<Int, String>>(pager.refresh())
+        assertIs<IllegalStateException>(error.throwable)
+    }
+
+    @Test
+    fun thrownCallbackExceptionsSurfaceAsLoadError() = runTest {
+        // paging does not catch exceptions from load; a throwing mapper must become a
+        // retryable error instead of killing the PagingData stream
+        val cause = IllegalArgumentException("mapping failed")
+        val source = object : PageSizePagingSource<String, List<Int>, Int>(pageSize = 10) {
+            override suspend fun makeCall(page: Int, size: Int): Either<String, List<Int>> = List(size) { it }.right()
+            override suspend fun List<Int>.data(): List<Int> = throw cause
+        }
+
+        val error = assertIs<LoadResult.Error<Int, Int>>(source.load(LoadParams.Refresh(null, 10, false)))
+        assertSame(cause, error.throwable)
+    }
+
+    @Test
+    fun cancellationIsNotConvertedToLoadError() = runTest {
+        val source = object : PageSizePagingSource<String, List<Int>, Int>(pageSize = 10) {
+            override suspend fun makeCall(page: Int, size: Int): Either<String, List<Int>> =
+                throw CancellationException("cancelled")
+
+            override suspend fun List<Int>.data(): List<Int> = this
+        }
+
+        assertFailsWith<CancellationException> { source.load(LoadParams.Refresh(null, 10, false)) }
     }
 }

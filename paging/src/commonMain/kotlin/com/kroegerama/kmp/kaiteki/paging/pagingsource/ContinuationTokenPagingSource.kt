@@ -44,7 +44,7 @@ public abstract class ContinuationTokenPagingSource<A, B, Token : Any, T : Any> 
      */
     override fun getRefreshKey(state: PagingState<Token, T>): Token? = null
 
-    override suspend fun load(params: LoadParams<Token>): LoadResult<Token, T> {
+    override suspend fun load(params: LoadParams<Token>): LoadResult<Token, T> = runCatchingLoad {
         val token = params.key
         val size = params.loadSize
 
