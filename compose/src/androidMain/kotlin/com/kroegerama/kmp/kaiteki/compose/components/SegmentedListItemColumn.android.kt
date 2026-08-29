@@ -1,5 +1,3 @@
-@file:JvmName("SegmentedListItemColumnAndroidKt")
-
 package com.kroegerama.kmp.kaiteki.compose.components
 
 import androidx.compose.foundation.layout.Column
