@@ -75,6 +75,7 @@ kotlin {
             implementation(libs.kotlinx.datetime)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.navigation3.ui)
+            implementation(libs.androidx.navigationevent.compose)
             implementation(libs.arrow)
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
@@ -99,6 +100,7 @@ kotlin {
         }
         jvmTest.dependencies {
             implementation(compose.desktop.currentOs)
+            implementation(libs.compose.uiTest)
         }
     }
 }
