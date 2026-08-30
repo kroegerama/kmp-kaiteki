@@ -37,4 +37,5 @@ include(
     ":compose",
     ":paging",
     ":permissions",
+    ":webview",
 )
