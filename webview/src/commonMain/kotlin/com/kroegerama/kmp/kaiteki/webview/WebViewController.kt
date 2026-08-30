@@ -25,10 +25,21 @@ public sealed interface LoadingState {
     public data object Finished : LoadingState
 }
 
+@Immutable
 public data class WebViewError(
     public val code: Long,
     public val description: String,
     public val failingUrl: String?,
+)
+
+/**
+ * A main frame response with an HTTP status of 400 or above. Reported separately from [WebViewError]:
+ * the load itself succeeded and the page renders whatever body the server sent with the status.
+ */
+@Immutable
+public data class WebViewHttpError(
+    public val statusCode: Int,
+    public val url: String,
 )
 
 /**
@@ -72,6 +83,10 @@ public class WebViewController(
     public var canGoForward: Boolean by mutableStateOf(false)
         internal set
     public var lastError: WebViewError? by mutableStateOf(null)
+        internal set
+
+    /** Status of the current page when the server answered with 400 or above. Replaced when the next page commits. */
+    public var lastHttpError: WebViewHttpError? by mutableStateOf(null)
         internal set
 
     /**

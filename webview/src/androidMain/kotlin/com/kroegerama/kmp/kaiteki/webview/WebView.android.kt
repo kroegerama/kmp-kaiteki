@@ -13,12 +13,14 @@ import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -27,6 +29,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -49,6 +53,7 @@ internal actual fun PlatformWebView(
             controller.goBack()
         }
     }
+    val uriHandler = LocalUriHandler.current
     // Clients, settings and command collection bind to one controller instance; recreate the native view when it changes.
     key(controller) {
         var view by remember { mutableStateOf<WebView?>(null) }
@@ -80,6 +85,9 @@ internal actual fun PlatformWebView(
                 }
                 recreationKey++
             }
+            val client = remember { ControllerClient(controller, stateCapture, onProcessGone, uriHandler) }
+            // LocalUriHandler can be replaced by a consumer at any time; the client keeps the current one.
+            SideEffect { client.uriHandler = uriHandler }
             // AndroidView only turns MATCH_PARENT into an EXACTLY spec under a bounded height constraint; an unbounded one
             // (scrolling parent, wrapContentHeight) measures UNSPECIFIED, where a MATCH_PARENT WebView reports zero height and
             // never paints. WRAP_CONTENT puts Chromium in zero-layout-height mode, so the page lays out and grows the view.
@@ -93,7 +101,7 @@ internal actual fun PlatformWebView(
                         WebView(ctx).apply {
                             layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, heightLayoutParam)
                             applySettings(controller.settings)
-                            webViewClient = ControllerClient(controller, stateCapture, onProcessGone)
+                            webViewClient = client
                             webChromeClient = chromeClient
                             // A skip marker from a previous view must never suppress this view's load.
                             controller.restoredGeneration = -1
@@ -230,26 +238,47 @@ private class ControllerClient(
     private val c: WebViewController,
     private val stateCapture: StateCapture,
     private val onProcessGone: () -> Unit,
+    var uriHandler: UriHandler,
 ) : WebViewClient() {
 
     /** URL of the navigation the last onPageStarted announced; cleared once its onPageFinished has been handled. */
     private var inFlightUrl: String? = null
 
+    /** Main frame HTTP error for the navigation that is about to start; Chromium delivers it before onPageStarted. */
+    private var pendingHttpError: WebViewHttpError? = null
+
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-        val interceptor = c.navigationInterceptor ?: return false
-        val nav = NavigationRequest(
-            url = request.url.toString(),
-            isMainFrame = request.isForMainFrame,
-            type = if (request.hasGesture()) NavigationType.LinkActivated else NavigationType.Other,
-            isRedirect = request.isRedirect,
-        )
-        return interceptor.onNavigation(nav) == NavigationDecision.Cancel
+        val url = request.url.toString()
+        val interceptor = c.navigationInterceptor
+        if (interceptor != null) {
+            val nav = NavigationRequest(
+                url = url,
+                isMainFrame = request.isForMainFrame,
+                type = if (request.hasGesture()) NavigationType.LinkActivated else NavigationType.Other,
+                isRedirect = request.isRedirect,
+            )
+            if (interceptor.onNavigation(nav) == NavigationDecision.Cancel) return true
+        }
+        if (!c.settings.shouldOpenExternally(url)) return false
+        try {
+            uriHandler.openUri(url)
+        } catch (e: Exception) {
+            // AndroidUriHandler throws IllegalArgumentException when no activity can open the URI, and
+            // startActivity from a non-Activity context raises AndroidRuntimeException. Letting either escape
+            // into WebView's callback would kill the process; the navigation stays cancelled either way,
+            // which beats the ERR_UNKNOWN_URL_SCHEME error page.
+            Log.w("KaitekiWebView", "no app could open $url", e)
+        }
+        return true
     }
 
     override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
         stateCapture.invalidate()
         inFlightUrl = url
         c.lastError = null
+        // The error arrives before this callback; only one belonging to the load being started survives.
+        c.lastHttpError = pendingHttpError?.takeIf { it.url == url }
+        pendingHttpError = null
         c.title = null
         c.loadingState = LoadingState.Loading(0f)
         c.currentUrl = url
@@ -274,6 +303,12 @@ private class ControllerClient(
         if (url != null) c.currentUrl = url
         c.canGoBack = view.canGoBack()
         c.canGoForward = view.canGoForward()
+    }
+
+    override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, errorResponse: WebResourceResponse) {
+        // Also fires for every failing subresource of an otherwise healthy page.
+        if (!request.isForMainFrame) return
+        pendingHttpError = WebViewHttpError(errorResponse.statusCode, request.url.toString())
     }
 
     override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {

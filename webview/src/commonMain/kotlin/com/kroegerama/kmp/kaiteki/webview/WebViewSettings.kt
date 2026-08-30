@@ -33,4 +33,11 @@ public data class WebViewSettings(
     val nativeAccessibilityEnabled: Boolean = true,
     /** iOS only. Lets Safari Web Inspector attach to the web view. Requires iOS 16.4; ignored below that and on Android. */
     val inspectable: Boolean = false,
+    /**
+     * Hands URLs the web view cannot load itself (`mailto:`, `tel:`, custom app schemes) to
+     * `LocalUriHandler` and cancels the navigation. When false, such a navigation fails instead.
+     * Applies to navigations started by the page; [WebViewController.loadUrl] is never redirected.
+     * A [NavigationInterceptor] still sees the navigation first and can cancel it.
+     */
+    val openExternalSchemes: Boolean = true,
 )

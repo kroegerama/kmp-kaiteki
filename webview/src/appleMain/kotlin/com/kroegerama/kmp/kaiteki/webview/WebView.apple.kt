@@ -11,6 +11,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.colorspace.ColorSpaces
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.uikit.LocalUIViewController
 import androidx.compose.ui.viewinterop.UIKitInteropInteractionMode
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
@@ -35,6 +37,7 @@ import platform.CoreGraphics.CGRectZero
 import platform.Foundation.NSBundle
 import platform.Foundation.NSData
 import platform.Foundation.NSError
+import platform.Foundation.NSHTTPURLResponse
 import platform.Foundation.NSKeyValueObservingOptionNew
 import platform.Foundation.NSLog
 import platform.Foundation.NSMutableURLRequest
@@ -64,6 +67,8 @@ import platform.WebKit.WKNavigation
 import platform.WebKit.WKNavigationAction
 import platform.WebKit.WKNavigationActionPolicy
 import platform.WebKit.WKNavigationDelegateProtocol
+import platform.WebKit.WKNavigationResponse
+import platform.WebKit.WKNavigationResponsePolicy
 import platform.WebKit.WKNavigationTypeBackForward
 import platform.WebKit.WKNavigationTypeFormResubmitted
 import platform.WebKit.WKNavigationTypeFormSubmitted
@@ -95,11 +100,16 @@ internal actual fun PlatformWebView(
 ) {
     // Delegates, settings and command collection bind to one controller instance; recreate the native view when it changes.
     key(controller) {
+        val uriHandler = LocalUriHandler.current
         // Must be remembered: navigationDelegate/UIDelegate are weak references, and addObserver does not retain the observer.
-        val delegate = remember { NavDelegate(controller) }
+        val delegate = remember { NavDelegate(controller, uriHandler) }
         val hostViewController = LocalUIViewController.current
         val uiDelegate = remember { UiDelegate(controller, delegate, hostViewController) }
-        SideEffect { uiDelegate.hostViewController = hostViewController }
+        SideEffect {
+            uiDelegate.hostViewController = hostViewController
+            // LocalUriHandler can be replaced by a consumer at any time; the delegate keeps the current one.
+            delegate.uriHandler = uriHandler
+        }
         val observer = remember { StateObserver(controller) }
         var view by remember { mutableStateOf<WKWebView?>(null) }
 
@@ -379,7 +389,10 @@ private fun WKNavigationAction.toNavigationType(): NavigationType = when (naviga
 }
 
 @OptIn(BetaInteropApi::class)
-private class NavDelegate(private val c: WebViewController) : NSObject(), WKNavigationDelegateProtocol {
+private class NavDelegate(
+    private val c: WebViewController,
+    var uriHandler: UriHandler,
+) : NSObject(), WKNavigationDelegateProtocol {
 
     /**
      * URLs of loads triggered by this wrapper (controller.content, re-issued `target="_blank"` requests),
@@ -395,6 +408,24 @@ private class NavDelegate(private val c: WebViewController) : NSObject(), WKNavi
 
     private fun consumeProgrammatic(url: String) = pendingProgrammaticUrls.remove(normalizeUrlKey(url)) != null
 
+    /** Main frame HTTP status of the response that is about to commit; published by didCommitNavigation. */
+    private var pendingHttpError: WebViewHttpError? = null
+
+    /**
+     * Hands [url] to the UriHandler when the web view cannot load its scheme; the caller then cancels the
+     * navigation. Only for page-initiated navigations, matching the Android callback surface.
+     */
+    fun openedExternally(url: String): Boolean {
+        if (!c.settings.shouldOpenExternally(url)) return false
+        try {
+            uriHandler.openUri(url)
+        } catch (e: Exception) {
+            // A throwing handler would skip the pending decision handler, which raises NSInternalInconsistencyException.
+            NSLog("KaitekiWebView: UriHandler threw for %@: %@", url, e.stackTraceToString())
+        }
+        return true
+    }
+
     override fun webView(
         webView: WKWebView,
         decidePolicyForNavigationAction: WKNavigationAction,
@@ -403,25 +434,29 @@ private class NavDelegate(private val c: WebViewController) : NSObject(), WKNavi
         val action = decidePolicyForNavigationAction
         val url = action.request.URL?.absoluteString
 
-        val allowed = when {
-            // Programmatic loads always carry WKNavigationTypeOther; the type check keeps a stale entry
-            // from exempting a link click or form submit to the same URL.
-            url != null && action.navigationType == WKNavigationTypeOther && consumeProgrammatic(url) -> true
+        // Programmatic loads always carry WKNavigationTypeOther; the type check keeps a stale entry
+        // from exempting a link click or form submit to the same URL.
+        // Android parity: WebView does not intercept reload or history navigations either.
+        val exempt = (url != null && action.navigationType == WKNavigationTypeOther && consumeProgrammatic(url)) ||
+                action.navigationType == WKNavigationTypeReload ||
+                action.navigationType == WKNavigationTypeBackForward
 
-            // Android parity: WebView does not intercept reload or history navigations.
-            action.navigationType == WKNavigationTypeReload || action.navigationType == WKNavigationTypeBackForward -> true
+        val allowed = exempt || run {
+            val interceptor = c.navigationInterceptor
+            if (interceptor == null || url == null) true
+            else interceptor.onNavigation(
+                NavigationRequest(
+                    url = url,
+                    isMainFrame = action.targetFrame?.mainFrame ?: true,
+                    type = action.toNavigationType(),
+                )
+            ) == NavigationDecision.Allow
+        }
 
-            else -> {
-                val interceptor = c.navigationInterceptor
-                if (interceptor == null || url == null) true
-                else interceptor.onNavigation(
-                    NavigationRequest(
-                        url = url,
-                        isMainFrame = action.targetFrame?.mainFrame ?: true,
-                        type = action.toNavigationType(),
-                    )
-                ) == NavigationDecision.Allow
-            }
+        // Before the target="_blank" branch: an external scheme opened in a new window belongs to the other app too.
+        if (allowed && !exempt && url != null && openedExternally(url)) {
+            decisionHandler(WKNavigationActionPolicy.WKNavigationActionPolicyCancel)
+            return
         }
 
         if (allowed && action.targetFrame == null) {
@@ -452,6 +487,26 @@ private class NavDelegate(private val c: WebViewController) : NSObject(), WKNavi
         }
     }
 
+    override fun webView(
+        webView: WKWebView,
+        decidePolicyForNavigationResponse: WKNavigationResponse,
+        decisionHandler: (WKNavigationResponsePolicy) -> Unit,
+    ) {
+        val response = decidePolicyForNavigationResponse
+        val http = response.response as? NSHTTPURLResponse
+        val status = http?.statusCode?.toInt()
+        val url = http?.URL?.absoluteString
+        // Recorded rather than published: allowing the response is what commits it, so didCommitNavigation is the
+        // first point that belongs to the page the status describes.
+        pendingHttpError = if (response.forMainFrame && url != null && status != null && status >= 400) {
+            WebViewHttpError(status, url)
+        } else {
+            null
+        }
+        // Allowing matches the default WebKit applies when this method is not implemented: the page renders the error body.
+        decisionHandler(WKNavigationResponsePolicy.WKNavigationResponsePolicyAllow)
+    }
+
     @ObjCSignatureOverride
     override fun webView(webView: WKWebView, didCommitNavigation: WKNavigation?) {
         // Age out entries whose policy callback never fired (loadHTMLString bypass, superseded loads) so they cannot
@@ -462,6 +517,10 @@ private class NavDelegate(private val c: WebViewController) : NSObject(), WKNavi
             val entry = iterator.next()
             if (entry.value <= 0) iterator.remove() else entry.setValue(entry.value - 1)
         }
+        // The committed page replaces the previous one, so a status recorded for another URL (a superseded load,
+        // or a commit without a response of its own such as inline HTML) clears the previous page's status instead.
+        c.lastHttpError = pendingHttpError?.takeIf { it.url == webView.URL?.absoluteString }
+        pendingHttpError = null
         webView.syncTo(c, refreshProgress = true)
     }
 
@@ -557,10 +616,11 @@ private class UiDelegate(
         val allowed = interceptor == null || interceptor.onNavigation(
             NavigationRequest(url = url, isMainFrame = true, type = action.toNavigationType())
         ) == NavigationDecision.Allow
-        if (allowed) {
-            navDelegate.markProgrammatic(url)
-            webView.loadRequest(action.request)
-        }
+        if (!allowed) return null
+        // window.open skips the navigation delegate's policy pass, so external schemes are handled here too.
+        if (navDelegate.openedExternally(url)) return null
+        navDelegate.markProgrammatic(url)
+        webView.loadRequest(action.request)
         return null
     }
 

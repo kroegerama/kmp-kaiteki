@@ -77,6 +77,13 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.core)
         }
+        getByName("androidDeviceTest").dependencies {
+            implementation(libs.junit)
+            implementation(libs.androidx.test.core)
+            implementation(libs.androidx.test.runner)
+            implementation(libs.androidx.activity.compose)
+            implementation(libs.compose.uiTestManifest)
+        }
     }
 }
 
