@@ -27,16 +27,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.Snapshot
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
@@ -57,11 +61,11 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.dismiss
+import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
@@ -121,12 +125,13 @@ public class ResideLayoutState(
      */
     public val fraction: Float
         get() {
-            val offset = anchoredDraggableState.offset
             val openPosition = anchoredDraggableState.anchors.positionOf(ResideLayoutValue.Open)
-            if (offset.isNaN() || openPosition.isNaN() || openPosition <= 0f) {
+            // progress falls back to 1 when the offset is unset or the two anchors coincide,
+            // which would render an unmeasured or zero-range layout as fully open
+            if (anchoredDraggableState.offset.isNaN() || openPosition.isNaN() || openPosition <= 0f) {
                 return if (currentValue == ResideLayoutValue.Open) 1f else 0f
             }
-            return (offset / openPosition).coerceIn(0f, 1f)
+            return anchoredDraggableState.progress(from = ResideLayoutValue.Closed, to = ResideLayoutValue.Open)
         }
 
     internal val offsetOrZero: Float
@@ -176,7 +181,10 @@ public fun rememberResideLayoutState(
  * A side-menu layout: [content] can be dragged aside horizontally to reveal [menu] behind it.
  * While sliding, the content scales down and tilts away while the menu zooms in from an enlarged state,
  * optionally with a parallax shift. A tap on the slid-aside content, system back, and the Escape key
- * close it. All slide-dependent values are read in the layout/draw phase, so dragging never recomposes the slots.
+ * close it. Once the menu has settled open it takes keyboard focus and the content behind it is excluded
+ * from focus traversal and from the accessibility tree; while the menu is covered it takes part in
+ * neither focus traversal nor hit testing. All slide-dependent values are read in the layout/draw phase,
+ * so dragging never recomposes the slots.
  *
  * @param menu The pane revealed behind the content.
  * @param modifier Applied to the layout root.
@@ -188,7 +196,8 @@ public fun rememberResideLayoutState(
  * defaults to the theme's default spatial motion, matching Material 3 components.
  * @param menuPaneTitle Accessibility pane title announced for the menu pane while open, e.g. "Navigation menu".
  * @param closeMenuContentDescription Accessibility description of the tap-to-close area covering the slid-aside content,
- * e.g. "Close navigation menu".
+ * e.g. "Close navigation menu". Without it that area is left out of the accessibility tree and the menu pane's
+ * dismiss action is the only way to close by assistive technology.
  * @param overhangSize How much of the content stays visible in the open state.
  * @param parallaxDistance How far the menu shifts horizontally between closed and open.
  * @param contentOpenScale Scale of the content in the open state; lerps from `1` while sliding.
@@ -224,36 +233,53 @@ public fun ResideLayout(
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val direction = if (isRtl) -1f else 1f
     val scope = rememberCoroutineScope()
-    val focusManager = LocalFocusManager.current
 
-    state.animationSpec = animationSpec
+    // applied after the composition instead of from the composable body, so a composition that is
+    // abandoned cannot leave the state holding a spec that was never committed
+    SideEffect {
+        state.animationSpec = animationSpec
+    }
 
+    // addresses the menu content, so a request resolves to the first entry
     val menuFocusRequester = remember { FocusRequester() }
+    // addresses the menu pane itself, for the case where the menu holds nothing focusable
+    val menuPaneFocusRequester = remember { FocusRequester() }
     val contentFocusRequester = remember { FocusRequester() }
-    val menuHasFocus = remember { mutableStateOf(false) }
-    LaunchedEffect(state.isOpen) {
+    var menuPaneIsFocusable by remember { mutableStateOf(false) }
+    var menuHasFocus by remember { mutableStateOf(false) }
+    LaunchedEffect(state, state.isOpen) {
         if (state.isOpen) {
-            menuFocusRequester.requestFocus()
-            // 2D (arrow key) focus search never descends into the focused node, so move focus
-            // to the first menu item; if the menu has no focusables, the pane keeps focus.
-            // the frame wait ensures the initial layout pass has produced valid focus rects
-            // when the layout starts out open, without it the enter search finds no candidate
-            withFrameNanos { }
-            focusManager.moveFocus(FocusDirection.Enter)
-        } else if (menuHasFocus.value) {
-            // focus must not stay stranded inside the now-hidden menu; the content pane is a focus
-            // group, so requesting it hands focus to the first focusable of the revealed content
-            contentFocusRequester.requestFocus()
+            if (menuFocusRequester.requestFocus()) {
+                menuPaneIsFocusable = false
+            } else {
+                // the menu holds nothing focusable, which is the case for clickable entries while the input mode
+                // is touch. The pane then takes focus itself, so that focus leaves the covered content and the
+                // Escape handler keeps receiving key events, which reach it only while focus sits in the layout
+                menuPaneIsFocusable = true
+                menuPaneFocusRequester.requestFocus()
+            }
+        } else {
+            if (menuHasFocus) {
+                // focus must not stay stranded inside the now-hidden menu; the content pane is a focus
+                // group, so requesting it hands focus to the first focusable of the revealed content
+                contentFocusRequester.requestFocus()
+            }
+            // cleared after the move, so dropping the pane's focusability never has focus to strand
+            menuPaneIsFocusable = false
         }
     }
     // hosts without a dispatcher owner (e.g. bare test environments) simply get no back handling
     if (LocalNavigationEventDispatcherOwner.current != null) {
         val navigationEventState = rememberNavigationEventState(NavigationEventInfo.None)
+        val backGestureInProgress by remember(navigationEventState) {
+            derivedStateOf { navigationEventState.transitionState is NavigationEventTransitionState.InProgress }
+        }
         NavigationBackHandler(
             state = navigationEventState,
-            // settledValue stays Open while the gesture drags the offset towards Closed,
-            // keeping the handler enabled for the whole gesture
-            isBackEnabled = closeOnBack && state.settledValue == ResideLayoutValue.Open,
+            // the target is Open for the whole opening animation and Closed for the whole closing one, so back
+            // is owned exactly while the menu is or is becoming visible; a back gesture drags the target across
+            // to Closed at the midpoint, so the in-progress flag keeps the handler registered until it ends
+            isBackEnabled = closeOnBack && (backGestureInProgress || state.targetValue == ResideLayoutValue.Open),
             onBackCancelled = { scope.launch { state.open() } },
             onBackCompleted = { scope.launch { state.close() } },
         )
@@ -277,6 +303,9 @@ public fun ResideLayout(
     Box(
         modifier = modifier
             .fillMaxSize()
+            // both panes are scaled and translated beyond the layout bounds while sliding
+            // and must not paint over content next to the layout
+            .clipToBounds()
             .layout { measurable, constraints ->
                 val placeable = measurable.measure(constraints)
                 // recomputed on every layout pass so a changed overhangSize or density takes effect
@@ -305,10 +334,51 @@ public fun ResideLayout(
                     animationSpec = animationSpec,
                 ),
             )
+            // sits on the root, an ancestor of both panes, so Escape closes the menu
+            // wherever focus currently is inside the layout
+            .onKeyEvent { event ->
+                if (state.isOpen && event.type == KeyEventType.KeyUp && event.key == Key.Escape) {
+                    scope.launch { state.close() }
+                    true
+                } else {
+                    false
+                }
+            }
+            .focusProperties {
+                // the revealed menu keeps focus: traversal that runs out of menu items would otherwise
+                // continue into whatever follows the layout, and key events only reach the handler above
+                // while focus sits inside it, which leaves Escape dead. Redirecting instead of cancelling
+                // keeps traversal wrapping around the menu instead of dead-ending on its last item.
+                // Checked when focus tries to leave rather than in composition, so the slide never recomposes
+                onExit = {
+                    // an explicit clearFocus or moveFocus(Exit) is not traversal and must keep working
+                    if (state.isOpen && requestedFocusDirection != FocusDirection.Exit && !menuFocusRequester.requestFocus()) {
+                        // nothing in the menu to wrap onto, so the move is refused instead
+                        cancelFocusChange()
+                    }
+                }
+            }
+            .focusGroup()
+            // scopes the close area's traversal index to this layout; without it the reorder is applied
+            // to the flattened screen and pushes the close area behind unrelated content
+            .semantics { isTraversalGroup = true }
     ) {
         Box(
             modifier = Modifier
                 .matchParentSize()
+                .layout { measurable, constraints ->
+                    val placeable = measurable.measure(constraints)
+                    layout(placeable.width, placeable.height) {
+                        // while fully covered the menu stays unplaced, which keeps it out of drawing, hit
+                        // testing and every focus search at once. Only rejecting focus entry would cancel
+                        // the whole search instead: a two-dimensional (arrow key) search that reaches this
+                        // pane first stops there and lands on nothing, leaving the content unreachable as
+                        // well. Read in the layout phase, so the slide never recomposes.
+                        if (state.fraction > 0f) {
+                            placeable.place(0, 0)
+                        }
+                    }
+                }
                 .graphicsLayer {
                     val fraction = state.fraction
                     val scale = lerp(menuClosedScale, 1f, fraction)
@@ -318,29 +388,17 @@ public fun ResideLayout(
                     translationX = -direction * (1f - fraction) * parallaxDistance.toPx()
                 }
                 .drawWithContent {
-                    val fraction = state.fraction
-                    // fully covered by the content pane, no need to draw
-                    if (fraction <= 0f) return@drawWithContent
                     drawContent()
-                    val dimAlpha = menuDimColor.alpha * (1f - fraction)
+                    val dimAlpha = menuDimColor.alpha * (1f - state.fraction)
                     if (dimAlpha > 0f) {
                         drawRect(color = menuDimColor.copy(alpha = dimAlpha))
                     }
                 }
-                // sits above the focus target of either branch, so it keeps reporting when the
-                // pane's own target is swapped out on close
-                .onFocusChanged { menuHasFocus.value = it.hasFocus }
+                // sits above the pane's own focus target, so it keeps reporting once the
+                // covered pane drops the focus it held
+                .onFocusChanged { menuHasFocus = it.hasFocus }
                 .then(
-                    if (state.settledValue == ResideLayoutValue.Closed) {
-                        // the hidden menu must not be reachable by accessibility services or keyboard focus;
-                        // the focus group makes this node a focus boundary, without it the enter block is never consulted
-                        Modifier
-                            .clearAndSetSemantics { }
-                            .focusProperties {
-                                onEnter = { cancelFocusChange() }
-                            }
-                            .focusGroup()
-                    } else {
+                    if (state.isOpen) {
                         Modifier.semantics {
                             menuPaneTitle?.let { paneTitle = it }
                             dismiss {
@@ -348,31 +406,30 @@ public fun ResideLayout(
                                 true
                             }
                         }
+                    } else {
+                        // an unplaced node still carries its semantics, so the covered menu
+                        // has to be cleared out of the tree explicitly
+                        Modifier.clearAndSetSemantics { }
                     }
                 )
-                .onKeyEvent { event ->
-                    if (state.isOpen && event.type == KeyEventType.KeyUp && event.key == Key.Escape) {
-                        scope.launch { state.close() }
-                        true
-                    } else {
-                        false
-                    }
+                .focusRequester(menuPaneFocusRequester)
+                .focusProperties {
+                    // the pane is a focus stop of its own only while the menu holds nothing focusable, so that a
+                    // backwards traversal off the first menu item does not land on this full-screen invisible node
+                    canFocus = menuPaneIsFocusable
+                    // a request that names a menu item bypasses focus search and reaches the pane even while
+                    // it is unplaced, so entry is refused for as long as the menu is fully covered. Reads the
+                    // same value the placement above does, so the two can never disagree. Checked when focus
+                    // tries to enter rather than in composition, so the slide never recomposes
+                    onEnter = { if (state.fraction <= 0f) cancelFocusChange() }
                 }
+                .focusTarget()
+                // below the pane's own focus target, so it addresses the menu content: the request then
+                // resolves to the first focus target in the menu instead of running a directional enter
+                // search, which picks the last entry in RTL
                 .focusRequester(menuFocusRequester)
-                // the pane itself is a focus target while open, so taking focus and handling the
-                // Escape key work even when the menu has no focusable descendants
-                .then(if (state.settledValue == ResideLayoutValue.Open) Modifier.focusTarget() else Modifier)
         ) {
             menu()
-            if (state.settledValue == ResideLayoutValue.Closed) {
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        // hit-testable but non-consuming: keeps taps on non-interactive content regions
-                        // from falling through to the hidden menu, while drags still reach the ancestor
-                        .pointerInput(Unit) { }
-                )
-            }
         }
         Box(
             modifier = Modifier
@@ -402,28 +459,22 @@ public fun ResideLayout(
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .then(
-                        if (state.settledValue == ResideLayoutValue.Open) {
-                            // the covered content must not be reachable by accessibility services or keyboard focus;
-                            // the focus group makes this node a focus boundary, without it the enter block is never consulted
-                            Modifier
-                                .clearAndSetSemantics { }
-                                .focusProperties {
-                                    onEnter = { cancelFocusChange() }
-                                }
-                                .focusGroup()
-                        } else {
-                            // the group is not focusable itself, so a focus request on it lands on
-                            // the first focusable of the content
-                            Modifier
-                                .focusRequester(contentFocusRequester)
-                                .focusGroup()
-                        }
-                    )
+                    // the covered content must not be readable by accessibility services
+                    .then(if (state.isOpen) Modifier.clearAndSetSemantics { } else Modifier)
+                    .focusProperties {
+                        // keyboard focus must not reach the covered content. Checked when focus tries to
+                        // enter rather than in composition, so the branch above is all that recomposes
+                        onEnter = { if (state.isOpen) cancelFocusChange() }
+                    }
+                    // the group is not focusable itself, so a focus request on it lands on the first
+                    // focusable of the content; it also makes the enter block above a focus boundary,
+                    // without a focus target the block is never consulted
+                    .focusGroup()
+                    .focusRequester(contentFocusRequester)
             ) {
                 content()
             }
-            if (state.settledValue == ResideLayoutValue.Open) {
+            if (state.isOpen) {
                 Box(
                     modifier = Modifier
                         .matchParentSize()
@@ -436,14 +487,23 @@ public fun ResideLayout(
                                 }
                             }
                         }
-                        .semantics(mergeDescendants = true) {
-                            traversalIndex = 1f
-                            closeMenuContentDescription?.let { contentDescription = it }
-                            onClick {
-                                scope.launch { state.close() }
-                                true
+                        .then(
+                            if (closeMenuContentDescription != null) {
+                                Modifier.semantics(mergeDescendants = true) {
+                                    // read after the menu pane, which the covered content no longer competes with
+                                    traversalIndex = 1f
+                                    contentDescription = closeMenuContentDescription
+                                    onClick {
+                                        scope.launch { state.close() }
+                                        true
+                                    }
+                                }
+                            } else {
+                                // an undescribed close area would be an unlabeled screen reader stop covering
+                                // the whole content; the menu pane's dismiss action stays available either way
+                                Modifier
                             }
-                        }
+                        )
                 )
             }
         }
@@ -505,6 +565,9 @@ private fun ResideLayoutOpenPreview() {
 private fun ResideLayoutPreviewContent(initialValue: ResideLayoutValue) {
     MaterialTheme {
         Surface {
+            val scope = rememberCoroutineScope()
+            val state = rememberResideLayoutState(initialValue = initialValue)
+
             ResideLayout(
                 menu = {
                     Column(
@@ -513,16 +576,17 @@ private fun ResideLayoutPreviewContent(initialValue: ResideLayoutValue) {
                             .fillMaxSize()
                             .background(MaterialTheme.colorScheme.primaryContainer)
                             .safeDrawingPadding()
-                            .padding(24.dp),
+                            .padding(24.dp)
+                            .padding(end = ResideLayoutDefaults.OverhangSize)
                     ) {
                         Text("Menu", style = MaterialTheme.typography.headlineSmall)
                         Spacer(Modifier.height(24.dp))
-                        ListItem(onClick = {}) { Text("Home") }
+                        ListItem(onClick = { scope.launch { state.close() } }) { Text("Close Menu") }
                         ListItem(onClick = {}) { Text("Profile") }
                         ListItem(onClick = {}) { Text("Settings") }
                     }
                 },
-                state = rememberResideLayoutState(initialValue = initialValue),
+                state = state,
                 menuPaneTitle = "Navigation menu",
                 closeMenuContentDescription = "Close navigation menu",
             ) {
@@ -532,10 +596,12 @@ private fun ResideLayoutPreviewContent(initialValue: ResideLayoutValue) {
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                         .safeDrawingPadding()
-                        .padding(24.dp),
+                        .padding(24.dp)
                 ) {
                     Text("Content", style = MaterialTheme.typography.headlineSmall)
                     Text("Drag aside to reveal the menu", style = MaterialTheme.typography.bodyMedium)
+                    ListItem(onClick = { scope.launch { state.open() } }) { Text("Open Menu") }
+                    ListItem(onClick = {}) { Text("Example") }
                 }
             }
         }

@@ -62,8 +62,16 @@ kotlin {
             consumerKeepRules.file("consumer-proguard-rules.pro")
         }
 
+        androidResources {
+            enable = true
+        }
+
         withHostTest {
             isIncludeAndroidResources = true
+        }
+
+        withDeviceTest {
+            instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         }
     }
 
@@ -101,6 +109,15 @@ kotlin {
         jvmTest.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.compose.uiTest)
+        }
+        getByName("androidDeviceTest").dependencies {
+            implementation(libs.junit)
+            implementation(libs.androidx.test.core)
+            implementation(libs.androidx.test.runner)
+            implementation(libs.androidx.activity.compose)
+            implementation(libs.compose.uiTest)
+            implementation(libs.compose.uiTestManifest)
+            implementation(libs.androidx.test.espresso.core)
         }
     }
 }
