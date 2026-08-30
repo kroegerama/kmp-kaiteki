@@ -134,8 +134,16 @@ public class ResideLayoutState(
             return anchoredDraggableState.progress(from = ResideLayoutValue.Closed, to = ResideLayoutValue.Open)
         }
 
+    // the settle spring is under-damped and overshoots the anchors, while scale, rotation, parallax
+    // and both overlays follow the clamped fraction. An unclamped translation would desync those
+    // transforms and uncover a strip the unplaced menu pane does not paint
     internal val offsetOrZero: Float
-        get() = anchoredDraggableState.offset.takeUnless(Float::isNaN) ?: 0f
+        get() {
+            val offset = anchoredDraggableState.offset
+            val openPosition = anchoredDraggableState.anchors.positionOf(ResideLayoutValue.Open)
+            if (offset.isNaN() || openPosition.isNaN()) return 0f
+            return offset.coerceIn(0f, openPosition)
+        }
 
     /** Animates the content pane aside, revealing the menu. */
     public suspend fun open() {
@@ -204,8 +212,8 @@ public fun rememberResideLayoutState(
  * @param contentOpenRotation Y-axis rotation of the content in the open state, in degrees; lerps from `0` while sliding. Mirrored in RTL.
  * @param menuClosedScale Scale of the menu in the closed state; lerps to `1` while sliding.
  * @param cameraDistance Camera distance used for the content's Y-axis rotation; larger values flatten the perspective.
- * @param contentShape Shape the content pane and its dim are clipped to while the menu is revealed; [RectangleShape] disables clipping.
- * @param contentDimColor Dim over the content, strongest when open. Alpha scales with the slide fraction; use [Color.Transparent] to disable.
+ * @param contentShape Shape the content pane and its scrim are clipped to while the menu is revealed; [RectangleShape] disables clipping.
+ * @param contentScrimColor Scrim over the content, strongest when open. Alpha scales with the slide fraction; use [Color.Transparent] to disable.
  * @param menuDimColor Dim over the menu, strongest when closed. Alpha scales inversely with the slide fraction; use [Color.Transparent] to disable.
  * @param content The main pane, covering the menu when closed.
  */
@@ -226,7 +234,7 @@ public fun ResideLayout(
     menuClosedScale: Float = ResideLayoutDefaults.MenuClosedScale,
     cameraDistance: Float = ResideLayoutDefaults.CameraDistance,
     contentShape: Shape = ResideLayoutDefaults.ContentShape,
-    contentDimColor: Color = ResideLayoutDefaults.ContentDimColor,
+    contentScrimColor: Color = ResideLayoutDefaults.ContentScrimColor,
     menuDimColor: Color = ResideLayoutDefaults.MenuDimColor,
     content: @Composable () -> Unit,
 ) {
@@ -308,20 +316,22 @@ public fun ResideLayout(
             .clipToBounds()
             .layout { measurable, constraints ->
                 val placeable = measurable.measure(constraints)
-                // recomputed on every layout pass so a changed overhangSize or density takes effect
-                // without a size change; updateAnchors no-ops when the anchors are equal
-                val range = (placeable.width - overhangSize.roundToPx()).coerceAtLeast(0)
-                state.anchoredDraggableState.updateAnchors(
-                    newAnchors = DraggableAnchors {
-                        ResideLayoutValue.Closed at 0f
-                        ResideLayoutValue.Open at range.toFloat()
-                    },
-                    // the default newTarget resolves to the anchor closest to the stale offset, which
-                    // snaps an open layout shut when the width grows past twice the old drag range;
-                    // read unobserved so a mid-drag target change does not invalidate measure
-                    newTarget = Snapshot.withoutReadObservation { state.anchoredDraggableState.targetValue },
-                )
+                val overhangPx = overhangSize.roundToPx()
                 layout(placeable.width, placeable.height) {
+                    // recomputed on every layout pass so a changed overhangSize or density takes effect
+                    // without a size change; updateAnchors no-ops when the anchors are equal; the
+                    // placement phase is not reached by intrinsic measurement
+                    val range = (placeable.width - overhangPx).coerceAtLeast(0)
+                    state.anchoredDraggableState.updateAnchors(
+                        newAnchors = DraggableAnchors {
+                            ResideLayoutValue.Closed at 0f
+                            ResideLayoutValue.Open at range.toFloat()
+                        },
+                        // the default newTarget resolves to the anchor closest to the stale offset, which
+                        // snaps an open layout shut when the width grows past twice the old drag range;
+                        // read unobserved so a mid-drag target change does not invalidate measure
+                        newTarget = Snapshot.withoutReadObservation { state.anchoredDraggableState.targetValue },
+                    )
                     placeable.place(0, 0)
                 }
             }
@@ -450,9 +460,9 @@ public fun ResideLayout(
                 }
                 .drawWithContent {
                     drawContent()
-                    val dimAlpha = contentDimColor.alpha * state.fraction
-                    if (dimAlpha > 0f) {
-                        drawRect(color = contentDimColor.copy(alpha = dimAlpha))
+                    val scrimAlpha = contentScrimColor.alpha * state.fraction
+                    if (scrimAlpha > 0f) {
+                        drawRect(color = contentScrimColor.copy(alpha = scrimAlpha))
                     }
                 }
         ) {
@@ -511,7 +521,7 @@ public fun ResideLayout(
 }
 
 /** Default values used by [ResideLayout]. */
-@Suppress("ConstPropertyName")
+@Suppress("MayBeConstant")
 public object ResideLayoutDefaults {
 
     /** How much of the content stays visible in the open state. */
@@ -521,16 +531,16 @@ public object ResideLayoutDefaults {
     public val ParallaxDistance: Dp = 0.dp
 
     /** Scale of the content in the open state. */
-    public const val ContentOpenScale: Float = 2f / 3f
+    public val ContentOpenScale: Float = 2f / 3f
 
     /** Y-axis rotation of the content in the open state, in degrees. */
-    public const val ContentOpenRotation: Float = -10f
+    public val ContentOpenRotation: Float = -10f
 
     /** Scale of the menu in the closed state. */
-    public const val MenuClosedScale: Float = 1.2f
+    public val MenuClosedScale: Float = 1.2f
 
     /** Camera distance used for the content's Y-axis rotation. */
-    public const val CameraDistance: Float = DefaultCameraDistance
+    public val CameraDistance: Float = DefaultCameraDistance
 
     /** Shape the content pane and its dim are clipped to while the menu is revealed. */
     public val ContentShape: Shape = RectangleShape
@@ -539,13 +549,18 @@ public object ResideLayoutDefaults {
     public val AnimationSpec: AnimationSpec<Float>
         @Composable @ReadOnlyComposable get() = MaterialTheme.motionScheme.defaultSpatialSpec()
 
-    /** Dim over the content, strongest when open. */
-    public val ContentDimColor: Color
-        @Composable @ReadOnlyComposable get() = MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f)
+    /** Scrim over the content, strongest when open. */
+    public val ContentScrimColor: Color
+        @Composable @ReadOnlyComposable get() = MaterialTheme.colorScheme.scrim.copy(alpha = ScrimAlpha)
 
     /** Dim over the menu, strongest when closed. */
     public val MenuDimColor: Color
-        @Composable @ReadOnlyComposable get() = MaterialTheme.colorScheme.scrim.copy(alpha = 0.8f)
+        @Composable @ReadOnlyComposable get() = MaterialTheme.colorScheme.scrim.copy(alpha = ScrimAlpha)
+
+    // matches the single scrim opacity Material 3 uses for drawers, bottom sheets and modal rails.
+    // Equal on both panes keeps the mid-slide, where both overlays are drawn at once, from being
+    // the darkest frame of the animation
+    private val ScrimAlpha = 0.32f
 }
 
 @Preview
