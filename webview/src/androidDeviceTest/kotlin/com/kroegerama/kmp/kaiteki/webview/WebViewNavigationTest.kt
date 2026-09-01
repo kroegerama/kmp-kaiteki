@@ -120,7 +120,7 @@ class WebViewNavigationTest {
 
 private const val MAILTO = "mailto:someone@example.com"
 
-private class RecordingUriHandler : UriHandler {
+internal class RecordingUriHandler : UriHandler {
 
     val opened: MutableList<String> = Collections.synchronizedList(mutableListOf())
 

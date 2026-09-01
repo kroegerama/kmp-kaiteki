@@ -28,6 +28,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
@@ -62,7 +63,6 @@ internal actual fun PlatformWebView(
 
         key(recreationKey) {
             val renderProcessGone = remember { mutableStateOf(false) }
-            val chromeClient = remember { ControllerChromeClient(controller) }
             // Shared by the saver capture and the teardown stash, so an unchanged history is serialized only once.
             val stateCapture = remember { StateCapture() }
             // Compose applies node changes before dispatching release callbacks, so the replacement view's factory
@@ -86,13 +86,14 @@ internal actual fun PlatformWebView(
                 recreationKey++
             }
             val client = remember { ControllerClient(controller, stateCapture, onProcessGone, uriHandler) }
+            val chromeClient = remember { ControllerChromeClient(controller, client) }
             // LocalUriHandler can be replaced by a consumer at any time; the client keeps the current one.
             SideEffect { client.uriHandler = uriHandler }
             // AndroidView only turns MATCH_PARENT into an EXACTLY spec under a bounded height constraint; an unbounded one
             // (scrolling parent, wrapContentHeight) measures UNSPECIFIED, where a MATCH_PARENT WebView reports zero height and
             // never paints. WRAP_CONTENT puts Chromium in zero-layout-height mode, so the page lays out and grows the view.
             BoxWithConstraints(
-                modifier = modifier,
+                modifier = modifier.clipToBounds(),
                 propagateMinConstraints = true,
             ) {
                 val heightLayoutParam = if (constraints.hasBoundedHeight) MATCH_PARENT else WRAP_CONTENT
@@ -242,12 +243,25 @@ private class ControllerClient(
 ) : WebViewClient() {
 
     /** URL of the navigation the last onPageStarted announced; cleared once its onPageFinished has been handled. */
-    private var inFlightUrl: String? = null
+    var inFlightUrl: String? = null
+        private set
+
+    /**
+     * True after a main frame navigation was cancelled here. Chromium still reports a start and a completion for it,
+     * which must not surface as a loading state.
+     */
+    var navigationCancelled: Boolean = false
 
     /** Main frame HTTP error for the navigation that is about to start; Chromium delivers it before onPageStarted. */
     private var pendingHttpError: WebViewHttpError? = null
 
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+        val cancelled = cancelNavigation(request)
+        if (request.isForMainFrame) navigationCancelled = cancelled
+        return cancelled
+    }
+
+    private fun cancelNavigation(request: WebResourceRequest): Boolean {
         val url = request.url.toString()
         val interceptor = c.navigationInterceptor
         if (interceptor != null) {
@@ -275,12 +289,14 @@ private class ControllerClient(
     override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
         stateCapture.invalidate()
         inFlightUrl = url
+        navigationCancelled = false
         c.lastError = null
         // The error arrives before this callback; only one belonging to the load being started survives.
         c.lastHttpError = pendingHttpError?.takeIf { it.url == url }
         pendingHttpError = null
         c.title = null
-        c.loadingState = LoadingState.Loading(0f)
+        // Progress reported before the commit belongs to this navigation; keep it instead of jumping back to zero.
+        if (c.loadingState !is LoadingState.Loading) c.loadingState = LoadingState.Loading(0f)
         c.currentUrl = url
     }
 
@@ -334,7 +350,7 @@ private class ControllerClient(
     }
 }
 
-private class ControllerChromeClient(private val c: WebViewController) : WebChromeClient() {
+private class ControllerChromeClient(private val c: WebViewController, private val client: ControllerClient) : WebChromeClient() {
 
     private val dialogScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
@@ -343,9 +359,16 @@ private class ControllerChromeClient(private val c: WebViewController) : WebChro
     }
 
     override fun onProgressChanged(view: WebView, newProgress: Int) {
-        // Progress can arrive after onPageFinished; never regress Finished back to Loading.
-        if (newProgress < 100 && c.loadingState is LoadingState.Loading) {
+        if (newProgress < 100) {
+            // The first estimate arrives when a navigation starts, before the commit that delivers onPageStarted;
+            // it is the only signal covering the network wait.
+            if (client.navigationCancelled && c.loadingState !is LoadingState.Loading) return
             c.loadingState = LoadingState.Loading(newProgress / 100f)
+        } else {
+            client.navigationCancelled = false
+            // Complete without a committed page: the navigation was cancelled, failed or became a download,
+            // so no onPageFinished will follow.
+            if (c.loadingState is LoadingState.Loading && client.inFlightUrl == null) c.loadingState = LoadingState.Finished
         }
     }
 
