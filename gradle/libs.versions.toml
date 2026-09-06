@@ -33,6 +33,7 @@ desugar = "2.1.5"
 mlkit-barcode = "17.3.0"
 mlkit-text = "16.0.1"
 mlkit-vision-common = "17.3.0"
+okio = "3.18.2"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
@@ -82,6 +83,7 @@ junit = { module = "junit:junit", version.ref = "junit" }
 mlkit-barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "mlkit-barcode" }
 mlkit-text-recognition = { module = "com.google.mlkit:text-recognition", version.ref = "mlkit-text" }
 mlkit-vision-common = { module = "com.google.mlkit:vision-common", version.ref = "mlkit-vision-common" }
+okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
 
 [plugins]
 android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }

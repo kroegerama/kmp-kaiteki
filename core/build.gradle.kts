@@ -107,6 +107,7 @@ kotlin {
             implementation(libs.androidx.datastore.preferences)
             implementation(libs.arrow)
             implementation(libs.compose.runtime.annotation)
+            api(libs.okio)
         }
         androidMain.dependencies {
             implementation(libs.androidx.startup)
