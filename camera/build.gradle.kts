@@ -44,6 +44,8 @@ kotlin {
             consumerKeepRules.publish = true
             consumerKeepRules.file("consumer-proguard-rules.pro")
         }
+
+        withHostTest {}
     }
 
     iosArm64()
