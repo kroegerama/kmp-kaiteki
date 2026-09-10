@@ -159,6 +159,52 @@ public interface SegmentedListItemColumnItemScope {
 public annotation class SegmentedListDsl
 
 /**
+ * Non-interactive [androidx.compose.material3.SegmentedListItem] shaped for its position within the enclosing [SegmentedListItemColumn].
+ *
+ * @param modifier [Modifier] applied to the item.
+ * @param enabled Whether the item responds to input.
+ * @param leadingContent Optional content shown before [content].
+ * @param trailingContent Optional content shown after [content].
+ * @param overlineContent Optional content shown above [content].
+ * @param supportingContent Optional content shown below [content].
+ * @param verticalAlignment Alignment of the item's contents along the cross axis.
+ * @param colors [ListItemColors] used for the container and content.
+ * @param elevation [ListItemElevation] used across the item's states.
+ * @param contentPadding Padding around [content].
+ * @param content Headline content of the item.
+ */
+@ExperimentalMaterial3ExpressiveApi
+@Composable
+public fun SegmentedListItemColumnItemScope.SegmentedListItem(
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    leadingContent: @Composable (() -> Unit)? = null,
+    trailingContent: @Composable (() -> Unit)? = null,
+    overlineContent: @Composable (() -> Unit)? = null,
+    supportingContent: @Composable (() -> Unit)? = null,
+    verticalAlignment: Alignment.Vertical = ListItemDefaults.verticalAlignment(),
+    colors: ListItemColors = ListItemDefaults.segmentedColors(),
+    elevation: ListItemElevation = ListItemDefaults.elevation(),
+    contentPadding: PaddingValues = ListItemDefaults.ContentPadding,
+    content: @Composable () -> Unit,
+) {
+    SegmentedListItem(
+        shapes = shapes,
+        modifier = modifier,
+        enabled = enabled,
+        leadingContent = leadingContent,
+        trailingContent = trailingContent,
+        overlineContent = overlineContent,
+        supportingContent = supportingContent,
+        verticalAlignment = verticalAlignment,
+        colors = colors,
+        elevation = elevation,
+        contentPadding = contentPadding,
+        content = content,
+    )
+}
+
+/**
  * Clickable [androidx.compose.material3.SegmentedListItem] shaped for its position within the enclosing [SegmentedListItemColumn].
  *
  * @param onClick Called when the item is clicked.
@@ -478,7 +524,6 @@ private fun SegmentedListItemColumnPreview() {
                 SegmentedListItemColumn {
                     item(key = "about") {
                         SegmentedListItem(
-                            onClick = {},
                             leadingContent = { Icon(imageVector = KaitekiIcon, contentDescription = null) },
                             supportingContent = { Text("Version $KAITEKI_VERSION") }
                         ) {
