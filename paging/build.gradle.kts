@@ -44,11 +44,6 @@ kotlin {
             moduleName = "kmp.kaiteki.paging"
         }
 
-        optimization {
-            consumerKeepRules.publish = true
-            consumerKeepRules.file("consumer-proguard-rules.pro")
-        }
-
         withHostTest {
             isIncludeAndroidResources = true
         }

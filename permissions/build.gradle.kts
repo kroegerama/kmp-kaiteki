@@ -47,11 +47,6 @@ kotlin {
             jvmTarget = JvmTarget.JVM_11
             moduleName = "kmp.kaiteki.permissions"
         }
-
-        optimization {
-            consumerKeepRules.publish = true
-            consumerKeepRules.file("consumer-proguard-rules.pro")
-        }
     }
 
     iosArm64()

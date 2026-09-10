@@ -57,11 +57,6 @@ kotlin {
             moduleName = "kmp.kaiteki.compose"
         }
 
-        optimization {
-            consumerKeepRules.publish = true
-            consumerKeepRules.file("consumer-proguard-rules.pro")
-        }
-
         androidResources {
             enable = true
         }

@@ -40,11 +40,6 @@ kotlin {
             moduleName = "kmp.kaiteki.camera"
         }
 
-        optimization {
-            consumerKeepRules.publish = true
-            consumerKeepRules.file("consumer-proguard-rules.pro")
-        }
-
         withHostTest {}
     }
 
