@@ -1,5 +1,6 @@
 package com.kroegerama.kmp.kaiteki.compose
 
+import androidx.compose.runtime.CompositionLocal
 import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.compositionLocalWithComputedDefaultOf
 import androidx.compose.ui.platform.LocalLocale
