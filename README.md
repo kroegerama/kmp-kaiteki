@@ -34,64 +34,137 @@ dependencies {
 
 ## Modules
 
-| Module                              | Description                                                                      |
-|-------------------------------------|----------------------------------------------------------------------------------|
-| **core**                            | Coroutine/Flow utilities, DataStore helpers, serialization, lifecycle extensions |
-| **compose**                         | Compose Multiplatform UI utilities, Material 3 helpers, navigation support       |
-| **paging**                          | Paging integration with Arrow and ViewModel support                              |
-| **camera**<br>_(experimental)_      | Camera integration with barcode scanning and text recognition                    |
-| **permissions**<br>_(experimental)_ | Multiplatform runtime permission handling for Compose                            |
+| Module                              | Description                                                                                                  |
+|-------------------------------------|--------------------------------------------------------------------------------------------------------------|
+| **core**                            | Load-state & event flows, lifecycle collection, DataStore, locale-aware formatting, date/time, serialization |
+| **compose**                         | Compose Multiplatform UI utilities, Material 3 helpers, navigation support                                   |
+| **paging**                          | Paging integration with Arrow and ViewModel support                                                          |
+| **camera**<br>_(experimental)_      | Camera integration with barcode scanning and text recognition                                                |
+| **permissions**<br>_(experimental)_ | Multiplatform runtime permission handling for Compose                                                        |
 
 ### Core
 
-- `LoadState<E, T>` - sealed class with `Idle`, `Loading`, `Success`, `Error` states, stale data support, and Arrow `Either` integration
+**State & events**
+
+- `LoadState<E, T>` - sealed class with `Idle`, `Loading`, `Success`, `Error` states, stale-data support, and Arrow `Either` integration
 - `LoadStateFlow` - reactive wrapper around `LoadState` with refresh, parameter flows, and ViewModel scope support
 - `EventFlow` - fire-and-forget event bus backed by `SharedFlow`
-- `ConsumableEventFlow` - single-consumption event flow for one-shot events
-- `SavedStateHandle.field()` - property delegate for ViewModel saved state
-- Lifecycle-aware flow collection: `observeFlow`, `observeMultipleFlows`
-- DataStore extensions: `get`, `set`, `flow` operators for `DataStore<Preferences>`
-- Localized formatting: `DecimalFormatter`, `LocalizedDateTimeFormatter`, `HumanReadableBytes`
-- _... and more_
+- `ConsumableEventFlow` - single-consumption event flow for one-shot effects (snackbar, navigation)
+
+**Lifecycle & ViewModel**
+
+- Lifecycle-aware flow collection: `observeFlow`, `observeWithLifecycle`, `observeMultipleFlows`
+- `launchWithCreated` / `launchWithStateAtLeast` - run a coroutine once a lifecycle state is reached
+- `SavedStateHandle.field()` - property delegate for ViewModel saved state (natively supported types; use AndroidX `saved()` for `@Serializable`
+  types)
+- `SavedStateHandle.stateField()` - like `field()`, but exposes a `MutableStateFlow` for observable saved state
+
+**Platform & storage**
+
+- `Platform.name`, `platformContext` - platform info and the shared application context (JVM: id detected from `kaiteki.applicationId`, jpackage
+  launcher, main class or jar name; override via `PlatformContext.initialize(applicationId)`)
+- `platformContext.dataDirectory` / `cacheDirectory` - okio `Path`s to the app's persistent and cache directories, resolved per OS on the JVM
+- `Initializer` - marker interface for DI-driven startup logic
+- DataStore extensions for `DataStore<Preferences>`: `get` / `set` operators, `flow`, `remove`
+
+**Formatting, locale & date/time**
+
+- `DecimalFormatter`, `LocalizedDateTimeFormatter` (incl. relative/"fancy" formatting), `Long.asHumanReadableBytes()`
+- `PlatformLocale` with `Locales` constants, display names, `isoCountryCodeToFlag`, `unicodeFlag`
+- `Month` / `DayOfWeek` / `YearMonth` `displayName`, `LocalDate/Time.now()`, `toMinuteOfDay()`, Julian days and `dayDistanceTo`
+- `BlurHash.decode()` - decode BlurHash image placeholders
+- Enum serial-name helpers: `enumValueOfSerialName`, `serialName()`
 
 ### Compose
 
-- Expressive Material 3 button versions with sizes (Small / Medium / Large)
-- `ConsumableState<T>` - channel-backed one-shot event consumption in Compose (e.g. snackbar, navigation)
-- `TextFieldValidation` - declarative text field validation
-- `DecimalInputTransformation` - locale-aware decimal input
-- `DashedBorder`, `PressAndHold` modifiers
-- `TintedVectorPainter` - recolor vector drawables
-- `Scrollbars` - scrollbar indicators for lazy lists
-- `CustomTabsUriHandler` - platform URI handler (Chrome Custom Tabs on Android)
-- `lazyPagingItemsOfData` - preview helper for `LazyPagingItems`
-- `pagingHeaders`, `pagingFooters` - helpers for `LazyList`, `LazyGrid`, `LazyStaggeredGrid` to support loading / error states with headers / footers
-- `Modifier.keepScreenOn` - multiplatform version, supports Android (delegate to official implementation) and iOS (uses `idleTimerDisabled`)
-- _... and more_
+**Modifiers**
+
+- `Modifier.dashedBorder()` - dashed border with an optional animated "marching ants" effect
+- `Modifier.checkerboard()` - checkerboard background to visualize transparency
+- `Modifier.pressAndHold()` - repeats a click while pressed, accelerating over time
+- `Modifier.keepScreenOn()` - keeps the screen awake (Android flag / iOS `idleTimerDisabled`)
+- `Modifier.cacheSize()` - reuses a previously measured size, e.g. for moveable content
+- `Modifier.blurHash()` - draws a BlurHash placeholder behind the content
+
+**Components**
+
+- Expressive Material 3 buttons in five sizes: `ButtonExtraSmall` to `ButtonExtraLarge`, likewise for `Outlined`, `Elevated`, `FilledTonal` and `Text`
+  buttons, with optional start/end icons
+- Icon buttons in the same sizes: `IconButton*`, `FilledIconButton*`, `FilledTonalIconButton*`, `OutlinedIconButton*` and the matching
+  `*IconToggleButton*` variants
+- `SegmentedListItemColumn` - column of `SegmentedListItem`s and `Card`s shaped for their position in the group
+- `ExpressivePullToRefreshBox` - pull-to-refresh with the Expressive loading indicator
+- `ResideLayout` + `rememberResideLayoutState()` - side-menu layout where the content pane slides aside with a 3D scale/tilt effect to reveal a menu
+- `VerticalScrollbar` / `HorizontalScrollbar` - lightweight scrollbar thumbs for a `ScrollState`
+- `BracketsOverlay` / `BracketsShape` - rounded corner brackets like a QR or document scanner frame
+- `StyledSnackbarHost` + `SnackbarController` - send `SnackbarEvent`s from anywhere, e.g. a ViewModel, rendered with custom shape, colors and layout
+
+**Graphics**
+
+- `rememberBlurHashPainter()` / `rememberBlurHash()` - BlurHash placeholders as a `Painter`
+- `rememberAnimatedShape()` - morphs between corner-based shapes; `ListItemShapes.rememberShapeForInteraction()` follows press, drag, focus and hover
+- `Path.strokeToFill()` - converts a stroke centerline into its filled outline
+
+**Text fields**
+
+- `rememberValidatingTextFieldState()` / `rememberSimpleValidatingState()` - declarative validation with an error DSL (`raise`, `require`);
+  `validate(...)` aggregates multiple `Validator`s
+- `InputTransformation.decimalInput()` / `DecimalInputTransformation` - locale-aware decimal input
+- `TextFieldState.string`, `textAsFlow()`, `trim()`
+
+**Navigation 3**
+
+- `rememberScaffoldSceneDecorator()` - wraps every scene in a `Scaffold` and shares one top app bar across destinations
+- `rememberBottomSheetSceneStrategy()` / `rememberAlertDialogSceneStrategy()` - show entries in a modal bottom sheet or alert dialog
+
+**Paging**
+
+- `pagingHeaders` / `pagingFooters` - render refresh / prepend / append / empty states in `LazyList`, `LazyGrid` and `LazyStaggeredGrid`
+- `lazyPagingItemsOfData()` - preview/mock `LazyPagingItems`
+
+**Formatting & locale**
+
+- `rememberDecimalFormatter()`, `LocalDecimalFormatter`
+- `rememberLocalizedDateTimeFormatter()`, `LocalLocalizedDateTimeFormatter`, `formatFancyAsState()` for self-updating relative times
+- `Locale.asPlatformLocale()`, `LocalPlatformLocale`
+
+**Misc**
+
+- `ConsumableState<T>` + `Consume { }` - channel-backed one-shot event consumption (e.g. snackbar, navigation)
+- `rememberTintedVectorPainter()` - recolor a vector as a `Painter`
+- `rememberCustomTabsUriHandler()` - open links in-app (Chrome Custom Tabs on Android, `SFSafariViewController` on iOS)
+- `KaitekiIcon` - the Kaiteki logo as an `ImageVector`
 
 ### Paging
 
 - `PagerHolder` - wrapper around `Pager` with `refresh`, `retry`, `cachedIn`, and reactive parameter support
-- Ready-made `PagingSource` implementations based on Arrow `Either` error handling and duplicate detection:
+- Ready-made `PagingSource` implementations based on Arrow `Either` error handling and duplicate detection
+  (configurable `DuplicateStrategy`: invalidate on shifted data, or filter duplicates from non-deterministic backends):
     - `PageSizePagingSource` - page/size pagination
+  - `OffsetLimitPagingSource` - offset/limit pagination
     - `ItemKeyedPagingSource` - cursor/item-keyed pagination
     - `ContinuationTokenPagingSource` - token-based pagination
     - `SinglePagePagingSource` - non-paginated single-page data
-- _... and more_
+- `pagingDataOf()`, `emptyPagingSource()`, `emptyItemSnapshotList()` - static data for previews and tests
 
 ### Camera (experimental)
 
 - `CameraView` - Compose camera preview (Android: CameraX, iOS: AVFoundation)
 - `rememberCameraController()` - zoom, torch, focus control
-- `rememberBarcodeExtension()` - real-time barcode scanning with configurable formats
-- `rememberOcrExtension()` - live text recognition (OCR)
+- `CameraController.bindBarcodeAnalyzerFlow(formats)` - real-time barcode scanning with configurable formats
+- `CameraController.bindTextAnalyzerFlow(minConfidence)` - live text recognition (OCR)
+- `Flow<OCRResult>.stabilized()` - suppresses OCR flicker by merging results across frames
+- `AnalysisRegion` - restricts barcode/OCR results to the part of the frame visible in the viewfinder, via
+  `CameraView(analysisRegion = AnalysisRegion.VisibleArea(inset))`; default `FullFrame`
+- `BarcodeResult` - includes the normalized bounding box of the detected code (`relativeX/Y/Width/Height`)
+- `CameraController.analysisRegionRect` - the active analysis region in viewfinder coordinates, e.g. for drawing scan brackets
 - Multiplatform API with platform-specific implementations (Android + iOS)
 
 ### Permissions (experimental)
 
-- `rememberPermissionState(permission)` - Composable for requesting and observing runtime permissions
-- `PermissionStatus` - sealed interface (`Granted` / `Denied` with rationale info)
-- `openSystemPreferences()` - deep-link to app settings
+- `rememberPermissionState(permission)` - returns a `PermissionState` for observing and requesting a runtime permission
+- `PermissionStatus` - sealed interface (`Granted` / `Denied(shouldShowRationale)`)
+- `PermissionState.launchPermissionRequest()` / `openSystemPreferences()` - request the permission or deep-link to app settings
 - Multiplatform API with platform-specific implementations (Android + iOS)
 
 ## License
