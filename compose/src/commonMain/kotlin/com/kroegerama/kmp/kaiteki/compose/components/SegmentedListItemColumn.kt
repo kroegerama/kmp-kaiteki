@@ -175,7 +175,7 @@ public annotation class SegmentedListDsl
  */
 @ExperimentalMaterial3ExpressiveApi
 @Composable
-public fun SegmentedListItemColumnItemScope.SegmentedListItem(
+public expect fun SegmentedListItemColumnItemScope.SegmentedListItem(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     leadingContent: @Composable (() -> Unit)? = null,
@@ -187,22 +187,7 @@ public fun SegmentedListItemColumnItemScope.SegmentedListItem(
     elevation: ListItemElevation = ListItemDefaults.elevation(),
     contentPadding: PaddingValues = ListItemDefaults.ContentPadding,
     content: @Composable () -> Unit,
-) {
-    SegmentedListItem(
-        shapes = shapes,
-        modifier = modifier,
-        enabled = enabled,
-        leadingContent = leadingContent,
-        trailingContent = trailingContent,
-        overlineContent = overlineContent,
-        supportingContent = supportingContent,
-        verticalAlignment = verticalAlignment,
-        colors = colors,
-        elevation = elevation,
-        contentPadding = contentPadding,
-        content = content,
-    )
-}
+) // TODO use m3 version when the non-interactive SegmentedListItem lands in jetbrains m3 fork
 
 /**
  * Clickable [androidx.compose.material3.SegmentedListItem] shaped for its position within the enclosing [SegmentedListItemColumn].
