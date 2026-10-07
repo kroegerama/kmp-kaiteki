@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
@@ -25,6 +26,7 @@ kotlin {
     }
     coreLibrariesVersion = "2.2.21"
 
+    @OptIn(ExperimentalKotlinGradlePluginApi::class)
     applyDefaultHierarchyTemplate {
         common {
             group("skiko") {
@@ -101,7 +103,6 @@ kotlin {
             implementation(libs.kotlin.test)
         }
         jvmTest.dependencies {
-            implementation(compose.desktop.currentOs)
             implementation(libs.compose.uiTest)
         }
         getByName("androidDeviceTest").dependencies {
