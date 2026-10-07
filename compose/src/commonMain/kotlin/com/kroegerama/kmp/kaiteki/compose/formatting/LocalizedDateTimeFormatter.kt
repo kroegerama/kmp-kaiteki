@@ -2,7 +2,6 @@ package com.kroegerama.kmp.kaiteki.compose.formatting
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalGridApi
 import androidx.compose.foundation.layout.Grid
 import androidx.compose.foundation.layout.GridTrackSize.Companion.Auto
 import androidx.compose.foundation.layout.columns
@@ -128,7 +127,6 @@ public fun LocalizedDateTimeFormatter.formatFancyAsState(
     }
 }
 
-@OptIn(ExperimentalGridApi::class)
 @Preview(locale = "en")
 @Preview(locale = "de")
 @Preview(locale = "fr")

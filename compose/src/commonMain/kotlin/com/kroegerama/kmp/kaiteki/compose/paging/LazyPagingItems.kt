@@ -77,9 +77,9 @@ private fun LazyPagingItemsExample() {
         LazyColumn(Modifier.fillMaxSize()) {
             items(items.itemCount) { idx ->
                 val item = items[idx] ?: return@items
-                ListItem(
-                    headlineContent = { Text(item) }
-                )
+                ListItem {
+                    Text(item)
+                }
             }
         }
     }

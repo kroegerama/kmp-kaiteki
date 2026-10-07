@@ -3,7 +3,6 @@ package com.kroegerama.kmp.kaiteki.compose.feature
 import androidx.annotation.FloatRange
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.ExperimentalGridApi
 import androidx.compose.foundation.layout.Grid
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -267,7 +266,7 @@ internal fun buildBlurHashShaderSource(
     )
 }
 
-@OptIn(ExperimentalGridApi::class, ExperimentalKaitekiApi::class)
+@OptIn(ExperimentalKaitekiApi::class)
 @Preview
 @Composable
 private fun BlurHashModifierPreview() {
@@ -290,7 +289,7 @@ private fun BlurHashModifierPreview() {
     }
 }
 
-@OptIn(ExperimentalGridApi::class, ExperimentalKaitekiApi::class)
+@OptIn(ExperimentalKaitekiApi::class)
 @Preview
 @Composable
 private fun BlurHashPainterPreview() {
@@ -315,7 +314,7 @@ private fun BlurHashPainterPreview() {
     }
 }
 
-@OptIn(ExperimentalGridApi::class, ExperimentalKaitekiApi::class)
+@OptIn(ExperimentalKaitekiApi::class)
 @Preview
 @Composable
 private fun BlurHashSizesPreview() {

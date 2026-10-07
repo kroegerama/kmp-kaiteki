@@ -28,7 +28,9 @@ kotlin {
     android {
         namespace = "com.kroegerama.kmp.kaiteki.camera"
         compileSdk {
-            version = release(libs.versions.android.compileSdk.get().toInt())
+            version = release(libs.versions.android.compileSdk.get().toInt()) {
+                minorApiLevel = libs.versions.android.compileSdkMinor.get().toInt()
+            }
         }
         minSdk {
             version = release(libs.versions.android.minSdk.get().toInt())
