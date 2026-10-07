@@ -94,9 +94,6 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.core)
             implementation(libs.hilt.lifecycle.viewmodel.compose)
-
-            // TODO: remove as soon as jetbrains m3 fork updates its transitive material3 dependency
-            implementation(libs.compose.material3.android)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
