@@ -1,0 +1,5 @@
+# ML Kit discovers its ComponentRegistrar implementations via manifest meta-data and instantiates them reflectively.
+# The ML Kit artifacts pin firebase-components 16.1.0, whose shipped rule keeps only the class; R8 full mode does not
+# extend that to the default constructor, so MlKitInitProvider fails with NoSuchMethodException on minified builds.
+# Same rule firebase-components ships since 18.0.1.
+-keep class * implements com.google.firebase.components.ComponentRegistrar { <init>(); }
