@@ -1,6 +1,6 @@
 [versions]
 agp = "9.4.1"
-icu4j = "78.3"
+icu4j = "79.1"
 kotlin = "2.4.21"
 android-minSdk = "24"
 android-compileSdk = "37"
