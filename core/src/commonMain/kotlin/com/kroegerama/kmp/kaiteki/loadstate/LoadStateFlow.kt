@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import arrow.core.Either
 import arrow.core.None
 import arrow.core.Option
+import arrow.core.left
 import arrow.core.some
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -61,8 +62,24 @@ public abstract class LoadStateFlow<E, T> {
          *
          * @param sharingStarted sharing policy for the backing [StateFlow].
          * @param onError invoked on each failure with the error and a `retry` action.
+         * @param catchException maps an exception thrown by [block] to an error state; when `null`, exceptions propagate to `viewModelScope`.
          * @param block the suspending loader producing an [Either] error or value.
          */
+        context(vm: ViewModel)
+        public operator fun <E, T> invoke(
+            sharingStarted: SharingStarted = DEFAULT_SHARING_STARTED,
+            onError: ((E, retry: () -> Unit) -> Unit)? = null,
+            catchException: ((Throwable) -> E)? = null,
+            block: suspend () -> Either<E, T>
+        ): LoadStateFlow<E, T> = invoke(
+            scope = vm.viewModelScope,
+            sharingStarted = sharingStarted,
+            onError = onError,
+            catchException = catchException,
+            block = block
+        )
+
+        @Deprecated("Kept for binary compatibility", level = DeprecationLevel.HIDDEN)
         context(vm: ViewModel)
         public operator fun <E, T> invoke(
             sharingStarted: SharingStarted = DEFAULT_SHARING_STARTED,
@@ -72,6 +89,7 @@ public abstract class LoadStateFlow<E, T> {
             scope = vm.viewModelScope,
             sharingStarted = sharingStarted,
             onError = onError,
+            catchException = null,
             block = block
         )
 
@@ -82,8 +100,26 @@ public abstract class LoadStateFlow<E, T> {
          * @param parameterFlow drives reloads; each emitted value is passed to [block].
          * @param sharingStarted sharing policy for the backing [StateFlow].
          * @param onError invoked on each failure with the error and a `retry` action.
+         * @param catchException maps an exception thrown by [block] to an error state; when `null`, exceptions propagate to `viewModelScope`.
          * @param block the suspending loader mapping a parameter to an [Either] error or value.
          */
+        context(vm: ViewModel)
+        public operator fun <Param, E, T> invoke(
+            parameterFlow: Flow<Param>,
+            sharingStarted: SharingStarted = DEFAULT_SHARING_STARTED,
+            onError: ((E, retry: () -> Unit) -> Unit)? = null,
+            catchException: ((Throwable) -> E)? = null,
+            block: suspend (Param) -> Either<E, T>
+        ): LoadStateFlow<E, T> = invoke(
+            scope = vm.viewModelScope,
+            parameterFlow = parameterFlow,
+            sharingStarted = sharingStarted,
+            onError = onError,
+            catchException = catchException,
+            block = block
+        )
+
+        @Deprecated("Kept for binary compatibility", level = DeprecationLevel.HIDDEN)
         context(vm: ViewModel)
         public operator fun <Param, E, T> invoke(
             parameterFlow: Flow<Param>,
@@ -95,6 +131,7 @@ public abstract class LoadStateFlow<E, T> {
             parameterFlow = parameterFlow,
             sharingStarted = sharingStarted,
             onError = onError,
+            catchException = null,
             block = block
         )
 
@@ -104,12 +141,14 @@ public abstract class LoadStateFlow<E, T> {
          * @param scope coroutine scope the loader runs in.
          * @param sharingStarted sharing policy for the backing [StateFlow].
          * @param onError invoked on each failure with the error and a `retry` action.
+         * @param catchException maps an exception thrown by [block] to an error state; when `null`, exceptions propagate to [scope].
          * @param block the suspending loader producing an [Either] error or value.
          */
         public operator fun <E, T> invoke(
             scope: CoroutineScope,
             sharingStarted: SharingStarted = DEFAULT_SHARING_STARTED,
             onError: ((E, retry: () -> Unit) -> Unit)? = null,
+            catchException: ((Throwable) -> E)? = null,
             block: suspend () -> Either<E, T>
         ): LoadStateFlow<E, T> = object : LoadStateFlow<E, T>() {
             private val stateFlow = MutableStateFlow(LoadStateFlowState<T, Nothing>())
@@ -131,7 +170,7 @@ public abstract class LoadStateFlow<E, T> {
                         )
                     )
                 }
-                val response = block().onLeft {
+                val response = catchingIf(catchException) { block() }.onLeft {
                     onError?.invoke(it) { refresh() }
                 }.onRight {
                     staleData.value = it.some()
@@ -165,6 +204,7 @@ public abstract class LoadStateFlow<E, T> {
          * @param parameterFlow drives reloads; each emitted value is passed to [block].
          * @param sharingStarted sharing policy for the backing [StateFlow].
          * @param onError invoked on each failure with the error and a `retry` action.
+         * @param catchException maps an exception thrown by [block] to an error state; when `null`, exceptions propagate to [scope].
          * @param block the suspending loader mapping a parameter to an [Either] error or value.
          */
         public operator fun <Param, E, T> invoke(
@@ -172,6 +212,7 @@ public abstract class LoadStateFlow<E, T> {
             parameterFlow: Flow<Param>,
             sharingStarted: SharingStarted = DEFAULT_SHARING_STARTED,
             onError: ((E, retry: () -> Unit) -> Unit)? = null,
+            catchException: ((Throwable) -> E)? = null,
             block: suspend (Param) -> Either<E, T>
         ): LoadStateFlow<E, T> = object : LoadStateFlow<E, T>() {
             private val stateFlow = MutableStateFlow(LoadStateFlowState<T, Param>())
@@ -193,7 +234,7 @@ public abstract class LoadStateFlow<E, T> {
                         if (state.withLoading) {
                             send(LoadState.Loading(state.refreshCount, staleData.value))
                         }
-                        val response = block(parameter).onLeft {
+                        val response = catchingIf(catchException) { block(parameter) }.onLeft {
                             onError?.invoke(it) { refresh() }
                         }.onRight {
                             staleData.value = it.some()
@@ -221,6 +262,36 @@ public abstract class LoadStateFlow<E, T> {
             }
         }
 
+        @Deprecated("Kept for binary compatibility", level = DeprecationLevel.HIDDEN)
+        public operator fun <E, T> invoke(
+            scope: CoroutineScope,
+            sharingStarted: SharingStarted = DEFAULT_SHARING_STARTED,
+            onError: ((E, retry: () -> Unit) -> Unit)? = null,
+            block: suspend () -> Either<E, T>
+        ): LoadStateFlow<E, T> = invoke(
+            scope = scope,
+            sharingStarted = sharingStarted,
+            onError = onError,
+            catchException = null,
+            block = block
+        )
+
+        @Deprecated("Kept for binary compatibility", level = DeprecationLevel.HIDDEN)
+        public operator fun <Param, E, T> invoke(
+            scope: CoroutineScope,
+            parameterFlow: Flow<Param>,
+            sharingStarted: SharingStarted = DEFAULT_SHARING_STARTED,
+            onError: ((E, retry: () -> Unit) -> Unit)? = null,
+            block: suspend (Param) -> Either<E, T>
+        ): LoadStateFlow<E, T> = invoke(
+            scope = scope,
+            parameterFlow = parameterFlow,
+            sharingStarted = sharingStarted,
+            onError = onError,
+            catchException = null,
+            block = block
+        )
+
         /**
          * Creates a [LoadStateFlow] that is permanently [LoadState.Success] with [data] and never
          * loads. Useful for previews, tests, or already-available values.
@@ -246,6 +317,14 @@ public abstract class LoadStateFlow<E, T> {
             }
         }
     }
+}
+
+private inline fun <E, T> catchingIf(
+    noinline catchException: ((Throwable) -> E)?,
+    block: () -> Either<E, T>
+): Either<E, T> {
+    if (catchException == null) return block()
+    return Either.catch { block() }.fold({ catchException(it).left() }, { it })
 }
 
 private data class LoadStateFlowState<T, Param>(

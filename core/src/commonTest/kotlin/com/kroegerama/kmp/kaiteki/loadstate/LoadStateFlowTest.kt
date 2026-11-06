@@ -425,6 +425,157 @@ class LoadStateFlowTest {
         job.cancelAndJoin()
     }
 
+    @Test
+    fun testCatchExceptionYieldsErrorWithStaleData() = runTest {
+        var shouldThrow = false
+        var errorReceived: String? = null
+        var retryCallback: (() -> Unit)? = null
+        var blockCount = 0
+        val flow = LoadStateFlow(
+            scope = backgroundScope,
+            onError = { error, retry ->
+                errorReceived = error
+                retryCallback = retry
+            },
+            catchException = { it.message.orEmpty() },
+        ) {
+            blockCount++
+            if (shouldThrow) throw IllegalStateException("boom")
+            "success".right()
+        }
+        val job = launch { flow.collectAll() }
+
+        testScheduler.runCurrent()
+        assertIs<LoadState.Success<String>>(flow.flow.value)
+
+        shouldThrow = true
+        flow.refresh()
+        testScheduler.runCurrent()
+
+        val state = flow.flow.value
+        assertIs<LoadState.Error<String, String>>(state)
+        assertEquals("boom", state.error)
+        assertEquals("success", state.staleData.getOrNull())
+        assertEquals("boom", errorReceived)
+        assertNotNull(retryCallback)
+
+        retryCallback()
+        testScheduler.runCurrent()
+        assertEquals(3, blockCount)
+
+        job.cancelAndJoin()
+    }
+
+    @Test
+    fun testRefreshAfterCaughtExceptionRecovers() = runTest {
+        var shouldThrow = true
+        val flow = LoadStateFlow(
+            scope = backgroundScope,
+            catchException = { it.message.orEmpty() },
+        ) {
+            if (shouldThrow) throw IllegalStateException("boom")
+            "success".right()
+        }
+        val job = launch { flow.collectAll() }
+
+        testScheduler.runCurrent()
+        assertIs<LoadState.Error<String, String>>(flow.flow.value)
+
+        shouldThrow = false
+        flow.refresh()
+        testScheduler.runCurrent()
+
+        assertIs<LoadState.Success<String>>(flow.flow.value)
+        assertEquals("success", flow.dataOrStale.value.getOrNull())
+
+        job.cancelAndJoin()
+    }
+
+    @Test
+    fun testParameterFlowCatchExceptionYieldsErrorWithStaleData() = runTest {
+        val params = MutableStateFlow(1)
+        var errorReceived: String? = null
+        val flow = LoadStateFlow(
+            scope = backgroundScope,
+            parameterFlow = params,
+            onError = { error, _ -> errorReceived = error },
+            catchException = { it.message.orEmpty() },
+        ) {
+            if (it == 2) throw IllegalStateException("boom")
+            "ok$it".right()
+        }
+        val job = launch { flow.collectAll() }
+
+        testScheduler.runCurrent()
+        assertEquals("ok1", flow.dataOrStale.value.getOrNull())
+
+        params.value = 2
+        testScheduler.runCurrent()
+
+        val state = flow.flow.value
+        assertIs<LoadState.Error<String, String>>(state)
+        assertEquals("boom", state.error)
+        assertEquals("ok1", state.staleData.getOrNull())
+        assertEquals("boom", errorReceived)
+
+        job.cancelAndJoin()
+    }
+
+    @Test
+    fun testParameterFlowRefreshAfterCaughtExceptionRecovers() = runTest {
+        val params = MutableStateFlow(1)
+        var shouldThrow = true
+        val flow = LoadStateFlow(
+            scope = backgroundScope,
+            parameterFlow = params,
+            catchException = { it.message.orEmpty() },
+        ) {
+            if (shouldThrow) throw IllegalStateException("boom")
+            "ok$it".right()
+        }
+        val job = launch { flow.collectAll() }
+
+        testScheduler.runCurrent()
+        assertIs<LoadState.Error<String, String>>(flow.flow.value)
+
+        shouldThrow = false
+        flow.refresh()
+        testScheduler.runCurrent()
+
+        assertIs<LoadState.Success<String>>(flow.flow.value)
+        assertEquals("ok1", flow.dataOrStale.value.getOrNull())
+
+        job.cancelAndJoin()
+    }
+
+    @Test
+    fun testCatchExceptionDoesNotMapCancellation() = runTest {
+        val params = MutableStateFlow(1)
+        val gate = CompletableDeferred<Unit>()
+        var catchCount = 0
+        val flow = LoadStateFlow(
+            scope = backgroundScope,
+            parameterFlow = params,
+            catchException = {
+                catchCount++
+                it.message.orEmpty()
+            },
+        ) {
+            if (it == 1) gate.await()
+            (it * 10).right()
+        }
+        val job = launch { flow.collectAll() }
+
+        testScheduler.runCurrent()
+        params.value = 2
+        testScheduler.runCurrent()
+
+        assertEquals(0, catchCount)
+        assertEquals(20, flow.dataOrStale.value.getOrNull())
+
+        job.cancelAndJoin()
+    }
+
     context(scope: CoroutineScope)
     private fun LoadStateFlow<*, *>.collectAll() {
         scope.launch { flow.collect() }
