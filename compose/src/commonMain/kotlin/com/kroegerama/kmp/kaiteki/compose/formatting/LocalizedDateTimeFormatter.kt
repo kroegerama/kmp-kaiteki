@@ -12,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocal
 import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.State
 import androidx.compose.runtime.compositionLocalWithComputedDefaultOf
@@ -56,7 +57,7 @@ import kotlin.time.Instant
  */
 @Composable
 public fun rememberLocalizedDateTimeFormatter(
-    locale: Locale = Locale.current,
+    locale: Locale = LocalLocale.current,
     dateStyle: FormatStyle = FormatStyle.MEDIUM,
     timeStyle: FormatStyle = FormatStyle.SHORT,
     capitalizationMode: CapitalizationMode = CapitalizationMode.NONE,
