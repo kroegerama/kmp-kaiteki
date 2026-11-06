@@ -1,9 +1,12 @@
 package com.kroegerama.kmp.kaiteki.camera.model
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Matrix
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class NormalizedRectsTest {
@@ -65,6 +68,37 @@ class NormalizedRectsTest {
         assertFalse(outer.containsRect(Rect(0.05f, 0.2f, 0.5f, 0.5f)))
         assertFalse(outer.containsRect(Rect(0.2f, 0.2f, 0.8f, 0.95f)))
         assertFalse(outer.containsRect(Rect(0f, 0f, 1f, 1f)))
+    }
+
+    @Test
+    fun denormalizeScalesToSize() {
+        assertEquals(Offset(540f, 1200f), Offset(0.5f, 0.5f).denormalize(1080f, 2400f))
+        assertEquals(Offset.Zero, Offset(0f, 0f).denormalize(1080f, 2400f))
+        assertEquals(Offset(1080f, 2400f), Offset(1f, 1f).denormalize(1080f, 2400f))
+    }
+
+    @Test
+    fun denormalizeClampsOutOfRangeInput() {
+        assertEquals(Offset(0f, 2400f), Offset(-0.5f, 1.5f).denormalize(1080f, 2400f))
+    }
+
+    @Test
+    fun denormalizeReturnsNullForEmptySize() {
+        assertNull(Offset(0.5f, 0.5f).denormalize(0f, 2400f))
+        assertNull(Offset(0.5f, 0.5f).denormalize(1080f, 0f))
+    }
+
+    @Test
+    fun denormalizedPointMapsThroughTransform() {
+        // A view-to-surface transform that scales by 2 and shifts by (10, 20).
+        val matrix = Matrix().apply {
+            values[Matrix.ScaleX] = 2f
+            values[Matrix.ScaleY] = 2f
+            values[Matrix.TranslateX] = 10f
+            values[Matrix.TranslateY] = 20f
+        }
+        val viewPoint = Offset(0.25f, 0.75f).denormalize(400f, 800f)
+        assertEquals(Offset(210f, 1220f), viewPoint?.let(matrix::map))
     }
 
     private fun assertRectEquals(expected: Rect, actual: Rect, absoluteTolerance: Float = 1e-6f) {

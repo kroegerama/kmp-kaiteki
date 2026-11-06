@@ -11,6 +11,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
 import com.kroegerama.kmp.kaiteki.camera.controller.PlatformCameraController
 import com.kroegerama.kmp.kaiteki.camera.model.AnalysisRegion
+import com.kroegerama.kmp.kaiteki.camera.model.denormalize
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.ObjCAction
@@ -20,6 +21,7 @@ import kotlinx.coroutines.launch
 import platform.AVFoundation.AVCaptureVideoPreviewLayer
 import platform.AVFoundation.AVCaptureVideoStabilizationModeCinematicExtended
 import platform.AVFoundation.AVLayerVideoGravityResizeAspectFill
+import platform.CoreGraphics.CGPointMake
 import platform.CoreGraphics.CGRectInset
 import platform.CoreGraphics.CGRectZero
 import platform.QuartzCore.CATransaction
@@ -61,6 +63,7 @@ internal actual fun PlatformCameraView(
             container.layer.addSublayer(previewLayer)
             // The analysis region only converts into output coordinates once the session runs.
             controller.onSessionStarted = { container.setNeedsLayout() }
+            controller.viewToDevicePointMapper = container::devicePointOfInterest
             scope.launch { controller.bindCamera(lifecycleOwner) }
             container
         },
@@ -69,6 +72,7 @@ internal actual fun PlatformCameraView(
         },
         onRelease = {
             controller.onSessionStarted = null
+            controller.viewToDevicePointMapper = null
             controller.clear()
         },
         properties = UIKitInteropProperties(
@@ -192,10 +196,19 @@ private class CameraPreviewUIView(
 
     @ObjCAction
     fun handleSingleTap(recognizer: UITapGestureRecognizer) {
-        val location = recognizer.locationInView(this)
-        val devicePoint = previewLayer.captureDevicePointOfInterestForPoint(location)
-        devicePoint.useContents {
-            controller.focus(Offset(x.toFloat(), y.toFloat()))
+        val (width, height) = bounds.useContents { size.width to size.height }
+        if (width <= 0.0 || height <= 0.0) return
+        recognizer.locationInView(this).useContents {
+            controller.focus(Offset((x / width).toFloat(), (y / height).toFloat()))
+        }
+    }
+
+    fun devicePointOfInterest(normalized: Offset): Offset? {
+        val (width, height) = bounds.useContents { size.width to size.height }
+        val viewPoint = normalized.denormalize(width.toFloat(), height.toFloat()) ?: return null
+        val location = CGPointMake(viewPoint.x.toDouble(), viewPoint.y.toDouble())
+        return previewLayer.captureDevicePointOfInterestForPoint(location).useContents {
+            Offset(x.toFloat(), y.toFloat())
         }
     }
 

@@ -99,6 +99,9 @@ internal actual class PlatformCameraController : CameraController {
     @Volatile
     internal var onSessionStarted: (() -> Unit)? = null
 
+    // Maps a point normalized to the CameraView bounds to a device point of interest; set on the main thread while the view exists.
+    internal var viewToDevicePointMapper: ((Offset) -> Offset?)? = null
+
     actual override val analysisRegionRect: Rect?
         get() = analysisRegionRectState.value
 
@@ -181,8 +184,10 @@ internal actual class PlatformCameraController : CameraController {
     }
 
     actual override fun focus(coords: Offset) {
-        captureDevice?.withConfiguration {
-            val point = CGPointMake(coords.x.toDouble(), coords.y.toDouble())
+        val device = captureDevice ?: return
+        val devicePoint = viewToDevicePointMapper?.invoke(coords) ?: return
+        device.withConfiguration {
+            val point = CGPointMake(devicePoint.x.toDouble(), devicePoint.y.toDouble())
             if (isFocusPointOfInterestSupported()) {
                 focusPointOfInterest = point
                 if (isFocusModeSupported(AVCaptureFocusModeAutoFocus)) {
@@ -256,7 +261,14 @@ internal actual class PlatformCameraController : CameraController {
         )
         val stableRef = StableRef.create(delegate)
 
-        val sessionQueue = dispatch_queue_create(label = "camera.session.queue", null)
+        val videoOutputQueue = dispatch_queue_create(
+            label = "VideoDataOutputQueue",
+            attr = dispatch_queue_attr_make_with_qos_class(
+                attr = null,
+                qos_class = QOS_CLASS_USER_INITIATED,
+                relative_priority = 0
+            )
+        )
         val videoDataOutput = AVCaptureVideoDataOutput()
 
         videoDataOutput.apply {
@@ -264,7 +276,7 @@ internal actual class PlatformCameraController : CameraController {
             videoSettings = mapOf(
                 kCVPixelBufferPixelFormatTypeKey to kCVPixelFormatType_32BGRA
             )
-            setSampleBufferDelegate(delegate, sessionQueue)
+            setSampleBufferDelegate(delegate, videoOutputQueue)
         }
 
         dispatch_async(sessionQueue) {

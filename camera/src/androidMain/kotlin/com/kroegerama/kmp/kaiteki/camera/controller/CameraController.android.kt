@@ -54,6 +54,9 @@ internal actual class PlatformCameraController(
     private var surfaceMeteringPointFactory: SurfaceOrientedMeteringPointFactory? = null
     private var camera: Camera? = null
 
+    // Maps a point normalized to the CameraView bounds to preview surface coordinates; set while a viewfinder is attached.
+    internal var viewToSurfaceMapper: ((Offset) -> Offset?)? = null
+
     // Preview and analysis share the same aspect ratio, so analysis frames cover
     // the same field of view as the preview and relative coordinates line up.
     private val previewUseCase = Preview.Builder()
@@ -190,9 +193,12 @@ internal actual class PlatformCameraController(
     }
 
     actual override fun focus(coords: Offset) {
-        val point = surfaceMeteringPointFactory?.createPoint(coords.x, coords.y) ?: return
+        val cameraControl = camera?.cameraControl ?: return
+        val factory = surfaceMeteringPointFactory ?: return
+        val surfacePoint = viewToSurfaceMapper?.invoke(coords) ?: return
+        val point = factory.createPoint(surfacePoint.x, surfacePoint.y)
         val meteringAction = FocusMeteringAction.Builder(point).build()
-        camera?.cameraControl?.startFocusAndMetering(meteringAction)
+        cameraControl.startFocusAndMetering(meteringAction)
     }
 
     actual override fun clear() {

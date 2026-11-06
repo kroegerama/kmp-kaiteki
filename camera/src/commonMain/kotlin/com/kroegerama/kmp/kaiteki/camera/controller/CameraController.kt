@@ -39,6 +39,8 @@ public interface CameraController {
 
     public fun setZoomRatio(value: Float): Boolean
     public fun toggleTorch()
+
+    /** Focuses and meters at [coords], normalized to the `CameraView` bounds (`0..1`, top-left origin) and clamped to that range. */
     public fun focus(coords: Offset)
 
     /**

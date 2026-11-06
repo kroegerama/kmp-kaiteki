@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.input.pointer.pointerInput
@@ -37,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
 import com.kroegerama.kmp.kaiteki.camera.controller.PlatformCameraController
 import com.kroegerama.kmp.kaiteki.camera.model.AnalysisRegion
+import com.kroegerama.kmp.kaiteki.camera.model.denormalize
 import kotlin.math.abs
 
 @ExperimentalKaitekiCameraApi
@@ -71,6 +73,22 @@ internal actual fun PlatformCameraView(
         val initialTransformMatrix = remember { coordinateTransformer.transformMatrix }
         val density = LocalDensity.current
         var viewSize by remember { mutableStateOf(IntSize.Zero) }
+
+        DisposableEffect(controller, coordinateTransformer) {
+            val mapper: (Offset) -> Offset? = { coords ->
+                val transformMatrix = coordinateTransformer.transformMatrix
+                if (transformMatrix.values === initialTransformMatrix.values) {
+                    null
+                } else {
+                    coords.denormalize(viewSize.width.toFloat(), viewSize.height.toFloat())?.let(transformMatrix::map)
+                }
+            }
+            controller.viewToSurfaceMapper = mapper
+            // During a Crossfade the outgoing viewfinder is disposed after the incoming one attached.
+            onDispose {
+                if (controller.viewToSurfaceMapper === mapper) controller.viewToSurfaceMapper = null
+            }
+        }
 
         LaunchedEffect(request, analysisRegion, density) {
             if (analysisRegion !is AnalysisRegion.VisibleArea) {
@@ -121,9 +139,7 @@ internal actual fun PlatformCameraView(
                             controller.setZoomRatio(if (controller.zoomRatio <= 1.5f) 2f else 1f)
                         },
                         onTap = { offset ->
-                            with(coordinateTransformer) {
-                                controller.focus(offset.transform())
-                            }
+                            controller.focus(Offset(offset.x / size.width, offset.y / size.height))
                         }
                     )
                 }

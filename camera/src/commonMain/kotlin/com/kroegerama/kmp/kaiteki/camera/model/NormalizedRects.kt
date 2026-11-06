@@ -1,7 +1,14 @@
 package com.kroegerama.kmp.kaiteki.camera.model
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import com.kroegerama.kmp.kaiteki.camera.ExperimentalKaitekiCameraApi
+
+/** Scales a normalized point, clamped to `0..1`, to a [width] x [height] space; `null` while that space is empty. */
+internal fun Offset.denormalize(width: Float, height: Float): Offset? {
+    if (width <= 0f || height <= 0f) return null
+    return Offset(x.coerceIn(0f, 1f) * width, y.coerceIn(0f, 1f) * height)
+}
 
 /** Rotates a normalized (`0..1`, top-left origin) rect clockwise by [degrees], a multiple of 90. */
 internal fun Rect.rotateNormalized(degrees: Int): Rect = when (((degrees % 360) + 360) % 360) {
