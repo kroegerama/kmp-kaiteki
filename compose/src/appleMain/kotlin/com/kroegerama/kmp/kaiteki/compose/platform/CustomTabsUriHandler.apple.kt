@@ -8,8 +8,10 @@ import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.uikit.LocalUIViewController
 import platform.Foundation.NSURL
 import platform.SafariServices.SFSafariViewController
+import platform.UIKit.UIApplication
 import platform.UIKit.UIViewController
 
+/** Opens http and https URLs in an [SFSafariViewController] and hands every other scheme to [UIApplication.openURL]. */
 public class SafariViewControllerUriHandler @RememberInComposition constructor(
     private val uiViewController: UIViewController,
     private val animated: Boolean = true,
@@ -18,6 +20,11 @@ public class SafariViewControllerUriHandler @RememberInComposition constructor(
 ) : UriHandler {
     override fun openUri(uri: String) {
         val url = NSURL.URLWithString(uri) ?: return
+        val scheme = url.scheme?.lowercase()
+        if (scheme != "http" && scheme != "https") {
+            UIApplication.sharedApplication.openURL(url, options = emptyMap<Any?, Any>(), completionHandler = null)
+            return
+        }
         val viewController = SFSafariViewController(url).apply {
             decorator()
         }
