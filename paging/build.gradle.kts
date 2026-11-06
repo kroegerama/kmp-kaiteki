@@ -19,7 +19,7 @@ kotlin {
             "-Xexpect-actual-classes",
         )
     }
-    coreLibrariesVersion = "2.2.21"
+    coreLibrariesVersion = libs.versions.kotlin.coreLibraries.get()
 
     jvm {
         compilerOptions {
@@ -39,7 +39,6 @@ kotlin {
         minSdk {
             version = release(libs.versions.android.minSdk.get().toInt())
         }
-        enableCoreLibraryDesugaring = true
 
         compilerOptions {
             jvmTarget = JvmTarget.JVM_11
@@ -56,9 +55,9 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.androidx.paging.common)
-            implementation(libs.arrow)
-            implementation(libs.androidx.lifecycle.viewmodel)
+            api(libs.androidx.paging.common)
+            api(libs.arrow)
+            api(libs.androidx.lifecycle.viewmodel)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -66,10 +65,6 @@ kotlin {
             implementation(libs.androidx.paging.testing)
         }
     }
-}
-
-dependencies {
-    coreLibraryDesugaring(libs.desugar)
 }
 
 mavenPublishing {

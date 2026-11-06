@@ -23,7 +23,7 @@ kotlin {
 
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
-    coreLibrariesVersion = "2.2.21"
+    coreLibrariesVersion = libs.versions.kotlin.coreLibraries.get()
 
     android {
         namespace = "com.kroegerama.kmp.kaiteki.camera"
@@ -50,9 +50,10 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.compose.runtime)
-            implementation(libs.compose.foundation)
+            api(libs.compose.runtime)
+            api(libs.compose.foundation)
             implementation(libs.compose.material3)
+            api(libs.androidx.lifecycle.common)
 
             implementation(projects.compose)
         }
@@ -66,7 +67,7 @@ kotlin {
 
             implementation(libs.mlkit.barcode.scanning)
             implementation(libs.mlkit.text.recognition)
-            implementation(libs.mlkit.vision.common)
+            api(libs.mlkit.vision.common)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

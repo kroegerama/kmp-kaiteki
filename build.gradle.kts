@@ -38,7 +38,7 @@ val pomAction = Action<MavenPom> {
     scm {
         url.set(projectUrl)
         connection.set("scm:git:https://github.com/kroegerama/kmp-kaiteki")
-        developerConnection.set("scm:git:https://www.github.com/kroegerama")
+        developerConnection.set("scm:git:ssh://git@github.com/kroegerama/kmp-kaiteki.git")
     }
 }
 

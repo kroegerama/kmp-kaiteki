@@ -53,7 +53,7 @@ kotlin {
             "-Xexpect-actual-classes",
         )
     }
-    coreLibrariesVersion = "2.2.21"
+    coreLibrariesVersion = libs.versions.kotlin.coreLibraries.get()
 
     jvm {
         compilerOptions {
@@ -94,20 +94,20 @@ kotlin {
             generatedKotlin.srcDir(generateKaitekiVersion)
         }
         commonMain.dependencies {
-            implementation(libs.kotlinx.datetime)
-            implementation(libs.kotlinx.coroutines.core)
-            implementation(libs.kotlinx.serialization.core)
-            implementation(libs.androidx.lifecycle.common)
+            api(libs.kotlinx.datetime)
+            api(libs.kotlinx.coroutines.core)
+            api(libs.kotlinx.serialization.core)
+            api(libs.androidx.lifecycle.common)
             implementation(libs.androidx.lifecycle.runtime)
-            implementation(libs.androidx.lifecycle.viewmodel.savedstate)
-            implementation(libs.androidx.datastore)
-            implementation(libs.androidx.datastore.preferences)
-            implementation(libs.arrow)
+            api(libs.androidx.lifecycle.viewmodel.savedstate)
+            api(libs.androidx.datastore)
+            api(libs.androidx.datastore.preferences)
+            api(libs.arrow)
             implementation(libs.compose.runtime.annotation)
             api(libs.okio)
         }
         androidMain.dependencies {
-            implementation(libs.androidx.startup)
+            api(libs.androidx.startup)
         }
         jvmMain.dependencies {
             implementation(libs.icu4j)

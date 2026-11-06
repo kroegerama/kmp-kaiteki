@@ -24,7 +24,7 @@ kotlin {
 
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
-    coreLibrariesVersion = "2.2.21"
+    coreLibrariesVersion = libs.versions.kotlin.coreLibraries.get()
 
     @OptIn(ExperimentalKotlinGradlePluginApi::class)
     applyDefaultHierarchyTemplate {
@@ -79,25 +79,24 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.kotlinx.datetime)
-            implementation(libs.androidx.lifecycle.viewmodel)
-            implementation(libs.androidx.navigation3.ui)
+            api(libs.kotlinx.datetime)
+            api(libs.androidx.lifecycle.viewmodel)
+            api(libs.androidx.navigation3.ui)
             implementation(libs.androidx.navigationevent.compose)
             implementation(libs.arrow)
-            implementation(libs.compose.runtime)
-            implementation(libs.compose.foundation)
-            implementation(libs.compose.material3)
+            api(libs.compose.runtime)
+            api(libs.compose.foundation)
+            api(libs.compose.material3)
             implementation(libs.compose.preview)
-            implementation(libs.androidx.paging.compose)
+            api(libs.androidx.paging.compose)
 
             api(projects.core)
             api(projects.paging)
         }
         androidMain.dependencies {
-            implementation(libs.androidx.browser)
+            api(libs.androidx.browser)
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.core)
-            implementation(libs.hilt.lifecycle.viewmodel.compose)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

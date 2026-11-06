@@ -23,7 +23,7 @@ kotlin {
 
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
-    coreLibrariesVersion = "2.2.21"
+    coreLibrariesVersion = libs.versions.kotlin.coreLibraries.get()
 
     jvm {
         compilerOptions {
@@ -43,7 +43,6 @@ kotlin {
         minSdk {
             version = release(libs.versions.android.minSdk.get().toInt())
         }
-        enableCoreLibraryDesugaring = true
 
         compilerOptions {
             jvmTarget = JvmTarget.JVM_11
@@ -56,7 +55,7 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.compose.runtime)
+            api(libs.compose.runtime)
             implementation(libs.compose.foundation)
         }
         androidMain.dependencies {
@@ -68,7 +67,6 @@ kotlin {
 
 dependencies {
     androidRuntimeClasspath(libs.compose.uiTooling)
-    coreLibraryDesugaring(libs.desugar)
 }
 
 mavenPublishing {
