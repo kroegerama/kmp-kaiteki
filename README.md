@@ -138,10 +138,10 @@ dependencies {
 ### Paging
 
 - `PagerHolder` - wrapper around `Pager` with `refresh`, `retry`, `cachedIn`, and reactive parameter support
-- Ready-made `PagingSource` implementations based on Arrow `Either` error handling and duplicate detection
-  (configurable `DuplicateStrategy`: invalidate on shifted data, or filter duplicates from non-deterministic backends):
+- Ready-made `PagingSource` implementations based on Arrow `Either` error handling and duplicate detection (configurable `DuplicateStrategy`:
+  invalidate on shifted data, or filter duplicates from non-deterministic backends):
     - `PageSizePagingSource` - page/size pagination
-  - `OffsetLimitPagingSource` - offset/limit pagination
+    - `OffsetLimitPagingSource` - offset/limit pagination
     - `ItemKeyedPagingSource` - cursor/item-keyed pagination
     - `ContinuationTokenPagingSource` - token-based pagination
     - `SinglePagePagingSource` - non-paginated single-page data
