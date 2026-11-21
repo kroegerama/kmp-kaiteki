@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonColors
@@ -37,7 +36,6 @@ import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
  * @param enabled Whether the button responds to input.
  * @param colors [IconButtonColors] used for the container and icon.
  */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun BaseIconButton(
     onClick: () -> Unit,
@@ -66,7 +64,6 @@ public fun BaseIconButton(
 }
 
 /** [BaseIconButton] with the extra-small container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun IconButtonExtraSmall(
     onClick: () -> Unit,
@@ -93,7 +90,6 @@ public fun IconButtonExtraSmall(
 }
 
 /** [BaseIconButton] with the small container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun IconButtonSmall(
     onClick: () -> Unit,
@@ -120,7 +116,6 @@ public fun IconButtonSmall(
 }
 
 /** [BaseIconButton] with the medium container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun IconButtonMedium(
     onClick: () -> Unit,
@@ -147,7 +142,6 @@ public fun IconButtonMedium(
 }
 
 /** [BaseIconButton] with the large container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun IconButtonLarge(
     onClick: () -> Unit,
@@ -174,7 +168,6 @@ public fun IconButtonLarge(
 }
 
 /** [BaseIconButton] with the extra-large container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun IconButtonExtraLarge(
     onClick: () -> Unit,
@@ -200,7 +193,6 @@ public fun IconButtonExtraLarge(
     )
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Preview
 @Composable
 private fun IconButtonPreview() {

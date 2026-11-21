@@ -13,7 +13,6 @@ import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.test.ComposeUiTest
-import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.pressKey
@@ -29,7 +28,6 @@ import org.junit.Test
  * platform's own key to focus mapping. The desktop test host does not apply that mapping, so a
  * two-dimensional focus search started by a key press cannot be exercised from `jvmTest`.
  */
-@OptIn(ExperimentalTestApi::class)
 class ResideLayoutKeyDeviceTest {
 
     private class Harness {

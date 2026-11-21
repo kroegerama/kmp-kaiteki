@@ -52,9 +52,9 @@ public class ScaffoldSceneDecorator<T : Any> @RememberInComposition constructor(
     }
 }
 
-internal class ScaffoldSceneDecoratorScene<T : Any>(
-    scene: Scene<T>,
-    sharedTransitionScope: SharedTransitionScope,
+internal data class ScaffoldSceneDecoratorScene<T : Any>(
+    private val scene: Scene<T>,
+    private val sharedTransitionScope: SharedTransitionScope,
 ) : Scene<T> {
     override val key: Any = scene::class to scene.key
     override val entries: List<NavEntry<T>> = scene.entries

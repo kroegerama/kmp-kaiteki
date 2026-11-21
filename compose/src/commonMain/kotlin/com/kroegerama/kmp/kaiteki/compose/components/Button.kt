@@ -10,7 +10,6 @@ import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonElevation
 import androidx.compose.material3.ButtonShapes
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -38,7 +37,6 @@ import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
  * @param colors [ButtonColors] used for the container and content.
  * @param elevation [ButtonElevation] used across the button's states, or null for no elevation.
  */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun BaseButton(
     onClick: () -> Unit,
@@ -77,7 +75,6 @@ public fun BaseButton(
 }
 
 /** [BaseButton] with the extra-small container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun ButtonExtraSmall(
     onClick: () -> Unit,
@@ -103,7 +100,6 @@ public fun ButtonExtraSmall(
 }
 
 /** [BaseButton] with the small container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun ButtonSmall(
     onClick: () -> Unit,
@@ -129,7 +125,6 @@ public fun ButtonSmall(
 }
 
 /** [BaseButton] with the medium container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun ButtonMedium(
     onClick: () -> Unit,
@@ -155,7 +150,6 @@ public fun ButtonMedium(
 }
 
 /** [BaseButton] with the large container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun ButtonLarge(
     onClick: () -> Unit,
@@ -181,7 +175,6 @@ public fun ButtonLarge(
 }
 
 /** [BaseButton] with the extra-large container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun ButtonExtraLarge(
     onClick: () -> Unit,
@@ -206,7 +199,6 @@ public fun ButtonExtraLarge(
     )
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Preview
 @Composable
 private fun ButtonPreview() {

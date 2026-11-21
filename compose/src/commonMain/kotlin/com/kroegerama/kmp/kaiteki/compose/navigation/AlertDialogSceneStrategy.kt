@@ -2,7 +2,6 @@ package com.kroegerama.kmp.kaiteki.compose.navigation
 
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.BasicAlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Surface
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
@@ -31,7 +30,6 @@ import androidx.navigation3.scene.SceneStrategyScope
  *
  * This strategy should always be added before any non-overlay scene strategies.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 public class AlertDialogSceneStrategy<T : Any> @RememberInComposition constructor() : SceneStrategy<T> {
 
     override fun SceneStrategyScope<T>.calculateScene(entries: List<NavEntry<T>>): Scene<T>? {
@@ -94,7 +92,6 @@ public class AlertDialogSceneStrategy<T : Any> @RememberInComposition constructo
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 internal data class AlertDialogScene<T : Any>(
     override val key: Any,
     override val previousEntries: List<NavEntry<T>>,

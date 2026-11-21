@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonColors
 import androidx.compose.material3.IconButtonDefaults
@@ -40,7 +39,6 @@ import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
  * @param colors [IconButtonColors] used for the container and icon.
  * @param border Border stroke drawn around the button, or null for no border.
  */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun BaseOutlinedIconButton(
     onClick: () -> Unit,
@@ -71,7 +69,6 @@ public fun BaseOutlinedIconButton(
 }
 
 /** [BaseOutlinedIconButton] with the extra-small container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun OutlinedIconButtonExtraSmall(
     onClick: () -> Unit,
@@ -100,7 +97,6 @@ public fun OutlinedIconButtonExtraSmall(
 }
 
 /** [BaseOutlinedIconButton] with the small container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun OutlinedIconButtonSmall(
     onClick: () -> Unit,
@@ -129,7 +125,6 @@ public fun OutlinedIconButtonSmall(
 }
 
 /** [BaseOutlinedIconButton] with the medium container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun OutlinedIconButtonMedium(
     onClick: () -> Unit,
@@ -158,7 +153,6 @@ public fun OutlinedIconButtonMedium(
 }
 
 /** [BaseOutlinedIconButton] with the large container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun OutlinedIconButtonLarge(
     onClick: () -> Unit,
@@ -187,7 +181,6 @@ public fun OutlinedIconButtonLarge(
 }
 
 /** [BaseOutlinedIconButton] with the extra-large container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun OutlinedIconButtonExtraLarge(
     onClick: () -> Unit,
@@ -215,7 +208,6 @@ public fun OutlinedIconButtonExtraLarge(
     )
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Preview
 @Composable
 private fun OutlinedIconButtonPreview() {

@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
@@ -42,7 +41,6 @@ import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
  * @param enabled Whether the button responds to input.
  * @param colors [IconToggleButtonColors] used for the container and icon across states.
  */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun BaseFilledIconToggleButton(
     checked: Boolean,
@@ -73,7 +71,6 @@ public fun BaseFilledIconToggleButton(
 }
 
 /** [BaseFilledIconToggleButton] with the extra-small container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledIconToggleButtonExtraSmall(
     checked: Boolean,
@@ -103,7 +100,6 @@ public fun FilledIconToggleButtonExtraSmall(
 }
 
 /** [BaseFilledIconToggleButton] with the small container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledIconToggleButtonSmall(
     checked: Boolean,
@@ -133,7 +129,6 @@ public fun FilledIconToggleButtonSmall(
 }
 
 /** [BaseFilledIconToggleButton] with the medium container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledIconToggleButtonMedium(
     checked: Boolean,
@@ -163,7 +158,6 @@ public fun FilledIconToggleButtonMedium(
 }
 
 /** [BaseFilledIconToggleButton] with the large container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledIconToggleButtonLarge(
     checked: Boolean,
@@ -193,7 +187,6 @@ public fun FilledIconToggleButtonLarge(
 }
 
 /** [BaseFilledIconToggleButton] with the extra-large container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledIconToggleButtonExtraLarge(
     checked: Boolean,
@@ -222,7 +215,6 @@ public fun FilledIconToggleButtonExtraLarge(
     )
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Preview
 @Composable
 private fun FilledIconToggleButtonPreview() {

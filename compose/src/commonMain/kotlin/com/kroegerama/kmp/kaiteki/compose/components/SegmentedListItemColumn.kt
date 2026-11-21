@@ -14,7 +14,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CardElevation
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
@@ -62,7 +61,6 @@ import kotlin.annotation.AnnotationTarget.TYPE
  * declaring is tracked and rebuilds all items on change; read state inside an item body instead to
  * recompose only that item.
  */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun SegmentedListItemColumn(
     modifier: Modifier = Modifier,
@@ -94,7 +92,6 @@ public fun SegmentedListItemColumn(
 }
 
 /** Receiver of a [SegmentedListItemColumn] content block. */
-@ExperimentalMaterial3ExpressiveApi
 @SegmentedListDsl
 public interface SegmentedListItemColumnScope {
     /**
@@ -137,7 +134,6 @@ public interface SegmentedListItemColumnScope {
  * Shadows enclosing layout scopes, so `Modifier.weight` and `Modifier.align` of a surrounding
  * [Column] or `Row` are not in scope for an item.
  */
-@ExperimentalMaterial3ExpressiveApi
 @SegmentedListDsl
 @LayoutScopeMarker
 @Immutable
@@ -173,7 +169,6 @@ public annotation class SegmentedListDsl
  * @param contentPadding Padding around [content].
  * @param content Headline content of the item.
  */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun SegmentedListItemColumnItemScope.SegmentedListItem(
     modifier: Modifier = Modifier,
@@ -223,7 +218,6 @@ public fun SegmentedListItemColumnItemScope.SegmentedListItem(
  * @param interactionSource [MutableInteractionSource] observing the item's interactions.
  * @param content Headline content of the item.
  */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun SegmentedListItemColumnItemScope.SegmentedListItem(
     onClick: () -> Unit,
@@ -282,7 +276,6 @@ public fun SegmentedListItemColumnItemScope.SegmentedListItem(
  * @param interactionSource [MutableInteractionSource] observing the item's interactions.
  * @param content Headline content of the item.
  */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun SegmentedListItemColumnItemScope.SegmentedListItem(
     checked: Boolean,
@@ -343,7 +336,6 @@ public fun SegmentedListItemColumnItemScope.SegmentedListItem(
  * @param interactionSource [MutableInteractionSource] observing the item's interactions.
  * @param content Headline content of the item.
  */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun SegmentedListItemColumnItemScope.SegmentedListItem(
     selected: Boolean,
@@ -394,7 +386,6 @@ public fun SegmentedListItemColumnItemScope.SegmentedListItem(
  * @param border Optional border drawn around the card.
  * @param content Content of the card.
  */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun SegmentedListItemColumnItemScope.Card(
     modifier: Modifier = Modifier,
@@ -426,7 +417,6 @@ public fun SegmentedListItemColumnItemScope.Card(
  * @param interactionSource [MutableInteractionSource] observing the card's interactions.
  * @param content Content of the card.
  */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun SegmentedListItemColumnItemScope.Card(
     onClick: () -> Unit,
@@ -458,7 +448,6 @@ public fun SegmentedListItemColumnItemScope.Card(
  * building them changes, so that unrelated recompositions keep the previous item lambdas and let
  * the items skip.
  */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 private fun rememberSegmentedListItemColumnEntries(
     content: SegmentedListItemColumnScope.() -> Unit
@@ -469,7 +458,6 @@ private fun rememberSegmentedListItemColumnEntries(
     }
 }
 
-@ExperimentalMaterial3ExpressiveApi
 private class SegmentedListItemColumnScopeImpl : SegmentedListItemColumnScope {
     val entries = mutableListOf<SegmentedListItemColumnEntry>()
 
@@ -484,7 +472,6 @@ private class SegmentedListItemColumnScopeImpl : SegmentedListItemColumnScope {
     }
 }
 
-@ExperimentalMaterial3ExpressiveApi
 @Immutable
 private class SegmentedListItemColumnEntry(
     val key: Any?,
@@ -495,7 +482,6 @@ private class SegmentedListItemColumnEntry(
 @Immutable
 private data class DefaultSegmentedListItemColumnKey(private val index: Int)
 
-@ExperimentalMaterial3ExpressiveApi
 @Immutable
 private class SegmentedListItemColumnItemScopeImpl(
     override val shapes: ListItemShapes,
@@ -505,7 +491,6 @@ private class SegmentedListItemColumnItemScopeImpl(
 
 private val ThemeOptions = listOf("Light", "Dark", "System")
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Preview
 @Composable
 private fun SegmentedListItemColumnPreview() {
@@ -583,7 +568,6 @@ private fun SegmentedListItemColumnPreview() {
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Preview
 @Composable
 private fun SegmentedListItemColumnSingleItemPreview() {
@@ -610,7 +594,6 @@ private fun SegmentedListItemColumnSingleItemPreview() {
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Preview
 @Composable
 private fun SegmentedListItemColumnCardPreview() {

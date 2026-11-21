@@ -9,7 +9,6 @@ import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.foundation.shape.CornerSize
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -64,7 +63,6 @@ public fun rememberAnimatedShape(
  * @param selected Whether the component is selected.
  * @param animationSpec [FiniteAnimationSpec] used for the morph animation.
  */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun ListItemShapes.rememberShapeForInteraction(
     interactionSource: InteractionSource,
@@ -92,7 +90,6 @@ public fun ListItemShapes.rememberShapeForInteraction(
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 private val ListItemShapes.hasCornerBasedShapes: Boolean
     get() = shape is CornerBasedShape &&
             selectedShape is CornerBasedShape &&

@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonShapes
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -37,7 +36,6 @@ import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
  * @param colors [ButtonColors] used for the container and content.
  * @param border Border stroke drawn around the button, or null for no border.
  */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun BaseOutlinedButton(
     onClick: () -> Unit,
@@ -76,7 +74,6 @@ public fun BaseOutlinedButton(
 }
 
 /** [BaseOutlinedButton] with the extra-small container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun OutlinedButtonExtraSmall(
     onClick: () -> Unit,
@@ -102,7 +99,6 @@ public fun OutlinedButtonExtraSmall(
 }
 
 /** [BaseOutlinedButton] with the small container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun OutlinedButtonSmall(
     onClick: () -> Unit,
@@ -128,7 +124,6 @@ public fun OutlinedButtonSmall(
 }
 
 /** [BaseOutlinedButton] with the medium container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun OutlinedButtonMedium(
     onClick: () -> Unit,
@@ -154,7 +149,6 @@ public fun OutlinedButtonMedium(
 }
 
 /** [BaseOutlinedButton] with the large container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun OutlinedButtonLarge(
     onClick: () -> Unit,
@@ -180,7 +174,6 @@ public fun OutlinedButtonLarge(
 }
 
 /** [BaseOutlinedButton] with the extra-large container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun OutlinedButtonExtraLarge(
     onClick: () -> Unit,
@@ -205,7 +198,6 @@ public fun OutlinedButtonExtraLarge(
     )
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Preview
 @Composable
 private fun OutlinedButtonPreview() {

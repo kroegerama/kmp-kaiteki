@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconToggleButton
@@ -42,7 +41,6 @@ import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
  * @param enabled Whether the button responds to input.
  * @param colors [IconToggleButtonColors] used for the container and icon across states.
  */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun BaseIconToggleButton(
     checked: Boolean,
@@ -73,7 +71,6 @@ public fun BaseIconToggleButton(
 }
 
 /** [BaseIconToggleButton] with the extra-small container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun IconToggleButtonExtraSmall(
     checked: Boolean,
@@ -103,7 +100,6 @@ public fun IconToggleButtonExtraSmall(
 }
 
 /** [BaseIconToggleButton] with the small container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun IconToggleButtonSmall(
     checked: Boolean,
@@ -133,7 +129,6 @@ public fun IconToggleButtonSmall(
 }
 
 /** [BaseIconToggleButton] with the medium container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun IconToggleButtonMedium(
     checked: Boolean,
@@ -163,7 +158,6 @@ public fun IconToggleButtonMedium(
 }
 
 /** [BaseIconToggleButton] with the large container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun IconToggleButtonLarge(
     checked: Boolean,
@@ -193,7 +187,6 @@ public fun IconToggleButtonLarge(
 }
 
 /** [BaseIconToggleButton] with the extra-large container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun IconToggleButtonExtraLarge(
     checked: Boolean,
@@ -222,7 +215,6 @@ public fun IconToggleButtonExtraLarge(
     )
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Preview
 @Composable
 private fun IconToggleButtonPreview() {

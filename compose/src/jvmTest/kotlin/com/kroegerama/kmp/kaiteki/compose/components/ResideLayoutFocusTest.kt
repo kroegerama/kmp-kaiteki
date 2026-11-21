@@ -24,7 +24,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ComposeUiTest
-import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
@@ -51,7 +50,6 @@ import kotlin.test.assertTrue
  * while closed, menu items are unreachable by traversal and by focus requests;
  * closing the menu hands focus back to the content.
  */
-@OptIn(ExperimentalTestApi::class)
 class ResideLayoutFocusTest {
 
     private class Harness {

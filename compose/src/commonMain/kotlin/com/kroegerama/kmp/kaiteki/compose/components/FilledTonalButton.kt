@@ -9,7 +9,6 @@ import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonElevation
 import androidx.compose.material3.ButtonShapes
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -37,7 +36,6 @@ import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
  * @param colors [ButtonColors] used for the container and content.
  * @param elevation [ButtonElevation] used across the button's states, or null for no elevation.
  */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun BaseFilledTonalButton(
     onClick: () -> Unit,
@@ -76,7 +74,6 @@ public fun BaseFilledTonalButton(
 }
 
 /** [BaseFilledTonalButton] with the extra-small container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledTonalButtonExtraSmall(
     onClick: () -> Unit,
@@ -102,7 +99,6 @@ public fun FilledTonalButtonExtraSmall(
 }
 
 /** [BaseFilledTonalButton] with the small container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledTonalButtonSmall(
     onClick: () -> Unit,
@@ -128,7 +124,6 @@ public fun FilledTonalButtonSmall(
 }
 
 /** [BaseFilledTonalButton] with the medium container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledTonalButtonMedium(
     onClick: () -> Unit,
@@ -154,7 +149,6 @@ public fun FilledTonalButtonMedium(
 }
 
 /** [BaseFilledTonalButton] with the large container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledTonalButtonLarge(
     onClick: () -> Unit,
@@ -180,7 +174,6 @@ public fun FilledTonalButtonLarge(
 }
 
 /** [BaseFilledTonalButton] with the extra-large container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledTonalButtonExtraLarge(
     onClick: () -> Unit,
@@ -205,7 +198,6 @@ public fun FilledTonalButtonExtraLarge(
     )
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Preview
 @Composable
 private fun FilledTonalButtonPreview() {

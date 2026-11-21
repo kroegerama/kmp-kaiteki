@@ -7,7 +7,6 @@ import com.kroegerama.kmp.kaiteki.camera.model.OCRResult
 import com.kroegerama.kmp.kaiteki.camera.model.containsRect
 import com.kroegerama.kmp.kaiteki.camera.model.relativeRect
 import com.kroegerama.kmp.kaiteki.camera.model.rotateNormalized
-import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.IntVar
 import kotlinx.cinterop.ObjCSignatureOverride
@@ -66,7 +65,7 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 @ExperimentalKaitekiCameraApi
 @Suppress("MISSING_DEPENDENCY_CLASS_IN_EXPRESSION_TYPE", "UPPER_BOUND_VIOLATED_IN_TYPEALIAS_EXPANSION_DEPRECATION_WARNING")
-@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class, ExperimentalAtomicApi::class, DelicateCoroutinesApi::class)
+@OptIn(ExperimentalForeignApi::class, ExperimentalAtomicApi::class, DelicateCoroutinesApi::class)
 internal class TextDelegate(
     private val producer: ProducerScope<OCRResult>,
     minConfidence: Float,

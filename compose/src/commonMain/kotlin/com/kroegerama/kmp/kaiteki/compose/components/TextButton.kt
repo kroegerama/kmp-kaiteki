@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonShapes
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
@@ -35,7 +34,6 @@ import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
  * @param enabled Whether the button responds to input.
  * @param colors [ButtonColors] used for the container and content.
  */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun BaseTextButton(
     onClick: () -> Unit,
@@ -72,7 +70,6 @@ public fun BaseTextButton(
 }
 
 /** [BaseTextButton] with the extra-small container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun TextButtonExtraSmall(
     onClick: () -> Unit,
@@ -96,7 +93,6 @@ public fun TextButtonExtraSmall(
 }
 
 /** [BaseTextButton] with the small container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun TextButtonSmall(
     onClick: () -> Unit,
@@ -120,7 +116,6 @@ public fun TextButtonSmall(
 }
 
 /** [BaseTextButton] with the medium container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun TextButtonMedium(
     onClick: () -> Unit,
@@ -144,7 +139,6 @@ public fun TextButtonMedium(
 }
 
 /** [BaseTextButton] with the large container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun TextButtonLarge(
     onClick: () -> Unit,
@@ -168,7 +162,6 @@ public fun TextButtonLarge(
 }
 
 /** [BaseTextButton] with the extra-large container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun TextButtonExtraLarge(
     onClick: () -> Unit,
@@ -191,7 +184,6 @@ public fun TextButtonExtraLarge(
     )
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Preview
 @Composable
 private fun ButtonPreview() {

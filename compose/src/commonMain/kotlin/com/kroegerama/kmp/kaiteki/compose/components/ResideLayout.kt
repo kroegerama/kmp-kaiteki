@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -29,7 +28,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.computedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -280,7 +279,7 @@ public fun ResideLayout(
     if (LocalNavigationEventDispatcherOwner.current != null) {
         val navigationEventState = rememberNavigationEventState(NavigationEventInfo.None)
         val backGestureInProgress by remember(navigationEventState) {
-            derivedStateOf { navigationEventState.transitionState is NavigationEventTransitionState.InProgress }
+            computedStateOf { navigationEventState.transitionState is NavigationEventTransitionState.InProgress }
         }
         NavigationBackHandler(
             state = navigationEventState,
@@ -575,7 +574,6 @@ private fun ResideLayoutOpenPreview() {
     ResideLayoutPreviewContent(initialValue = ResideLayoutValue.Open)
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ResideLayoutPreviewContent(initialValue: ResideLayoutValue) {
     MaterialTheme {

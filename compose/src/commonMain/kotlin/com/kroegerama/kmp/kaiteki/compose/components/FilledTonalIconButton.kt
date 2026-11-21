@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonColors
@@ -38,7 +37,6 @@ import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
  * @param enabled Whether the button responds to input.
  * @param colors [IconButtonColors] used for the container and icon.
  */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun BaseFilledTonalIconButton(
     onClick: () -> Unit,
@@ -67,7 +65,6 @@ public fun BaseFilledTonalIconButton(
 }
 
 /** [BaseFilledTonalIconButton] with the extra-small container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledTonalIconButtonExtraSmall(
     onClick: () -> Unit,
@@ -94,7 +91,6 @@ public fun FilledTonalIconButtonExtraSmall(
 }
 
 /** [BaseFilledTonalIconButton] with the small container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledTonalIconButtonSmall(
     onClick: () -> Unit,
@@ -121,7 +117,6 @@ public fun FilledTonalIconButtonSmall(
 }
 
 /** [BaseFilledTonalIconButton] with the medium container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledTonalIconButtonMedium(
     onClick: () -> Unit,
@@ -148,7 +143,6 @@ public fun FilledTonalIconButtonMedium(
 }
 
 /** [BaseFilledTonalIconButton] with the large container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledTonalIconButtonLarge(
     onClick: () -> Unit,
@@ -175,7 +169,6 @@ public fun FilledTonalIconButtonLarge(
 }
 
 /** [BaseFilledTonalIconButton] with the extra-large container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledTonalIconButtonExtraLarge(
     onClick: () -> Unit,
@@ -201,7 +194,6 @@ public fun FilledTonalIconButtonExtraLarge(
     )
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Preview
 @Composable
 private fun FilledTonalIconButtonPreview() {

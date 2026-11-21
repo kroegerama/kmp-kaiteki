@@ -75,7 +75,6 @@ internal actual class PlatformCameraController : CameraController {
     internal val session = AVCaptureSession()
     private var captureDevice: AVCaptureDevice? = null
 
-    @OptIn(ExperimentalForeignApi::class)
     internal val sessionQueue = dispatch_queue_create(
         "CameraSessionQueue",
         dispatch_queue_attr_make_with_qos_class(null, QOS_CLASS_USER_INITIATED, 0)
@@ -253,7 +252,7 @@ internal actual class PlatformCameraController : CameraController {
         }
     }.distinctUntilChanged()
 
-    actual override fun bindTextAnalyzerFlow(minConfidence: Float): Flow<OCRResult> = callbackFlow<OCRResult> {
+    actual override fun bindTextAnalyzerFlow(minConfidence: Float): Flow<OCRResult> = callbackFlow {
         val delegate = TextDelegate(
             producer = this,
             minConfidence = minConfidence,

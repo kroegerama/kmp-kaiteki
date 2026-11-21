@@ -10,7 +10,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonElevation
 import androidx.compose.material3.ButtonShapes
 import androidx.compose.material3.ElevatedButton
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -37,7 +36,6 @@ import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
  * @param colors [ButtonColors] used for the container and content.
  * @param elevation [ButtonElevation] used across the button's states, or null for no elevation.
  */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun BaseElevatedButton(
     onClick: () -> Unit,
@@ -76,7 +74,6 @@ public fun BaseElevatedButton(
 }
 
 /** [BaseElevatedButton] with the extra-small container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun ElevatedButtonExtraSmall(
     onClick: () -> Unit,
@@ -102,7 +99,6 @@ public fun ElevatedButtonExtraSmall(
 }
 
 /** [BaseElevatedButton] with the small container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun ElevatedButtonSmall(
     onClick: () -> Unit,
@@ -128,7 +124,6 @@ public fun ElevatedButtonSmall(
 }
 
 /** [BaseElevatedButton] with the medium container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun ElevatedButtonMedium(
     onClick: () -> Unit,
@@ -154,7 +149,6 @@ public fun ElevatedButtonMedium(
 }
 
 /** [BaseElevatedButton] with the large container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun ElevatedButtonLarge(
     onClick: () -> Unit,
@@ -180,7 +174,6 @@ public fun ElevatedButtonLarge(
 }
 
 /** [BaseElevatedButton] with the extra-large container height. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun ElevatedButtonExtraLarge(
     onClick: () -> Unit,
@@ -205,7 +198,6 @@ public fun ElevatedButtonExtraLarge(
     )
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Preview
 @Composable
 private fun ElevatedButtonPreview() {

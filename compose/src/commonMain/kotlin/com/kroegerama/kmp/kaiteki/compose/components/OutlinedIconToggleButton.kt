@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconToggleButtonColors
@@ -45,7 +44,6 @@ import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
  * @param colors [IconToggleButtonColors] used for the container and icon across states.
  * @param border Border stroke drawn around the button, or null for no border.
  */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun BaseOutlinedIconToggleButton(
     checked: Boolean,
@@ -78,7 +76,6 @@ public fun BaseOutlinedIconToggleButton(
 }
 
 /** [BaseOutlinedIconToggleButton] with the extra-small container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun OutlinedIconToggleButtonExtraSmall(
     checked: Boolean,
@@ -110,7 +107,6 @@ public fun OutlinedIconToggleButtonExtraSmall(
 }
 
 /** [BaseOutlinedIconToggleButton] with the small container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun OutlinedIconToggleButtonSmall(
     checked: Boolean,
@@ -142,7 +138,6 @@ public fun OutlinedIconToggleButtonSmall(
 }
 
 /** [BaseOutlinedIconToggleButton] with the medium container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun OutlinedIconToggleButtonMedium(
     checked: Boolean,
@@ -174,7 +169,6 @@ public fun OutlinedIconToggleButtonMedium(
 }
 
 /** [BaseOutlinedIconToggleButton] with the large container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun OutlinedIconToggleButtonLarge(
     checked: Boolean,
@@ -206,7 +200,6 @@ public fun OutlinedIconToggleButtonLarge(
 }
 
 /** [BaseOutlinedIconToggleButton] with the extra-large container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun OutlinedIconToggleButtonExtraLarge(
     checked: Boolean,
@@ -237,7 +230,6 @@ public fun OutlinedIconToggleButtonExtraLarge(
     )
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Preview
 @Composable
 private fun OutlinedIconToggleButtonPreview() {

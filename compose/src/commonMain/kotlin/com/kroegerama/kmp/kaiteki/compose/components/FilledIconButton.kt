@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonColors
@@ -38,7 +37,6 @@ import com.kroegerama.kmp.kaiteki.compose.KaitekiIcon
  * @param enabled Whether the button responds to input.
  * @param colors [IconButtonColors] used for the container and icon.
  */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun BaseFilledIconButton(
     onClick: () -> Unit,
@@ -67,7 +65,6 @@ public fun BaseFilledIconButton(
 }
 
 /** [BaseFilledIconButton] with the extra-small container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledIconButtonExtraSmall(
     onClick: () -> Unit,
@@ -94,7 +91,6 @@ public fun FilledIconButtonExtraSmall(
 }
 
 /** [BaseFilledIconButton] with the small container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledIconButtonSmall(
     onClick: () -> Unit,
@@ -121,7 +117,6 @@ public fun FilledIconButtonSmall(
 }
 
 /** [BaseFilledIconButton] with the medium container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledIconButtonMedium(
     onClick: () -> Unit,
@@ -148,7 +143,6 @@ public fun FilledIconButtonMedium(
 }
 
 /** [BaseFilledIconButton] with the large container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledIconButtonLarge(
     onClick: () -> Unit,
@@ -175,7 +169,6 @@ public fun FilledIconButtonLarge(
 }
 
 /** [BaseFilledIconButton] with the extra-large container size. */
-@ExperimentalMaterial3ExpressiveApi
 @Composable
 public fun FilledIconButtonExtraLarge(
     onClick: () -> Unit,
@@ -201,7 +194,6 @@ public fun FilledIconButtonExtraLarge(
     )
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Preview
 @Composable
 private fun FilledIconButtonPreview() {
