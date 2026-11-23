@@ -117,6 +117,9 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.turbine)
         }
+        jvmTest.dependencies {
+            implementation(libs.libphonenumber)
+        }
         getByName("androidHostTest").dependencies {
             implementation(libs.robolectric)
         }
