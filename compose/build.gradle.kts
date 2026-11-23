@@ -101,7 +101,7 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
-        jvmTest.dependencies {
+        getByName("skikoTest").dependencies {
             implementation(libs.compose.uiTest)
         }
         getByName("androidDeviceTest").dependencies {

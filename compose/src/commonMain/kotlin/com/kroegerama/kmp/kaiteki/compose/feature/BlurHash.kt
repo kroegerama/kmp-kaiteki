@@ -6,15 +6,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Grid
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
-import androidx.compose.ui.graphics.painter.BrushPainter
 import androidx.compose.ui.graphics.painter.ColorPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.node.DrawModifierNode
@@ -26,11 +25,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import com.kroegerama.kmp.kaiteki.ExperimentalKaitekiApi
 import com.kroegerama.kmp.kaiteki.feature.BlurHash
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.pow
 
-internal expect fun createBlurHashBrush(
-    decoded: BlurHash,
-    intrinsicSize: Size
-): Brush
+private const val BlurHashBitmapSize = 32
 
 /**
  * Decodes [blurHash] and remembers the result across recompositions.
@@ -77,18 +76,18 @@ public fun rememberBlurHashPainter(
  * Remembers a [Painter] that renders the already-decoded [blurHash].
  *
  * @param blurHash the decoded [BlurHash], or `null` to draw [fallback].
- * @param fallback color drawn when [blurHash] is `null`; defaults to the hash's average color.
+ * @param fallback color drawn when [blurHash] is `null`.
  * @param intrinsicSize the painter's intrinsic size, or [Size.Unspecified] to leave it unsized.
  */
 @ExperimentalKaitekiApi
 @Composable
 public fun rememberBlurHashPainter(
     blurHash: BlurHash?,
-    fallback: Color = blurHash?.averageColor?.let(::Color) ?: Color.Transparent,
+    fallback: Color = Color.Transparent,
     intrinsicSize: Size = Size.Unspecified
 ): Painter = remember(blurHash, fallback, intrinsicSize) {
     blurHash ?: return@remember ColorPainter(fallback)
-    BrushPainter(createBlurHashBrush(blurHash, intrinsicSize))
+    blurHash.toPainter(intrinsicSize)
 }
 
 /**
@@ -111,7 +110,7 @@ public fun Modifier.blurHash(
     fallback = fallback
 )
 
-private class BlurHashElement(
+private data class BlurHashElement(
     val blurHash: String,
     val punch: Float,
     val fallback: Color
@@ -129,21 +128,6 @@ private class BlurHashElement(
         properties["punch"] = punch
         properties["fallback"] = fallback
     }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is BlurHashElement) return false
-        return blurHash == other.blurHash &&
-                punch == other.punch &&
-                fallback == other.fallback
-    }
-
-    override fun hashCode(): Int {
-        var result = blurHash.hashCode()
-        result = 31 * result + punch.hashCode()
-        result = 31 * result + fallback.hashCode()
-        return result
-    }
 }
 
 private class BlurHashNode(
@@ -152,13 +136,7 @@ private class BlurHashNode(
     private var fallback: Color
 ) : Modifier.Node(), DrawModifierNode {
 
-    // decoded once per hash/punch change; the shader itself is compiled lazily and cached by the
-    // ShaderBrush per draw size, so the draw path stays a single drawRect
-    private var brush: Brush? = null
-
-    override fun onAttach() {
-        rebuildBrush()
-    }
+    private var painter: Painter? = createBlurHashPainter(blurHash, punch)
 
     fun update(
         blurHash: String,
@@ -169,7 +147,7 @@ private class BlurHashNode(
         if (this.blurHash != blurHash || this.punch != punch) {
             this.blurHash = blurHash
             this.punch = punch
-            rebuildBrush()
+            painter = createBlurHashPainter(blurHash, punch)
             invalidate = true
         }
         if (this.fallback != fallback) {
@@ -179,15 +157,10 @@ private class BlurHashNode(
         if (invalidate) invalidateDraw()
     }
 
-    private fun rebuildBrush() {
-        val decoded = BlurHash.decode(blurHash, punch)
-        brush = decoded?.let { createBlurHashBrush(it, Size.Unspecified) }
-    }
-
     override fun ContentDrawScope.draw() {
-        val brush = brush
-        if (brush != null) {
-            drawRect(brush)
+        val painter = painter
+        if (painter != null) {
+            with(painter) { draw(size) }
         } else {
             drawRect(fallback)
         }
@@ -195,75 +168,50 @@ private class BlurHashNode(
     }
 }
 
-/**
- * this shader works with AGSL (Android) and SKSL (SKIA)
- */
-internal fun buildBlurHashShaderSource(
-    componentsX: Int,
-    componentsY: Int
-): String = buildString {
-    val factorCount = componentsX * componentsY
-    appendLine(
-        """
-        uniform float2 resolution;
-        uniform half3 factors[$factorCount];
-        
-        const half PI = 3.14159265;
-        
-        half3 linearToSrgb(half3 v) {
-            half3 cutoff = step(v, half3(0.0031308));
-        
-            half3 lower = v * 12.92;
-            half3 higher = 1.055 * pow(v, half3(1.0 / 2.4)) - 0.055;
-        
-            return mix(higher, lower, cutoff);
-        }
-        
-        half4 main(float2 fragCoord) {
-            half2 uv = half2(fragCoord / resolution);
-            
-    """.trimIndent()
-    )
+private fun createBlurHashPainter(blurHash: String, punch: Float): Painter? =
+    BlurHash.decode(blurHash, punch)?.toPainter(Size.Unspecified)
 
-    for (x in 0 until componentsX) {
-        when (x) {
-            0 -> appendLine("    half x0 = 1.0;")
-            1 -> appendLine("    half x1 = cos(PI * uv.x);")
-            else -> appendLine("    half x$x = cos(${x}.0 * PI * uv.x);")
+private fun BlurHash.toPainter(intrinsicSize: Size): Painter = PlaceholderBitmapPainter(
+    image = createImageBitmap(toArgbPixels(), BlurHashBitmapSize, BlurHashBitmapSize),
+    intrinsicSize = intrinsicSize
+)
+
+/** Decodes a [width] by [height] rendering as opaque ARGB pixels, row by row, matching the reference BlurHash decoder. */
+internal fun BlurHash.toArgbPixels(
+    width: Int = BlurHashBitmapSize,
+    height: Int = BlurHashBitmapSize
+): IntArray {
+    val cosX = DoubleArray(width * componentsX) { cos(PI * (it / componentsX) * (it % componentsX) / width) }
+    val cosY = DoubleArray(height * componentsY) { cos(PI * (it / componentsY) * (it % componentsY) / height) }
+    val pixels = IntArray(width * height)
+    for (y in 0..<height) {
+        for (x in 0..<width) {
+            var r = 0.0
+            var g = 0.0
+            var b = 0.0
+            for (j in 0..<componentsY) {
+                val basisY = cosY[y * componentsY + j]
+                for (i in 0..<componentsX) {
+                    val basis = cosX[x * componentsX + i] * basisY
+                    val index = (i + j * componentsX) * 3
+                    r += factors[index] * basis
+                    g += factors[index + 1] * basis
+                    b += factors[index + 2] * basis
+                }
+            }
+            pixels[y * width + x] = (0xFF shl 24) or (linearToSrgb(r) shl 16) or (linearToSrgb(g) shl 8) or linearToSrgb(b)
         }
     }
+    return pixels
+}
 
-    appendLine()
-
-    for (y in 0 until componentsY) {
-        when (y) {
-            0 -> appendLine("    half y0 = 1.0;")
-            1 -> appendLine("    half y1 = cos(PI * uv.y);")
-            else -> appendLine("    half y$y = cos(${y}.0 * PI * uv.y);")
-        }
-    }
-
-    appendLine()
-    appendLine("    half3 color = half3(0.0);")
-    appendLine()
-
-    var index = 0
-
-    for (y in 0 until componentsY) {
-        for (x in 0 until componentsX) {
-            appendLine("    color += factors[$index] * (x$x * y$y);")
-            index++
-        }
-    }
-
-    appendLine()
-    appendLine(
-        """
-            color = linearToSrgb(color);
-            return half4(saturate(color), 1.0);
-        }
-    """.trimIndent()
-    )
+private fun linearToSrgb(value: Double): Int {
+    val v = value.coerceIn(0.0, 1.0)
+    return if (v <= 0.0031308) {
+        v * 12.92 * 255 + 0.5
+    } else {
+        (1.055 * v.pow(1 / 2.4) - 0.055) * 255 + 0.5
+    }.toInt()
 }
 
 @OptIn(ExperimentalKaitekiApi::class)
@@ -276,7 +224,8 @@ private fun BlurHashModifierPreview() {
             column(1.fr)
             column(1.fr)
             gap(4.dp)
-        }
+        },
+        modifier = Modifier.safeDrawingPadding()
     ) {
         listOf(0.25f, 0.5f, 0.75f, 1f, 1.5f, 2f).fastForEach { punch ->
             Box(
@@ -300,7 +249,8 @@ private fun BlurHashPainterPreview() {
             column(1.fr)
             column(1.fr)
             gap(4.dp)
-        }
+        },
+        modifier = Modifier.safeDrawingPadding()
     ) {
         listOf(0.25f, 0.5f, 0.75f, 1f, 1.5f, 2f).fastForEach { punch ->
             Image(
@@ -331,7 +281,8 @@ private fun BlurHashSizesPreview() {
             column(1.fr)
             column(1.fr)
             gap(4.dp)
-        }
+        },
+        modifier = Modifier.safeDrawingPadding()
     ) {
         hashes.fastForEach { (title, hash) ->
             Text(

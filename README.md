@@ -73,6 +73,7 @@ dependencies {
 - `PlatformLocale` with `Locales` constants, display names, `isoCountryCodeToFlag`, `unicodeFlag`
 - `Month` / `DayOfWeek` / `YearMonth` `displayName`, `LocalDate/Time.now()`, `toMinuteOfDay()`, Julian days and `dayDistanceTo`
 - `BlurHash.decode()` - decode BlurHash image placeholders
+- `ThumbHash.decode()` - decode ThumbHash image placeholders (bytes or Base64), with aspect ratio and alpha
 - Enum serial-name helpers: `enumValueOfSerialName`, `serialName()`
 
 ### Compose
@@ -85,6 +86,7 @@ dependencies {
 - `Modifier.keepScreenOn()` - keeps the screen awake (Android flag / iOS `idleTimerDisabled`)
 - `Modifier.cacheSize()` - reuses a previously measured size, e.g. for moveable content
 - `Modifier.blurHash()` - draws a BlurHash placeholder behind the content
+- `Modifier.thumbHash()` - draws a ThumbHash placeholder behind the content
 
 **Components**
 
@@ -102,6 +104,7 @@ dependencies {
 **Graphics**
 
 - `rememberBlurHashPainter()` / `rememberBlurHash()` - BlurHash placeholders as a `Painter`
+- `rememberThumbHashPainter()` / `rememberThumbHash()` - ThumbHash placeholders as a `Painter`, sized to the image's aspect ratio
 - `rememberAnimatedShape()` - morphs between corner-based shapes; `ListItemShapes.rememberShapeForInteraction()` follows press, drag, focus and hover
 - `Path.strokeToFill()` - converts a stroke centerline into its filled outline
 
