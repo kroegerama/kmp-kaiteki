@@ -71,6 +71,8 @@ dependencies {
 
 - `DecimalFormatter`, `LocalizedDateTimeFormatter` (incl. relative/"fancy" formatting), `Long.asHumanReadableBytes()`
 - `PlatformLocale` with `Locales` constants, display names, `isoCountryCodeToFlag`, `unicodeFlag`
+- Calling codes: `callingCodeCountries`, `isoCountryCodeToCallingCode`, `PlatformLocale.callingCode`, and
+  `callingCodeCountryForPhoneNumber` - resolve the region of an international number, incl. shared codes (`+1 242` gives `BS`)
 - `Month` / `DayOfWeek` / `YearMonth` `displayName`, `LocalDate/Time.now()`, `toMinuteOfDay()`, Julian days and `dayDistanceTo`
 - `BlurHash.decode()` - decode BlurHash image placeholders
 - `ThumbHash.decode()` - decode ThumbHash image placeholders (bytes or Base64), with aspect ratio and alpha

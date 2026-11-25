@@ -42,6 +42,88 @@ public fun isoCountryCodeToCallingCode(isoCode: String): Int? {
 public val PlatformLocale.callingCode: Int?
     get() = isoCountryCodeToCallingCode(country)
 
+/**
+ * Resolves the region of a phone number in international format, including regions that share a calling code such as `+1 242` (Bahamas).
+ * The result is best effort: numbers with an unknown prefix resolve to the main region of their calling code.
+ *
+ * @param phoneNumber A number starting with `+` or `00`, e.g. `"+1 (242) 555-0100"`. A `(0)` group and non-digit characters are ignored.
+ * @return The region with its calling code, or `null` if [phoneNumber] is not in international format or has no known calling code.
+ */
+public fun callingCodeCountryForPhoneNumber(phoneNumber: String): CallingCodeCountry? {
+    val start = phoneNumber.indexOfFirst { it == '+' || it in '0'..'9' }
+    if (start < 0) return null
+    val international = when {
+        phoneNumber[start] == '+' ->phoneNumber.substring(start + 1)
+        phoneNumber.startsWith("00", start) -> phoneNumber.substring(start + 2)
+        else -> return null
+    }
+    val digits = international.replace("(0)", "").filter { it in '0'..'9' }
+    if (digits.startsWith('0')) return null
+    for (length in 1..minOf(3, digits.length)) {
+        val callingCode = digits.substring(0, length).toInt()
+        val isoCodes = callingCodeTable[callingCode] ?: continue
+        val mainRegion = isoCodes.first()
+        if (isoCodes.size == 1) return CallingCodeCountry(mainRegion, callingCode)
+        val nationalNumber = digits.substring(length)
+        val prefixes = regionPrefixTable[callingCode].orEmpty()
+        val longestPrefix = minOf(nationalNumber.length, MAX_REGION_PREFIX_LENGTH)
+        val isoCode = (longestPrefix downTo 1).firstNotNullOfOrNull { prefixes[nationalNumber.substring(0, it)] } ?: mainRegion
+        return CallingCodeCountry(isoCode, callingCode)
+    }
+    return null
+}
+
+internal const val MAX_REGION_PREFIX_LENGTH: Int = 5
+
+private fun regionPrefixes(vararg regions: Pair<String, List<String>>): Map<String, String> =
+    regions.flatMap { (isoCode, prefixes) -> prefixes.map { prefix -> prefix to isoCode } }.toMap()
+
+// Calling code to national number prefix to region, for regions that share a calling code with a main region.
+// Derived from google/libphonenumber phone number metadata.
+// Copyright The Libphonenumber Authors, licensed under the Apache License, Version 2.0.
+internal val regionPrefixTable: Map<Int, Map<String, String>> by lazy {
+    mapOf(
+        1 to regionPrefixes(
+            "AG" to listOf("268"),
+            "AI" to listOf("264"),
+            "AS" to listOf("684"),
+            "BB" to listOf("246"),
+            "BM" to listOf("441"),
+            "BS" to listOf("242"),
+            "CA" to listOf(
+                "204", "226", "236", "249", "250", "257", "263", "273", "289", "306", "343", "354", "365", "367", "368", "382", "403", "416",
+                "418", "428", "431", "437", "438", "450", "468", "474", "506", "514", "519", "548", "579", "581", "584", "587", "600", "604",
+                "613", "622", "633", "639", "647", "672", "683", "705", "709", "742", "753", "778", "780", "782", "807", "819", "825", "867",
+                "873", "879", "902", "905", "942"
+            ),
+            "DM" to listOf("767"),
+            "DO" to listOf("809", "829", "849"),
+            "GD" to listOf("473"),
+            "GU" to listOf("671"),
+            "JM" to listOf("658", "876"),
+            "KN" to listOf("869"),
+            "KY" to listOf("345"),
+            "LC" to listOf("758"),
+            "MP" to listOf("670"),
+            "MS" to listOf("664"),
+            "PR" to listOf("787", "939"),
+            "SX" to listOf("721"),
+            "TC" to listOf("649"),
+            "TT" to listOf("868"),
+            "VC" to listOf("784"),
+            "VG" to listOf("284"),
+            "VI" to listOf("340"),
+        ),
+        7 to regionPrefixes("KZ" to listOf("7")),
+        39 to regionPrefixes("VA" to listOf("06698")),
+        44 to regionPrefixes("IM" to listOf("1624", "7524", "7624", "74576")),
+        47 to regionPrefixes("SJ" to listOf("79")),
+        290 to regionPrefixes("TA" to listOf("8")),
+        358 to regionPrefixes("AX" to listOf("18")),
+        599 to regionPrefixes("BQ" to listOf("3", "4", "7")),
+    )
+}
+
 // Derived from google/libphonenumber CountryCodeToRegionCodeMap.java, without the non-geographic region "001".
 // Copyright The Libphonenumber Authors, licensed under the Apache License, Version 2.0.
 private val callingCodeTable: Map<Int, List<String>> = mapOf(
